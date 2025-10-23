@@ -1,0 +1,36 @@
+services:
+  mariadb:
+    image: mariadb:latest
+    restart: always
+    environment:
+      # TODO change
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=cosc471
+      - MYSQL_USER=mariadb
+    volumes:
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    ports:
+      - 33123:3306
+  
+  frontend:
+    restart: always
+    build:
+      context: .
+      dockerfile: ./front.dockerfile
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    ports:
+      - 3000:3000
+    depends_on:
+      - backend
+
+  backend:
+    restart: always
+    build:
+      context: .
+      dockerfile: ./back.dockerfile
+    ports:
+      - 8081:8081
+    depends_on:
+      - mariadb
