@@ -1,0 +1,106 @@
+@startuml
+hide circle
+hide methods
+skinparam classAttributeIconSize 0
+
+class User {
+  +id: INT <<PK>>
+  +name: VARCHAR(255)
+  +email: VARCHAR(255) <<UNIQUE>>
+  +hash_pass: VARCHAR(128)
+  +is_teacher: BOOLEAN = FALSE
+}
+
+class Course {
+  +id: INT <<PK>>
+  +teacherID: INT
+  +name: VARCHAR(255)
+}
+
+class Assignment {
+  +id: INT <<PK>>
+  +courseID: INT
+  +name: VARCHAR(255)
+  +rubric: VARCHAR(255)
+}
+
+class CourseGroup {
+  +id: INT <<PK>>
+  +name: VARCHAR(255)
+  +assignmentID: INT
+}
+
+class Submission {
+  +id: INT <<PK>>
+  +path: VARCHAR(255)
+  +studentID: INT
+  +assignmentID: INT
+}
+
+class Group_Members {
+  +groupID: INT
+  +userID: INT
+  +assignmentID: INT
+  -- PK (userID, groupID)
+}
+
+class User_Courses {
+  +courseID: INT
+  +userID: INT
+  -- PK (userID, courseID)
+}
+
+class Review {
+  +id: INT <<PK>>
+  +assignmentID: INT
+  +reviewerID: INT
+  +revieweeID: INT
+}
+
+class Criterion {
+  +id: INT <<PK>>
+  +reviewID: INT
+  +criterionRowID: INT
+  +grade: INT
+  +comments: VARCHAR(255)
+}
+
+class Rubric {
+  +id: INT <<PK>>
+  +assignmentID: INT
+  +canComment: BOOLEAN
+}
+
+class Criteria_Description {
+  +id: INT <<PK>>
+  +rubricID: INT
+  +question: VARCHAR(255)
+  +scoreMax: INT
+  +hasScore: BOOLEAN = TRUE
+}
+
+' Relationships (logical FKs; FK constraints may be disabled in dev schema)
+User "1" <-- "0..*" Course : teacherID (teacher)
+Course "1" <-- "0..*" Assignment : courseID
+Assignment "1" <-- "0..*" CourseGroup : assignmentID
+
+User "1" <-- "0..*" Submission : studentID
+Assignment "1" <-- "0..*" Submission : assignmentID
+
+CourseGroup "1" <-- "0..*" Group_Members : groupID
+User "1" <-- "0..*" Group_Members : userID
+Assignment "1" <-- "0..*" Group_Members : assignmentID
+
+User "1" <-- "0..*" User_Courses : userID
+Course "1" <-- "0..*" User_Courses : courseID
+
+Assignment "1" <-- "0..*" Review : assignmentID
+User "1" <-- "0..*" Review : reviewerID
+User "1" <-- "0..*" Review : revieweeID
+
+Review "1" <-- "0..*" Criterion : reviewID
+Criteria_Description "1" <-- "0..*" Criterion : criterionRowID
+
+Assignment "1" <-- "0..*" Rubric : assignmentID
+Rubric "1" <-- "0..*" Criteria_Description : rubricID
+@enduml
