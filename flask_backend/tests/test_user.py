@@ -14,10 +14,8 @@ def test_get_current_user(test_client):
     test_client.post(
         '/auth/register',
         data=json.dumps({
-            'username': 'testuser',
+            'name': 'testuser',
             'password': '123456',
-            'first_name': 'Test',
-            'last_name': 'User',
             'email': 'test@example.com'
         }),
         headers={'Content-Type': 'application/json'}
@@ -25,7 +23,7 @@ def test_get_current_user(test_client):
     
     login_response = test_client.post(
         '/auth/login',
-        data=json.dumps({'username': 'testuser', 'password': '123456'}),
+        data=json.dumps({'email': 'test@example.com', 'password': '123456'}),
         headers={'Content-Type': 'application/json'}
     )
     token = login_response.json['access_token']
@@ -37,10 +35,10 @@ def test_get_current_user(test_client):
     )
     
     assert response.status_code == 200
-    assert response.json['user_name'] == 'testuser'
-    assert response.json['first_name'] == 'Test'
-    assert response.json['last_name'] == 'User'
+    assert response.json['name'] == 'testuser'
     assert response.json['email'] == 'test@example.com'
+    assert response.json['id'] is not None
+    assert response.json['is_teacher'] is False
     assert 'password' not in response.json  # Password should not be exposed
 
 
@@ -64,17 +62,16 @@ def test_update_current_user(test_client):
     test_client.post(
         '/auth/register',
         data=json.dumps({
-            'username': 'testuser',
+            'name': 'testuser',
             'password': '123456',
-            'first_name': 'Test',
-            'last_name': 'User'
+            'email': 'test@example.com'
         }),
         headers={'Content-Type': 'application/json'}
     )
     
     login_response = test_client.post(
         '/auth/login',
-        data=json.dumps({'username': 'testuser', 'password': '123456'}),
+        data=json.dumps({'email': 'test@example.com', 'password': '123456'}),
         headers={'Content-Type': 'application/json'}
     )
     token = login_response.json['access_token']
@@ -83,9 +80,7 @@ def test_update_current_user(test_client):
     response = test_client.put(
         '/user/',
         data=json.dumps({
-            'first_name': 'Updated',
-            'last_name': 'Name',
-            'email': 'updated@example.com'
+            'name': 'Updated'
         }),
         headers={
             'Authorization': f'Bearer {token}',
@@ -94,9 +89,7 @@ def test_update_current_user(test_client):
     )
     
     assert response.status_code == 200
-    assert response.json['first_name'] == 'Updated'
-    assert response.json['last_name'] == 'Name'
-    assert response.json['email'] == 'updated@example.com'
+    assert response.json['name'] == 'Updated'
 
 
 def test_get_user_by_id(test_client):
@@ -109,17 +102,16 @@ def test_get_user_by_id(test_client):
     test_client.post(
         '/auth/register',
         data=json.dumps({
-            'username': 'testuser',
+            'name': 'testuser',
             'password': '123456',
-            'first_name': 'Test',
-            'last_name': 'User'
+            'email': 'test@example.com'
         }),
         headers={'Content-Type': 'application/json'}
     )
     
     login_response = test_client.post(
         '/auth/login',
-        data=json.dumps({'username': 'testuser', 'password': '123456'}),
+        data=json.dumps({'email': 'test@example.com', 'password': '123456'}),
         headers={'Content-Type': 'application/json'}
     )
     token = login_response.json['access_token']
@@ -139,7 +131,7 @@ def test_get_user_by_id(test_client):
     
     assert response.status_code == 200
     assert response.json['id'] == user_id
-    assert response.json['user_name'] == 'testuser'
+    assert response.json['name'] == 'testuser'
 
 
 def test_get_other_user_by_id_forbidden(test_client):
@@ -152,10 +144,9 @@ def test_get_other_user_by_id_forbidden(test_client):
     test_client.post(
         '/auth/register',
         data=json.dumps({
-            'username': 'user1',
+            'name': 'user1',
             'password': '123456',
-            'first_name': 'User',
-            'last_name': 'One'
+            'email': 'user1@example.com'
         }),
         headers={'Content-Type': 'application/json'}
     )
@@ -163,10 +154,9 @@ def test_get_other_user_by_id_forbidden(test_client):
     test_client.post(
         '/auth/register',
         data=json.dumps({
-            'username': 'user2',
+            'name': 'user2',
             'password': '123456',
-            'first_name': 'User',
-            'last_name': 'Two'
+            'email': 'user2@example.com'
         }),
         headers={'Content-Type': 'application/json'}
     )
@@ -174,7 +164,7 @@ def test_get_other_user_by_id_forbidden(test_client):
     # Login as user1
     login_response = test_client.post(
         '/auth/login',
-        data=json.dumps({'username': 'user1', 'password': '123456'}),
+        data=json.dumps({'email': 'user1@example.com', 'password': '123456'}),
         headers={'Content-Type': 'application/json'}
     )
     token = login_response.json['access_token']
@@ -200,17 +190,16 @@ def test_delete_own_user(test_client):
     test_client.post(
         '/auth/register',
         data=json.dumps({
-            'username': 'testuser',
+            'name': 'testuser',
             'password': '123456',
-            'first_name': 'Test',
-            'last_name': 'User'
+            'email': 'test@example.com'
         }),
         headers={'Content-Type': 'application/json'}
     )
     
     login_response = test_client.post(
         '/auth/login',
-        data=json.dumps({'username': 'testuser', 'password': '123456'}),
+        data=json.dumps({'email': 'test@example.com', 'password': '123456'}),
         headers={'Content-Type': 'application/json'}
     )
     token = login_response.json['access_token']

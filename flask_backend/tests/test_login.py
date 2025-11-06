@@ -17,7 +17,7 @@ def test_register(test_client):
     """
     response = test_client.post(
         '/auth/register',
-        data=json.dumps({'username': 'testuser', 'password': '123456'}),
+        data=json.dumps({'name': 'testuser', 'password': '123456', 'email': 'test@example.com'}),
         headers={'Content-Type': 'application/json'}
     )
     assert response.status_code == 201
@@ -33,14 +33,14 @@ def test_register_duplicate(test_client):
     # Create first user
     test_client.post(
         '/auth/register',
-        data=json.dumps({'username': 'testuser', 'password': '123456'}),
+        data=json.dumps({'name': 'testuser', 'password': '123456', 'email': 'test@example.com'}),
         headers={'Content-Type': 'application/json'}
     )
     
     # Try to create duplicate
     response = test_client.post(
         '/auth/register',
-        data=json.dumps({'username': 'testuser', 'password': '123456'}),
+        data=json.dumps({'name': 'testuser', 'password': '123456', 'email': 'test@example.com'}),
         headers={'Content-Type': 'application/json'}
     )
     assert response.status_code == 400
@@ -56,14 +56,14 @@ def test_login(test_client):
     # First register a user
     test_client.post(
         '/auth/register',
-        data=json.dumps({'username': 'example', 'password': '123456'}),
+        data=json.dumps({'name': 'example', 'password': '123456', 'email': 'example@example.com'}),
         headers={'Content-Type': 'application/json'}
     )
     
     # Then login
     token_request = test_client.post(
         '/auth/login',
-        data=json.dumps({'username': 'example', 'password': '123456'}),
+        data=json.dumps({'email': 'example@example.com', 'password': '123456'}),
         headers={'Content-Type': 'application/json'}
     )
     assert token_request.status_code == 200
@@ -78,11 +78,11 @@ def test_login_invalid_credentials(test_client):
     """
     response = test_client.post(
         '/auth/login',
-        data=json.dumps({'username': 'nonexistent', 'password': 'wrong'}),
+        data=json.dumps({'email': 'nonexistent@example.com', 'password': 'wrong'}),
         headers={'Content-Type': 'application/json'}
     )
     assert response.status_code == 401
-    assert response.json['msg'] == 'Bad username or password'
+    assert response.json['msg'] == 'Bad email or password'
 
 
 def test_logout(test_client):
@@ -94,13 +94,13 @@ def test_logout(test_client):
     # Register and login first
     test_client.post(
         '/auth/register',
-        data=json.dumps({'username': 'example', 'password': '123456'}),
+        data=json.dumps({'name': 'example', 'password': '123456', 'email': 'example@example.com'}),
         headers={'Content-Type': 'application/json'}
     )
     
     token_response = test_client.post(
         '/auth/login',
-        data=json.dumps({'username': 'example', 'password': '123456'}),
+        data=json.dumps({'email': 'example@example.com', 'password': '123456'}),
         headers={'Content-Type': 'application/json'}
     )
     token = token_response.json['access_token']
