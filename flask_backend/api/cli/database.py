@@ -27,53 +27,22 @@ def drop_db_command():
 @with_appcontext
 def add_users_command():
     """Add sample users to the database"""
-    # Regular user
-    user1_dict = {
-        "user_name": "example",
-        "password": generate_password_hash("123456", method="pbkdf2:sha256"),
-        "first_name": "example",
-        "last_name": "example",
-        "phone_number": "123456",
-        "email": "example@example.com",
-        "role": User.ROLE_USER
-    }
-    
-    # Admin user
-    user2_dict = {
-        "user_name": "admin",
-        "password": generate_password_hash("123456", method="pbkdf2:sha256"),
-        "first_name": "admin",
-        "last_name": "admin",
-        "phone_number": "123456",
-        "email": "admin@example.com",
-        "role": User.ROLE_ADMIN
-    }
-    
-    # Moderator user
-    user3_dict = {
-        "user_name": "moderator",
-        "password": generate_password_hash("123456", method="pbkdf2:sha256"),
-        "first_name": "moderator",
-        "last_name": "moderator",
-        "phone_number": "123456",
-        "email": "moderator@example.com",
-        "role": User.ROLE_MODERATOR
-    }
-    
-    if not User.get_by_username(user1_dict["user_name"]):
-        user1 = User(**user1_dict)
-        User.create_user(user1)
-        click.echo(f"User '{user1.user_name}' created with role '{user1.role}'")
-    
-    if not User.get_by_username(user2_dict["user_name"]):
-        user2 = User(**user2_dict)
-        User.create_user(user2)
-        click.echo(f"User '{user2.user_name}' created with role '{user2.role}'")
-    
-    if not User.get_by_username(user3_dict["user_name"]):
-        user3 = User(**user3_dict)
-        User.create_user(user3)
-        click.echo(f"User '{user3.user_name}' created with role '{user3.role}'")
+    # Create mock users that match the User model: (name, email, hash_pass, is_teacher)
+    sample_users = [
+        {"name": "Example Student", "email": "example@example.com", "password": "123456", "is_teacher": False},
+        {"name": "Admin Teacher", "email": "admin@example.com", "password": "123456", "is_teacher": True},
+        {"name": "Moderator User", "email": "moderator@example.com", "password": "123456", "is_teacher": False},
+    ]
+
+    for u in sample_users:
+        # check existence by email
+        if not User.get_by_email(u["email"]):
+            hashed = generate_password_hash(u["password"], method="pbkdf2:sha256")
+            user = User(name=u["name"], email=u["email"], hash_pass=hashed, is_teacher=u["is_teacher"])
+            User.create_user(user)
+            click.echo(f"User '{user.email}' created (is_teacher={user.is_teacher})")
+        else:
+            click.echo(f"User '{u['email']}' already exists")
 
 
 # Backward compatibility alias

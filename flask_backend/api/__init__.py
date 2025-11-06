@@ -4,7 +4,7 @@ import functools
 from flask import Flask, jsonify
 from flask_jwt_extended import JWTManager
 
-from .controllers import auth, user, fake_api
+from .controllers import auth_controller, fake_api_controller, user_controller
 from .cli import init_app
 from .models.db import db, ma
 
@@ -53,8 +53,8 @@ def create_app(test_config=None):
     init_app(app)
     
     # Register blueprints
-    app.register_blueprint(auth.bp)
-    app.register_blueprint(user.bp)
-    app.register_blueprint(fake_api.fake)
+    app.register_blueprint(auth_controller.bp)
+    app.register_blueprint(user_controller.bp)
+    app.register_blueprint(fake_api_controller.fake)
 
     return app
