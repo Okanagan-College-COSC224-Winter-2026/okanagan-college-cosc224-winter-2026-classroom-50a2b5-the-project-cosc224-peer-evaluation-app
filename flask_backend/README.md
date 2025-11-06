@@ -48,6 +48,68 @@ run the project:
 flask run
 ```
 
+## Running the test suite
+
+These tests use pytest and an in-memory SQLite database. No external services are required.
+
+1. Activate your virtual environment (from the project root or `flask_backend/`):
+
+```bash
+source venv/bin/activate
+```
+
+1. Install the package in editable mode and development dependencies (includes pytest):
+
+```bash
+pip install -e .
+pip install -r requirements-dev.txt
+```
+
+1. From the `flask_backend/` directory, run all tests:
+
+```bash
+pytest
+```
+
+### Useful pytest commands
+
+- Quiet output:
+
+    ```bash
+    pytest -q
+    ```
+
+- Run a single file:
+
+    ```bash
+    pytest tests/test_login.py -q
+    ```
+
+- Run a single test function:
+
+    ```bash
+    pytest tests/test_login.py::test_login -q
+    ```
+
+- Verbose with stop on first failure:
+
+    ```bash
+    pytest -vv -x
+    ```
+
+### Coverage reporting
+
+Coverage plugin (`pytest-cov`) is installed via `requirements-dev.txt`. Run:
+
+```bash
+pytest --cov=api --cov-report=term-missing
+```
+
+### Notes
+
+- Tests bootstrap the app via `api.create_app` with `TESTING=True` and create/drop tables per session; your local database will not be modified.
+- CI-oriented dependencies live in `requirements-ci.txt`. For local development, prefer `requirements-dev.txt`.
+
 ## The structure of the project (In the following tree, only important entities are listed)
 
 ```text

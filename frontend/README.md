@@ -73,7 +73,7 @@ From `frontend/package.json`:
     ```ts
     const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081';
     ```
-    
+
     Then provide `VITE_API_BASE_URL` at build/run time.
 
 ## Run with Docker (development)
