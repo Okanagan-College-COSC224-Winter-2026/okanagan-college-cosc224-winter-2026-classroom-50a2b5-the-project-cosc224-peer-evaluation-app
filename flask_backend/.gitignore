@@ -1,0 +1,12 @@
+*.py[co]
+.project
+.pydevproject
+.settings
+src/config.ini
+__pycache__
+.idea
+venv/
+.venv/
+*.egg-info/
+.ropeproject
+.vscode/

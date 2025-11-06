@@ -1,6 +1,6 @@
 import { didExpire, getToken, removeToken } from "./login";
 
-const BASE_URL = 'http://localhost:8081'
+const BASE_URL = 'http://localhost:5000'
 
 // export const getProfile = async (id: string) => {
 //   // TODO
@@ -20,10 +20,13 @@ export const tryLogin = async (username: string, password: string) => {
   const credentials = btoa(`${username}:${password}`);
 
   try {
-    const response = await fetch(`${BASE_URL}/login`, {
+    const response = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         "Authorization": `Basic ${credentials}`
-      }
+      },
+      body: JSON.stringify({ username, password })
     });
     
     if (!response.ok) { 
