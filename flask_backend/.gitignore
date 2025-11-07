@@ -10,3 +10,5 @@ venv/
 *.egg-info/
 .ropeproject
 .vscode/
+*.sqlite
+*.sqlite3
