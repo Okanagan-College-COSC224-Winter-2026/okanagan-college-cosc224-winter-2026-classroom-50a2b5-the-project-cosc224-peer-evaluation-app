@@ -64,7 +64,7 @@ def test_client(app, db):
 @pytest.fixture
 def make_admin():
     """Fixture to create an admin user in the database."""
-    def _make_admin(email='admin@example.com', password='adminpass', name='Admin User'):
+    def _make_admin(email='admin@example.com', password='admin', name='Admin User'):
         user = User(
             name=name,
             email=email,

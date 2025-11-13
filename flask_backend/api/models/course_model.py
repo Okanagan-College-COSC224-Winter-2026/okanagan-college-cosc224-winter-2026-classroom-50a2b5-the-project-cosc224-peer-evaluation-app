@@ -45,6 +45,11 @@ class Course(db.Model):
         return cls.query.filter_by(name=name).first()
 
     @classmethod
+    def get_by_name_teacher(cls, name, teacher_id):
+        """Get course by name and teacher ID"""
+        return cls.query.filter_by(name=name, teacherID=teacher_id).first()
+    
+    @classmethod
     def create_course(cls, course):
         """Add a new course to the database"""
         db.session.add(course)
