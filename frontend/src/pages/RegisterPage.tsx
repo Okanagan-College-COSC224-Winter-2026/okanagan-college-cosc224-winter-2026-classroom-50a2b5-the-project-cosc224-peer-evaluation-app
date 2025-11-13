@@ -1,0 +1,98 @@
+import { useState } from 'react';
+import './RegisterPage.css';
+import Textbox from '../components/Textbox';
+import Button from '../components/Button';
+import Checkbox from '../components/Checkbox';
+import ErrorMessage from '../components/ErrorMessage';
+import { tryRegister } from '../util/api';
+import { useNavigate } from 'react-router-dom';
+
+export default function RegisterPage() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [is_teacher, setIsTeacher] = useState(false);
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
+
+  
+  const attemptRegister = async () => {
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (await tryRegister(name, email, password, is_teacher)) {
+      navigate('/');
+    }
+  }
+
+  return (
+    <div className="RegisterPage">
+      {error && <ErrorMessage message={error} className="RegisterError" />}
+      <div className="RegisterBlock">
+        <h1>Register</h1>
+
+        <div className="RegisterInner">
+          <div className="RegisterInputs">
+            <div className="RegisterInputChunk">
+              <span>Name</span>
+              <Textbox
+                placeholder='Name...'
+                onInput={setName}
+                className='RegisterInput'
+              />
+            </div>
+
+            <div className="RegisterInputChunk">
+              <span>Email</span>
+              <Textbox
+                type='email'
+                placeholder='Email...'
+                onInput={setEmail}
+                className='RegisterInput'
+              />
+            </div>
+
+            <div className="RegisterInputChunk">
+              <span>Password</span>
+              <Textbox
+                type='password'
+                placeholder='Password...'
+                onInput={setPassword}
+                className='RegisterInput'
+              />
+            </div>
+
+            <div className="RegisterInputChunk">
+              <span>Confirm Password</span>
+              <Textbox
+                type='password'
+                placeholder='Confirm Password...'
+                onInput={setConfirmPassword}
+                className='RegisterInput'
+              />
+            </div>
+
+            <div className="RegisterInputChunk">
+              <Checkbox
+                checked={is_teacher}
+                onChange={() => setIsTeacher(!is_teacher)}
+                label="Register as Teacher"
+              />
+            </div>
+            
+          </div>
+
+        </div>
+
+        <Button
+          onClick={()=> attemptRegister()}
+          children="Register"
+        />
+
+      </div>
+    </div>
+  );
+}

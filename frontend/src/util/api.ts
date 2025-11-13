@@ -16,14 +16,14 @@ export const maybeHandleExpire = (response: Response) => {
   }
 }
 
-export const tryLogin = async (username: string, password: string) => {
+export const tryLogin = async (email: string, password: string) => {
   try {
     const response = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ email: username, password }),
+      body: JSON.stringify({ email: username, password: password }),
       credentials: 'include'  // Include cookies in request/response
     });
     
@@ -36,15 +36,39 @@ export const tryLogin = async (username: string, password: string) => {
     
     // Store user info (but not token - that's in httponly cookie now)
     localStorage.setItem('user', JSON.stringify(json));
+    //console.log("Logged in:", json);
 
     return json;
   } catch (error) {
     // Login is wrong
     console.error(error);
-    window.location.href = '/';
+    // window.location.href = '/';
   }
 
   return false
+}
+
+export const tryRegister = async (name: string, email: string, password: string, is_teacher: boolean) => {
+  try {
+    const response = await fetch(`${BASE_URL}/auth/register`, {
+      method: 'POST',
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        is_teacher
+      }),
+      headers: {
+        'Content-Type': 'application/json'
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Response status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 export const createClass = async (name: string) => {

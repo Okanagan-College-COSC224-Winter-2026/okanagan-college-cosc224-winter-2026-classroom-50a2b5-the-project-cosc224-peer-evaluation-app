@@ -1,36 +1,38 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './LoginPage.css';
 import Textbox from '../components/Textbox';
 import Button from '../components/Button';
+import ErrorMessage from '../components/ErrorMessage';
 import { tryLogin } from '../util/api';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
+  const [error, setError] = useState('');
+
   const attemptLogin = async () => {
-    //const result = await tryLogin(username, password);
-    const result = await tryLogin(username, password);
-
-    if (result.token) {
+    if (await tryLogin(email, password)) {
       window.location.href = `/home`;
+    } else {
+      setError('Invalid email or password');
     }
-
-    // TODO show error message
   }
 
   return (
     <div className="LoginPage">
-      <div className="LoginBlock">
+      {error && <ErrorMessage message={error} className="LoginError" />}
+      <div className="LoginBlock">  
         <h1>Login</h1>
 
         <div className="LoginInner">
           <div className="LoginInputs">
             <div className="LoginInputChunk">
-              <span>Username</span>
+              <span>Email</span>
               <Textbox
-                placeholder='Username...'
-                onInput={setUsername}
+                placeholder='Email...'
+                onInput={setEmail}
                 className='LoginInput'
               />
             </div>
@@ -47,12 +49,18 @@ export default function LoginPage() {
           </div>
 
         </div>
+        <div>
+          <Button
+            onClick={()=> attemptLogin()}
+            children="Login"
+          />
 
-        <Button
-          onClick={()=> attemptLogin()}
-          children="Login"
-        />
-
+          <Button
+            onClick={() => navigate('/register')}
+            type='secondary'
+            children="Register"
+          />
+        </div>
       </div>
     </div>
   );
