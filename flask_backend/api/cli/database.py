@@ -27,32 +27,42 @@ def drop_db_command():
 @with_appcontext
 def add_users_command():
     """Add sample users to the database"""
-    # Create mock users that match the User model: (name, email, hash_pass, is_teacher)
+    # Create mock users that match the User model: (name, email, hash_pass, role)
     sample_users = [
-        {"name": "Example Student", "email": "example@example.com", "password": "123456", "is_teacher": False},
-        {"name": "Admin Teacher", "email": "admin@example.com", "password": "123456", "is_teacher": True},
-        {"name": "Moderator User", "email": "moderator@example.com", "password": "123456", "is_teacher": False},
+        {"name": "Example Student", "email": "student@example.com", "password": "123456", "role": "student"},
+        {"name": "Example Teacher", "email": "teacher@example.com", "password": "123456", "role": "teacher"},
+        {"name": "Example Admin", "email": "admin@example.com", "password": "123456", "role": "admin"},
     ]
 
     for u in sample_users:
         # check existence by email
         if not User.get_by_email(u["email"]):
             hashed = generate_password_hash(u["password"], method="pbkdf2:sha256")
-            user = User(name=u["name"], email=u["email"], hash_pass=hashed, is_teacher=u["is_teacher"])
+            user = User(name=u["name"], email=u["email"], hash_pass=hashed, role=u["role"])
             User.create_user(user)
-            click.echo(f"User '{user.email}' created (is_teacher={user.is_teacher})")
+            click.echo(f"User '{user.email}' created (role={user.role})")
         else:
             click.echo(f"User '{u['email']}' already exists")
 
 
-# Backward compatibility alias
-@click.command('add_members')
+@click.command('create_admin')
 @with_appcontext
-def db_mock_command():
-    """Legacy command: Add sample users (calls add_users)"""
-    click.echo("Note: 'add_members' is deprecated, use 'add_users' instead")
-    ctx = click.get_current_context()
-    ctx.invoke(add_users_command)
+def create_admin_command():
+    """Create an admin user"""
+    name = click.prompt('Admin name')
+    email = click.prompt('Admin email')
+    password = click.prompt('Password', hide_input=True, confirmation_prompt=True)
+    
+    # Check if user already exists
+    if User.get_by_email(email):
+        click.echo(f"Error: User with email '{email}' already exists", err=True)
+        return
+    
+    # Create admin user
+    hashed = generate_password_hash(password, method="pbkdf2:sha256")
+    admin = User(name=name, email=email, hash_pass=hashed, role='admin')
+    User.create_user(admin)
+    click.echo(f"Admin user '{email}' created successfully")
 
 
 def init_app(app):
@@ -60,4 +70,4 @@ def init_app(app):
     app.cli.add_command(init_db_command)
     app.cli.add_command(drop_db_command)
     app.cli.add_command(add_users_command)
-    app.cli.add_command(db_mock_command)  # Keep for backward compatibility
+    app.cli.add_command(create_admin_command)

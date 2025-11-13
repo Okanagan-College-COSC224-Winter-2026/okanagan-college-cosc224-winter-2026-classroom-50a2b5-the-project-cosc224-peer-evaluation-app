@@ -6,7 +6,7 @@ CREATE TABLE User (
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     hash_pass VARCHAR(128) NOT NULL,
-    is_teacher BOOLEAN NOT NULL DEFAULT FALSE
+    role VARCHAR(50) NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'teacher', 'admin'))
 );
 
 CREATE TABLE Course (
@@ -79,27 +79,27 @@ CREATE TABLE Criteria_Description (
 
 -- TEST VALUES
 -- Credentials: test / 1234
-INSERT INTO User (id, name, email, is_teacher, hash_pass)
-  VALUES (1, 'test', 'test@test.com', false, 'd404559f602eab6fd602ac7680dacbfaadd13630335e951f097af3900e9de176b6db28512f2e000b9d04fba5133e8b1c6e8df59db3a8ab9d60be4b97cc9e81db'),
-         (2, 'test2', 'test2@test.com', true, 'd404559f602eab6fd602ac7680dacbfaadd13630335e951f097af3900e9de176b6db28512f2e000b9d04fba5133e8b1c6e8df59db3a8ab9d60be4b97cc9e81db');
+INSERT INTO User (id, name, email, role, hash_pass)
+  VALUES (1, 'test', 'test@test.com', 'student', 'd404559f602eab6fd602ac7680dacbfaadd13630335e951f097af3900e9de176b6db28512f2e000b9d04fba5133e8b1c6e8df59db3a8ab9d60be4b97cc9e81db'),
+         (2, 'test2', 'test2@test.com', 'teacher', 'd404559f602eab6fd602ac7680dacbfaadd13630335e951f097af3900e9de176b6db28512f2e000b9d04fba5133e8b1c6e8df59db3a8ab9d60be4b97cc9e81db'),
+         (3, 'admin', 'admin@test.com', 'admin', 'd404559f602eab6fd602ac7680dacbfaadd13630335e951f097af3900e9de176b6db28512f2e000b9d04fba5133e8b1c6e8df59db3a8ab9d60be4b97cc9e81db');
 INSERT INTO Assignment(id, courseID, name, rubric)
     VALUES(1,1,"test","test-rubric");
 
 -- Insert dummy Users (Students and Teachers)
 -- actually make them hashed passwords, these wont login the dummy users (itll de-hash "hashedpassword2" instead of husidhgjashkjyh;y23421g)
-INSERT INTO User (name, email, hash_pass, is_teacher)
+INSERT INTO User (name, email, hash_pass, role)
 VALUES 
-
-    ('JDoe', 'john.doe@example.com', '639675e26fc7399c0a1d61ee59eebfd5dab73fad055999f83105790758713af02ea6cb1afbc1be9f6f3ca2ea48327026218383713c8e0e18530b52c9dc147a1b', FALSE),
-    ('Jane Smith', 'jane.smith@example.com', 'hashedpassword2', FALSE),
-    ('Robert Brown', 'robert.brown@example.com', 'hashedpassword3', FALSE),
-    ('Mary Johnson', 'mary.johnson@example.com', 'hashedpassword4', FALSE),
-    ('William Harris', 'william.harris@example.com', 'hashedpassword5', TRUE),
-    ('Emily White', 'emily.white@example.com', 'hashedpassword6', FALSE),
-    ('James Clark', 'james.clark@example.com', 'hashedpassword7', FALSE),
-    ('Linda Lewis', 'linda.lewis@example.com', 'hashedpassword8', TRUE),
-    ('Michael Walker', 'michael.walker@example.com', 'hashedpassword9', FALSE),
-    ('Sarah Hall', 'sarah.hall@example.com', 'hashedpassword10', FALSE);
+    ('JDoe', 'john.doe@example.com', '639675e26fc7399c0a1d61ee59eebfd5dab73fad055999f83105790758713af02ea6cb1afbc1be9f6f3ca2ea48327026218383713c8e0e18530b52c9dc147a1b', 'student'),
+    ('Jane Smith', 'jane.smith@example.com', 'hashedpassword2', 'student'),
+    ('Robert Brown', 'robert.brown@example.com', 'hashedpassword3', 'student'),
+    ('Mary Johnson', 'mary.johnson@example.com', 'hashedpassword4', 'student'),
+    ('William Harris', 'william.harris@example.com', 'hashedpassword5', 'teacher'),
+    ('Emily White', 'emily.white@example.com', 'hashedpassword6', 'student'),
+    ('James Clark', 'james.clark@example.com', 'hashedpassword7', 'student'),
+    ('Linda Lewis', 'linda.lewis@example.com', 'hashedpassword8', 'teacher'),
+    ('Michael Walker', 'michael.walker@example.com', 'hashedpassword9', 'student'),
+    ('Sarah Hall', 'sarah.hall@example.com', 'hashedpassword10', 'student');
 
 -- Insert dummy Courses
 INSERT INTO Course (teacherID, name)

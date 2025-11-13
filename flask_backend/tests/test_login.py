@@ -51,7 +51,7 @@ def test_login(test_client):
     """
     GIVEN POST /auth/login
     WHEN valid credentials are provided
-    THEN an access token should be returned
+    THEN a JWT cookie should be set and user info returned
     """
     # First register a user
     test_client.post(
@@ -67,7 +67,13 @@ def test_login(test_client):
         headers={'Content-Type': 'application/json'}
     )
     assert token_request.status_code == 200
-    assert token_request.json['access_token'] is not None
+    # Should NOT return access_token in JSON anymore
+    assert 'access_token' not in token_request.json
+    # Should return user info
+    assert token_request.json['role'] == 'student'
+    assert token_request.json['name'] == 'example'
+    # Should set a cookie
+    assert 'Set-Cookie' in token_request.headers
 
 
 def test_login_invalid_credentials(test_client):
@@ -87,9 +93,9 @@ def test_login_invalid_credentials(test_client):
 
 def test_logout(test_client):
     """
-    GIVEN POST /auth/logout with valid JWT
+    GIVEN POST /auth/logout with valid JWT cookie
     WHEN the logout endpoint is called
-    THEN it should return success
+    THEN it should return success and clear the cookie
     """
     # Register and login first
     test_client.post(
@@ -98,17 +104,16 @@ def test_logout(test_client):
         headers={'Content-Type': 'application/json'}
     )
     
-    token_response = test_client.post(
+    test_client.post(
         '/auth/login',
         data=json.dumps({'email': 'example@example.com', 'password': '123456'}),
         headers={'Content-Type': 'application/json'}
     )
-    token = token_response.json['access_token']
+    # Cookie is automatically stored in test_client
     
     # Logout
-    response = test_client.post(
-        '/auth/logout',
-        headers={'Authorization': f'Bearer {token}'}
-    )
+    response = test_client.post('/auth/logout')
     assert response.status_code == 200
     assert response.json['msg'] == 'Successfully logged out'
+    # Should clear the cookie
+    assert 'Set-Cookie' in response.headers

@@ -20,33 +20,59 @@ def test_user_basic(dbsession):
     
     assert user1.id is not None
     assert user1.name == 'testuser'
-    assert user1.is_teacher is False
+    assert user1.role == 'student'  # Default role is student
 
 
 def test_user_roles(dbsession):
     """
-    GIVEN an admin user and a regular user
+    GIVEN users with different roles
     WHEN role checks are performed
     THEN the correct role permissions should be returned
     """
     teacher_user = User(
         name='teacher',
         hash_pass=generate_password_hash('admin123'),
+        email="teacher@example.com",
+        role='teacher'
+    )
+    
+    admin_user = User(
+        name='admin',
+        hash_pass=generate_password_hash('admin123'),
         email="admin@example.com",
-        is_teacher=True
+        role='admin'
     )
     
     regular_user = User(
         name='regular',
         hash_pass=generate_password_hash('regular123'),
         email="regular@example.com",
-        is_teacher=False
+        role='student'
     )
 
     dbsession.add(teacher_user)
+    dbsession.add(admin_user)
     dbsession.add(regular_user)
     dbsession.flush()
 
+    # Test role checking methods
+    assert teacher_user.is_teacher() is True
+    assert teacher_user.is_admin() is False
+    assert teacher_user.is_student() is False
+    
+    assert admin_user.is_admin() is True
+    assert admin_user.is_teacher() is False
+    assert admin_user.is_student() is False
+    
+    assert regular_user.is_student() is True
+    assert regular_user.is_teacher() is False
+    assert regular_user.is_admin() is False
+    
+    # Test has_role method
+    assert teacher_user.has_role('teacher', 'admin') is True
+    assert regular_user.has_role('teacher', 'admin') is False
+    
+    # Test backward compatibility
     assert teacher_user.is_teacher_user() is True
     assert regular_user.is_teacher_user() is False
 
@@ -61,7 +87,7 @@ def test_user_methods(dbsession):
         name='methodtest',
         hash_pass=generate_password_hash('123456'),
         email="method@example.com",
-        is_teacher=False
+        role='student'
     )
     dbsession.add(user)
     dbsession.commit()
@@ -97,10 +123,42 @@ def test_user_backward_compatibility(dbsession):
     dbsession.commit()
     
     # Test old method names still work
-    found = User.get_member_by_email('legacy@example.com')
+    found = User.get_by_email('legacy@example.com')
     assert found is not None
     assert found.email == 'legacy@example.com'
     
-    found_by_id = User.get_member_by_id(user.id)
+    found_by_id = User.get_by_id(user.id)
     assert found_by_id is not None
+
+
+def test_user_role_validation(dbsession):
+    """
+    GIVEN an invalid role is provided
+    WHEN creating a user with that role
+    THEN a ValueError should be raised
+    """
+    import pytest
+    
+    # Test valid roles work
+    valid_user = User(
+        name='validuser',
+        hash_pass=generate_password_hash('123456'),
+        email="valid@example.com",
+        role='teacher'
+    )
+    dbsession.add(valid_user)
+    dbsession.flush()
+    assert valid_user.role == 'teacher'
+    
+    # Test invalid role raises ValueError
+    with pytest.raises(ValueError) as exc_info:
+        invalid_user = User(
+            name='invaliduser',
+            hash_pass=generate_password_hash('123456'),
+            email="invalid@example.com",
+            role='superuser'
+        )
+    
+    assert "Invalid role 'superuser'" in str(exc_info.value)
+    assert "Must be one of: student, teacher, admin" in str(exc_info.value)
 

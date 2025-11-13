@@ -1,5 +1,8 @@
+// Token is now stored in httponly cookie, so we don't need getToken anymore
+// But we keep user info (role, name, user_id) in localStorage for UI purposes
 export const getToken = () => {
-  return localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user") as string).token : null;
+  // Tokens are now in httponly cookies, no longer accessible from JS
+  return null;
 }
 
 export const removeToken = () => {
@@ -11,14 +14,40 @@ export const didExpire = (response: Response) => {
   return response.status === 401;
 }
 
-// TODO this is dangerous, we need to also ensure we do server-side isTeacher checks
-export const isTeacher = () => {
-  const user = JSON.parse(localStorage.getItem("user") || '{ "isTeacher": false }');
-  return user.isTeacher;
+export const getUserRole = (): string => {
+  const user = JSON.parse(localStorage.getItem("user") || '{ "role": "student" }');
+  return user.role || "student";
 }
 
-export const logout = () => {
-  // Remove token from local storage
+export const isTeacher = () => {
+  return getUserRole() === "teacher";
+}
+
+export const isAdmin = () => {
+  return getUserRole() === "admin";
+}
+
+export const isStudent = () => {
+  return getUserRole() === "student";
+}
+
+export const hasRole = (...roles: string[]) => {
+  const userRole = getUserRole();
+  return roles.includes(userRole);
+}
+
+export const logout = async () => {
+  // Call backend logout endpoint to clear the cookie
+  try {
+    await fetch('http://localhost:5000/auth/logout', {
+      method: 'POST',
+      credentials: 'include'  // Include cookies in request
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
+  
+  // Remove user info from local storage
   removeToken();
 
   window.location.href = '/';

@@ -4,11 +4,13 @@ interface Course {
   name: string;
 }
 
-interface Member {
+interface User {
   id: number;
   name: string;
   email: string;
+  role: 'student' | 'teacher' | 'admin';
 }
+
 interface StudentGroups {
   groupID: number;
   userID: number;

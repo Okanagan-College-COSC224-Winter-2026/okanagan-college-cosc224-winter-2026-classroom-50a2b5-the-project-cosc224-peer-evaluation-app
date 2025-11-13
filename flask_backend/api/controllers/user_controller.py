@@ -25,7 +25,7 @@ def get_current_user():
 @bp.route('/<int:user_id>', methods=['GET'])
 @jwt_required()
 def get_user_by_id(user_id):
-    """Get user by ID (users can view their own info, admins can view anyone)"""
+    """Get user by ID (users can view their own info, teachers/admins can view anyone)"""
     current_email = get_jwt_identity()
     current_user = User.get_by_email(current_email)
 
@@ -36,8 +36,8 @@ def get_user_by_id(user_id):
     if not user:
         return jsonify({"msg": "User not found"}), 404
     
-    # Users can view their own info, admins can view anyone
-    if current_user.id != user_id and not current_user.is_teacher_user():
+    # Users can view their own info, teachers and admins can view anyone
+    if current_user.id != user_id and not current_user.has_role('teacher', 'admin'):
         return jsonify({"msg": "Insufficient permissions"}), 403
     
     return jsonify(UserSchema().dump(user)), 200
@@ -80,7 +80,7 @@ def delete_user(user_id):
         return jsonify({"msg": "User not found"}), 404
     
     # Users can delete their own account, admins can delete anyone
-    if current_user.id != user_id and not current_user.is_teacher():
+    if current_user.id != user_id and not current_user.is_admin():
         return jsonify({"msg": "Insufficient permissions"}), 403
     
     user.delete()

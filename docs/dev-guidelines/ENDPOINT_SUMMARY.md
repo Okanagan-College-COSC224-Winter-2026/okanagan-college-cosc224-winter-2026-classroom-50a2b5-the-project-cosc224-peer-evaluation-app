@@ -25,10 +25,11 @@ This document summarizes all API endpoints documented across the user stories an
 
 All protected endpoints require:
 
-- **Header**: `Authorization: Bearer <JWT_TOKEN>`
+- **HTTPOnly Cookie**: JWT token is automatically included by the browser
+- **Credentials**: All fetch requests must include `credentials: 'include'`
 - **Admin endpoints**: User must have `role = 'admin'`
 
-Obtain JWT token via `POST /auth/login` with valid credentials.
+Obtain JWT token via `POST /auth/login` with valid credentials. The token is automatically stored in an HTTPOnly cookie.
 
 # API Endpoint Summary (generated)
 
@@ -39,10 +40,10 @@ This summary is generated from `docs/dev-guidelines/endpoints.json` (generatedAt
 
 ## Authentication and access
 
-- Protected routes: require header `Authorization: Bearer <token>` returned by the login endpoint.
-- Login: call `GET /login` with header `Authorization: Basic base64(user:pass)` to obtain `{ token, isTeacher }`.
-- Public routes: `GET /login`, `GET /ping`.
-- Testing: setting `DANGEROUS_DISABLE_ALL_AUTH=true` disables auth checks (tests only; do not use in production).
+- **Protected routes**: Require HTTPOnly cookie with JWT token (automatically sent by browser when `credentials: 'include'` is specified)
+- **Login**: Call `POST /auth/login` with JSON body `{ email, password }` to obtain user info and set HTTPOnly cookie
+- **Public routes**: `GET /ping`, `POST /auth/register`, `POST /auth/login`
+- **Legacy note**: Old documentation may reference `Authorization: Bearer <token>` headers - these are no longer used
 
 ---
 
@@ -50,14 +51,15 @@ This summary is generated from `docs/dev-guidelines/endpoints.json` (generatedAt
 
 | Method | Path   | Headers                                   | Response                        | Notes |
 |--------|--------|-------------------------------------------|----------------------------------|-------|
-| GET    | `/login` | `Authorization: Basic base64(user:pass)` | `200 { token, isTeacher }` or `400/401` | On success stores session in-memory at `app.session[token]`. |
+| POST   | `/auth/login` | `Content-Type: application/json` | `200 { role, user_id, name, msg }` or `400/401` | Sets HTTPOnly cookie with JWT token. Frontend must use `credentials: 'include'`. |
+| POST   | `/auth/register` | `Content-Type: application/json` | `201 { msg, user: {...} }` or `400` | Creates student account. Body: `{ name, email, password }`. |
 | GET    | `/ping` | —                                         | `{ message: 'pong!' }`          | Lightweight healthcheck. |
 
 ---
 
 ## Protected endpoints
 
-All endpoints in this section require `Authorization: Bearer <token>`.
+All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests must include `credentials: 'include'`.
 
 | Method | Path | Params | Query | Body | Response | Notes |
 |--------|------|--------|-------|------|----------|-------|

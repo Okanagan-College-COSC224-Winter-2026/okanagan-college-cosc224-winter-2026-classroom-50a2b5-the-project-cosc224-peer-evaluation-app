@@ -2,7 +2,7 @@ import functools
 
 from flask import Blueprint, request, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, set_access_cookies, unset_jwt_cookies
 
 from ..models import User, db
 
@@ -12,14 +12,17 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @bp.route('/register', methods=['POST'])
 def register():
-    """Register a new user account"""
+    """Register a new user account (student only - teachers/admins created by admins)"""
     if not request.is_json:
         return jsonify({"msg": "Missing JSON in request"}), 400
 
     name = request.json.get('name', None)
     password = request.json.get('password', None)
     email = request.json.get('email', None)
-    is_teacher = request.json.get('is_teacher', False)
+    
+    # Public registration is for students only
+    # Teachers and admins must be created by existing admins
+    role = 'student'
 
     if not name:
         return jsonify({"msg": "Name is required"}), 400
@@ -27,11 +30,9 @@ def register():
         return jsonify({"msg": "Password is required"}), 400
     if not email:
         return jsonify({"msg": "Email is required"}), 400
-    if not is_teacher:
-        is_teacher = False
 
     # Check if user already exists
-    existing_user = User.get_member_by_email(email)
+    existing_user = User.get_by_email(email)
     if existing_user:
         return jsonify({"msg": f"User with email {email} is already registered"}), 400
 
@@ -40,16 +41,16 @@ def register():
         name=name,
         hash_pass=generate_password_hash(password),
         email=email,
-        is_teacher=is_teacher
+        role=role
     )
-    User.add_member(new_user)
+    User.create_user(new_user)
     
     return jsonify({"msg": "User registered successfully"}), 201
 
 
 @bp.route('/login', methods=['POST'])
 def login():
-    """Authenticate user and return JWT token"""
+    """Authenticate user and return JWT token in httponly cookie"""
     if not request.is_json:
         return jsonify({"msg": "Missing JSON in request"}), 400
 
@@ -60,59 +61,61 @@ def login():
         return jsonify({"msg": "Email and password are required"}), 400
 
     # Verify credentials
-    user = User.get_member_by_email(email)
+    user = User.get_by_email(email)
     if user is None or not check_password_hash(user.hash_pass, password):
         return jsonify({"msg": "Bad email or password"}), 401
 
-    # Generate access token
-    access_token = create_access_token(identity=email)
-    return jsonify(access_token=access_token), 200
+    # Generate access token with additional claims
+    additional_claims = {"role": user.role}
+    access_token = create_access_token(identity=email, additional_claims=additional_claims)
+    
+    # Create response with user info (but not the token)
+    response = jsonify(
+        role=user.role,
+        user_id=user.id,
+        name=user.name,
+        msg="Login successful"
+    )
+    
+    # Set the JWT token as an httponly cookie
+    set_access_cookies(response, access_token)
+    
+    return response, 200
 
 
 @bp.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
     """
-    Logout endpoint (JWT is stateless, so this is mainly for consistency)
-    Client should discard the token on logout
+    Logout endpoint - clears the JWT cookie
     """
-    return jsonify({"msg": "Successfully logged out"}), 200
+    response = jsonify({"msg": "Successfully logged out"})
+    unset_jwt_cookies(response)
+    return response, 200
 
 
 # JWT-based decorators for API protection
 def jwt_role_required(*roles):
-    """Decorator to require specific role(s) for JWT-protected endpoints"""
+    """Decorator to require specific role(s) for JWT-protected endpoints
+    
+    Usage:
+        @jwt_role_required('admin')  # Only admins
+        @jwt_role_required('teacher', 'admin')  # Teachers or admins
+        @jwt_role_required('student', 'teacher', 'admin')  # Any authenticated user
+    """
     def decorator(view):
         @functools.wraps(view)
         @jwt_required()
         def wrapped_view(*args, **kwargs):
             current_email = get_jwt_identity()
-            user = None
-
-            if hasattr(User, "get_member_by_email"):
-                user = User.get_member_by_email(current_email)
-            elif hasattr(User, "get_by_email"):
-                user = User.get_by_email(current_email)
-            else:
-                try:
-                    user = User.query.filter_by(email=current_email).first()
-                except Exception:
-                    user = None
+            user = User.get_by_email(current_email)
             
             if not user:
                 return jsonify({"msg": "User not found"}), 404
             
-            # Check teacher flag if requested
-            if 'teacher' in roles:
-                if not getattr(user, 'is_teacher', False):
-                    return jsonify({"msg": "Insufficient permissions"}), 403
-                return view(*roles, **kwargs)
-
-            # fallback to checking a role attribute if present
-            if roles:
-                user_role = getattr(user, 'role', None)
-                if user_role is None or user_role not in roles:
-                    return jsonify({"msg": "Insufficient permissions"}), 403
+            # Check if user has one of the required roles
+            if roles and not user.has_role(*roles):
+                return jsonify({"msg": "Insufficient permissions"}), 403
 
             return view(*args, **kwargs)
         return wrapped_view
@@ -121,4 +124,9 @@ def jwt_role_required(*roles):
 
 def jwt_admin_required(view):
     """Decorator to require admin role for JWT-protected endpoints"""
-    return jwt_role_required('teacher')(view)
+    return jwt_role_required('admin')(view)
+
+
+def jwt_teacher_required(view):
+    """Decorator to require teacher or admin role for JWT-protected endpoints"""
+    return jwt_role_required('teacher', 'admin')(view)

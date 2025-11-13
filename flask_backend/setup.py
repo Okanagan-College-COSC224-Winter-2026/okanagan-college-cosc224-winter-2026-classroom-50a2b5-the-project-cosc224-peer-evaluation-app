@@ -19,7 +19,8 @@ dependencies = [
     'marshmallow',
     'flask-marshmallow',
     'marshmallow-sqlalchemy',
-    'flask-jwt-extended'
+    'flask-jwt-extended',
+    'flask-cors'
 ]
 
 

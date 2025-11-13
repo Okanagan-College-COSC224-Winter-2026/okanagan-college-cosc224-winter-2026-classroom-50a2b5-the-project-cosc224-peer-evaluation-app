@@ -1,4 +1,4 @@
-import { didExpire, getToken, removeToken } from "./login";
+import { didExpire, removeToken } from "./login";
 
 const BASE_URL = 'http://localhost:5000'
 
@@ -17,16 +17,14 @@ export const maybeHandleExpire = (response: Response) => {
 }
 
 export const tryLogin = async (username: string, password: string) => {
-  const credentials = btoa(`${username}:${password}`);
-
   try {
     const response = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        "Authorization": `Basic ${credentials}`
       },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ email: username, password }),
+      credentials: 'include'  // Include cookies in request/response
     });
     
     if (!response.ok) { 
@@ -36,7 +34,7 @@ export const tryLogin = async (username: string, password: string) => {
 
     const json = await response.json();
     
-    // Store the token
+    // Store user info (but not token - that's in httponly cookie now)
     localStorage.setItem('user', JSON.stringify(json));
 
     return json;
@@ -57,8 +55,8 @@ export const createClass = async (name: string) => {
     }),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getToken()}`
     },
+    credentials: 'include'  // Include cookies (JWT token)
   })
 
   maybeHandleExpire(response);
@@ -73,9 +71,7 @@ export const listClasses = async () => {
   // TODO get session info and whatnot
   const resp = await fetch(`${BASE_URL}/classes`, {
     method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${getToken()}`
-    }
+    credentials: 'include'  // Include cookies (JWT token)
   })
 
   maybeHandleExpire(resp);
@@ -96,8 +92,8 @@ export const importStudentsForCourse = async (courseID: number, students: string
     }),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getToken()}`
     },
+    credentials: 'include'
   })
 
   maybeHandleExpire(response);
@@ -111,9 +107,9 @@ export const listAssignments = async (classId: string) => {
   const resp = await fetch(`${BASE_URL}/assignments/`+classId, {
     method: 'GET',
     headers: {
-       'Authorization': `Bearer ${getToken()}`,
        'Content-Type': 'application/json',
     },
+    credentials: 'include',
   })
   
   maybeHandleExpire(resp);
@@ -129,9 +125,9 @@ export const listStuGroup = async (assignmentId : number, studentId : number) =>
   const resp = await fetch(`${BASE_URL}/list_stu_groups/`+ assignmentId + "/" + studentId, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${getToken()}`,
       'Content-Type': 'application/json',
    },
+    credentials: 'include',
   })
 
   maybeHandleExpire(resp);
@@ -148,9 +144,9 @@ export const listGroups = async (assignmentId : number) => {
   const resp = await fetch(`${BASE_URL}/list_all_groups/` + assignmentId, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${getToken()}`,
       'Content-Type': 'application/json',
    },
+    credentials: 'include',
   })
   maybeHandleExpire(resp);
 
@@ -166,9 +162,9 @@ export const listUnassignedGroups = async (assignmentId : number) => {
   const resp = await fetch(`${BASE_URL}/list_ua_groups/` + assignmentId, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${getToken()}`,
       'Content-Type': 'application/json',
    },
+    credentials: 'include',
   })
 
   maybeHandleExpire(resp);
@@ -183,9 +179,9 @@ export const listCourseMembers = async (classId: string) => {
       id: classId,
     }),
     headers: {
-       'Authorization': `Bearer ${getToken()}`,
        'Content-Type': 'application/json',
     },
+    credentials: 'include',
   })
   
   maybeHandleExpire(resp);
@@ -203,7 +199,7 @@ export const getClassName = async (classId: string) => {
   const resp = await fetch(`${BASE_URL}/get_class/${classId}`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${getToken()}`,
+      credentials: 'include',
       'Content-Type': 'application/json',
     },
   });
@@ -223,9 +219,9 @@ export const getClassName = async (classId: string) => {
   const resp = await fetch(`${BASE_URL}/get_className/${classId}`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${getToken()}`,
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
   });
 
   maybeHandleExpire(resp);
@@ -240,9 +236,9 @@ export const listGroupMembers = async (assignmentId : number, groupID: number) =
   const resp = await fetch(`${BASE_URL}/list_group_members/` + assignmentId + '/' + groupID, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${getToken()}`,
       'Content-Type': 'application/json',
    },
+    credentials: 'include',
   })
 
   maybeHandleExpire(resp);
@@ -258,9 +254,9 @@ export const getUserId = async () => {
   const resp = await fetch(`${BASE_URL}/user_id`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${getToken()}`,
       'Content-Type': 'application/json',
    },
+    credentials: 'include',
   })
 
   maybeHandleExpire(resp);
@@ -281,17 +277,15 @@ export const saveGroups = async (groupID: number, userID: number, assignmentID :
       assignmentID
     }),
     headers: {
-      'Authorization': `Bearer ${getToken()}`,
       'Content-Type': 'application/json',
    },
+    credentials: 'include',
   })
 }
 
 export const getCriteria = async (rubricID: number) => {
   const resp = await fetch(`${BASE_URL}/criteria?rubricID=${rubricID}`, {
-    headers: {
-      'Authorization': `Bearer ${getToken()}`
-    }
+    credentials: 'include'
   })
 
   maybeHandleExpire(resp);
@@ -311,8 +305,8 @@ export const createCriteria = async (rubricID: number, question: string, scoreMa
     }),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getToken()}`
     },
+    credentials: 'include'
   })
 
   maybeHandleExpire(response);
@@ -330,8 +324,8 @@ export const createRubric = async (id: number, assignmentID: number, canComment:
     }),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getToken()}`
     },
+    credentials: 'include'
   })
 
   maybeHandleExpire(response);
@@ -345,9 +339,7 @@ export const createRubric = async (id: number, assignmentID: number, canComment:
 
 export const getRubric = async (rubricID: number) => {
   const resp = await fetch(`${BASE_URL}/rubric?rubricID=${rubricID}`, {
-      headers: {
-          'Authorization': `Bearer ${getToken()}`
-      }
+      credentials: 'include'
   });
 
   maybeHandleExpire(resp);
@@ -368,8 +360,8 @@ export const createAssignment = async (courseID: number, name: string)=> {
     }),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getToken()}`
     },
+    credentials: 'include'
   })
   
   maybeHandleExpire(response);
@@ -388,9 +380,9 @@ export const deleteGroup = async (groupID: number) => {
       groupID,
     }),
     headers: {
-      'Authorization': `Bearer ${getToken()}`,
       'Content-Type': 'application/json',
    },
+    credentials: 'include',
   })
 }
 
@@ -404,8 +396,8 @@ export const createReview = async (assignmentID: number, reviewerID: number, rev
     }),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getToken()}`
     },
+    credentials: 'include'
   })
 
   maybeHandleExpire(response);
@@ -427,8 +419,8 @@ export const createCriterion = async (reviewID: number, criterionRowID: number, 
     }),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getToken()}`
     },
+    credentials: 'include'
   })
 
   maybeHandleExpire(response);
@@ -441,9 +433,7 @@ export const createCriterion = async (reviewID: number, criterionRowID: number, 
 
 export const getReview = async (assignmentID: number, reviewerID: number, revieweeID: number) => {
   const resp = await fetch(`${BASE_URL}/review?assignmentID=${assignmentID}&reviewerID=${reviewerID}&revieweeID=${revieweeID}`, {
-    headers: {
-      'Authorization': `Bearer ${getToken()}`
-    }
+    credentials: 'include'
   })
 
   maybeHandleExpire(resp);
@@ -460,8 +450,8 @@ export const getNextGroupID = async(assignmentID: number)=> {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getToken()}`
-    }
+    },
+    credentials: 'include'
   })
 
   maybeHandleExpire(response);
@@ -481,8 +471,8 @@ export const createGroup = async(assignmentID: number, name: string, id: number)
     }),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getToken()}`
-    }
+    },
+    credentials: 'include'
   })
   maybeHandleExpire(response);
 
