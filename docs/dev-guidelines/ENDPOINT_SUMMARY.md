@@ -65,9 +65,9 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 |--------|------|--------|-------|------|----------|-------|
 | GET | `/assignments/:course` | `{ course: string }` | — | — | `Array<Assignment>` | Returns all assignments for a course. |
 | POST | `/classes/members` | — | — | `{ id: number }` | `Array<User { id, name, email }>` | Uses `User_Course` to look up members. |
-| GET | `/classes` | — | — | — | `Array<Course>` | Currently returns all classes; TODO: filter by student membership. |
+| GET | `/class/classes` | — | — | — | `Array<Course>` | Currently returns all classes; TODO: filter by student membership. |
 | POST | `/create_assignment` | — | — | `{ courseID: number, name: string }` | `{ message: string, id: number }` | Creates assignment and returns created id. |
-| POST | `/create_class` | — | — | `{ name: string }` | `201 { message: 'Class created', id }` or `400 { message: 'Class already exists' }` | TeacherID currently hardcoded to 0 (TODO: use session). |
+| POST | `/class/create_class` | — | — | `{ name: string }` | `201 { message: 'Class created', id }` or `400 { message: 'Class already exists' }` | TeacherID currently hardcoded to 0 (TODO: use session). |
 | POST | `/create_criteria` | — | — | `{ id: number, rubricID: number, question: string, scoreMax: number, hasScore: boolean }` | `{ message: string, id: number }` | Creates a `Criteria_Description` row. Field `id` is taken from body. |
 | POST | `/create_criterion` | — | — | `{ reviewID: number, criterionRowID: number, grade: number, comments: string }` | `{ message: string, id: number }` | Creates one `Criterion` (row within a Review). |
 | POST | `/create_group` | — | — | `{ id: number, name: string, assignmentID: number }` | `{ message: string, id: number }` | Creates `CourseGroup`; route swallows DB errors and logs them. |

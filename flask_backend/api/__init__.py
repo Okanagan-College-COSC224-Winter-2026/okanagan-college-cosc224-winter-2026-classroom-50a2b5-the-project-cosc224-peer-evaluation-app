@@ -5,7 +5,7 @@ from flask import Flask, jsonify
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 
-from .controllers import auth_controller, fake_api_controller, user_controller, admin_controller
+from .controllers import auth_controller, fake_api_controller, user_controller, admin_controller, class_controller
 from .cli import init_app
 from .models.db import db, ma
 
@@ -14,7 +14,6 @@ def create_app(test_config=None):
     """Create and configure the Flask application"""
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
-    CORS(app)
     
     # Determine if we're in production based on FLASK_ENV or explicit PRODUCTION flag
     is_production = os.environ.get('FLASK_ENV') == 'production' or os.environ.get('PRODUCTION', 'false').lower() == 'true'
@@ -75,6 +74,7 @@ def create_app(test_config=None):
     app.register_blueprint(auth_controller.bp)
     app.register_blueprint(user_controller.bp)
     app.register_blueprint(admin_controller.bp)
+    app.register_blueprint(class_controller.bp)
     app.register_blueprint(fake_api_controller.fake)
 
     return app

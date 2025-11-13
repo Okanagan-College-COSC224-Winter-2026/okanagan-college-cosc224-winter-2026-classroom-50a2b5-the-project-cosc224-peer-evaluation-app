@@ -30,6 +30,26 @@ class Course(db.Model):
         return db.session.get(cls, int(course_id))
 
     @classmethod
+    def get_all_courses(cls):
+        """Get all courses"""
+        return cls.query.all()
+
+    @classmethod
+    def get_courses_by_teacher(cls, teacher_id):
+        """Get all courses taught by a specific teacher"""
+        return cls.query.filter_by(teacherID=teacher_id).all()
+    
+    @classmethod
+    def get_by_name(cls, name):
+        """Get course by name"""
+        return cls.query.filter_by(name=name).first()
+
+    @classmethod
+    def get_by_name_teacher(cls, name, teacher_id):
+        """Get course by name and teacher ID"""
+        return cls.query.filter_by(name=name, teacherID=teacher_id).first()
+    
+    @classmethod
     def create_course(cls, course):
         """Add a new course to the database"""
         db.session.add(course)
