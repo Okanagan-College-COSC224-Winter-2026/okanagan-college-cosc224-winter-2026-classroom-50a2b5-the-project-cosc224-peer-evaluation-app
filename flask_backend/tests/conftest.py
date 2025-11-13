@@ -2,7 +2,9 @@ import functools
 import pytest
 
 from api import create_app
+from werkzeug.security import generate_password_hash
 from api.models.db import db as _db
+from api.models import User
 
 
 base_url = 'http://localhost:5000/assets'
@@ -58,4 +60,19 @@ def test_client(app, db):
     with app.test_client() as testing_client:
         with app.app_context():
             yield testing_client
+
+@pytest.fixture
+def make_admin():
+    """Fixture to create an admin user in the database."""
+    def _make_admin(email='admin@example.com', password='adminpass', name='Admin User'):
+        user = User(
+            name=name,
+            email=email,
+            hash_pass=generate_password_hash(password),
+            role='admin'
+        )
+        _db.session.add(user)
+        _db.session.commit()
+        return user
+    return _make_admin
 

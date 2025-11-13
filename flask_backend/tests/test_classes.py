@@ -3,38 +3,29 @@ Tests for classes endpoints
 """
 import json
 
-def test_create_classes(test_client):
+def test_create_classes(test_client, make_admin):
     """
     GIVEN a logged-in teacher user
     WHEN POST /class/create_class is called with valid data
     THEN a new class should be created
     """
-    # Register and login as teacher
+    # Set the admin user by default into the database
+    make_admin(email='admin@example.com', password='admin', name='adminuser')
+
+    # Login as teacher/admin
     test_client.post(
-        '/auth/register',
-        data=json.dumps({
-            'name': 'teacheruser',
-            'password': '123456',
-            'email': 'teacher@example.com',
-            'is_teacher': True
-        }),
-        headers={'Content-Type': 'application/json'}
-    )
-    login_response = test_client.post(
         '/auth/login',
-        data=json.dumps({'email': 'teacher@example.com', 'password': '123456'}),
+        data=json.dumps({'email': 'admin@example.com', 'password': 'admin'}),
         headers={'Content-Type': 'application/json'}
     )
-    token = login_response.json['access_token']
-    # Create class
     response = test_client.post(
         '/class/create_class',
         data=json.dumps({'name': 'Math 101'}),
         headers={
-            'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
         }
     )
+
     assert response.status_code == 201
     assert response.json['msg'] == 'Class created'
     assert 'id' in response.json['class']
@@ -51,58 +42,47 @@ def test_create_class_not_teacher(test_client):
         data=json.dumps({
             'name': 'studentuser',
             'password': '123456',
-            'email': 'student@example.com',
-            'is_teacher': False
+            'email': 'student@example.com'
         }),
         headers={'Content-Type': 'application/json'}
     )
-    login_response = test_client.post(
+    test_client.post(
         '/auth/login',
         data=json.dumps({'email': 'student@example.com', 'password': '123456'}),
         headers={'Content-Type': 'application/json'}
     )
-    token = login_response.json['access_token']
     # Attempt to create class
     response = test_client.post(
         '/class/create_class',
         data=json.dumps({'name': 'Math 101'}),
         headers={
-            'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
         }
     )
     assert response.status_code == 403
     assert response.json['msg'] == 'Insufficient permissions'
 
-def test_get_classes(test_client):
+def test_get_classes(test_client, make_admin):
     """
     GIVEN a logged-in teacher user with existing classes
     WHEN GET /class/classes is called
     THEN the list of classes should be returned
     """
-    # Register and login as teacher
+
+    # Set the admin user by default into the database
+    make_admin(email='admin@example.com', password='admin', name='adminuser')
+
+    # Login as teacher/admin
     test_client.post(
-        '/auth/register',
-        data=json.dumps({
-            'name': 'teacheruser2',
-            'password': '123456',
-            'email': 'teacher2@example.com',
-            'is_teacher': True
-        }),
-        headers={'Content-Type': 'application/json'}
-    )
-    login_response = test_client.post(
         '/auth/login',
-        data=json.dumps({'email': 'teacher2@example.com', 'password': '123456'}),
+        data=json.dumps({'email': 'admin@example.com', 'password': 'admin'}),
         headers={'Content-Type': 'application/json'}
     )
-    token = login_response.json['access_token']
     # Create a class
     test_client.post(
         '/class/create_class',
         data=json.dumps({'name': 'Math 101'}),
         headers={
-            'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
         }
     )
@@ -110,7 +90,6 @@ def test_get_classes(test_client):
     response = test_client.get(
         '/class/classes',
         headers={
-            'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
         }
     )

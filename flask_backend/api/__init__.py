@@ -14,7 +14,6 @@ def create_app(test_config=None):
     """Create and configure the Flask application"""
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
-    CORS(app)
     
     # Determine if we're in production based on FLASK_ENV or explicit PRODUCTION flag
     is_production = os.environ.get('FLASK_ENV') == 'production' or os.environ.get('PRODUCTION', 'false').lower() == 'true'

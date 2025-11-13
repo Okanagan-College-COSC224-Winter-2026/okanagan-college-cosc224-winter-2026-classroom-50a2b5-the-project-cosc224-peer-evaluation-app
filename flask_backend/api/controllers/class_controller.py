@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from .auth_controller import jwt_admin_required
+from .auth_controller import jwt_teacher_required
 
 from ..models import db, User, Course
 
@@ -9,7 +9,7 @@ bp = Blueprint('class', __name__, url_prefix='/class')
 
 @bp.route('/create_class', methods=['POST'])
 @jwt_required()
-@jwt_admin_required
+@jwt_teacher_required
 def create_class():
     """Create a new class where the authenticated user is the teacher"""
     data = request.get_json()
