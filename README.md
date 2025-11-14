@@ -19,35 +19,121 @@ A role-based peer evaluation system for academic courses with support for studen
 
 ## Requirements
 
-### Docker Setup (Recommended)
-* [Docker](https://www.docker.com/)
-* [Docker Compose](https://docs.docker.com/compose/)
-
 ### Local Development
 * Python 3.8+ (for Flask backend)
-* Node.js 16+ with pnpm (for frontend)
-* PostgreSQL or SQLite
+* Node.js 20.x or newer (LTS recommended for frontend)
+* npm (package manager)
+* SQLite (included with Python) or PostgreSQL
+
+## Prerequisites Installation
+
+### Installing Python
+
+#### Windows
+1. Download Python from [python.org](https://www.python.org/downloads/)
+2. Run the installer and **check "Add Python to PATH"**
+3. Verify installation:
+   ```powershell
+   python --version
+   ```
+
+#### macOS
+Option 1 - Official Installer:
+1. Download Python from [python.org](https://www.python.org/downloads/)
+2. Run the `.pkg` installer
+3. Verify installation:
+   ```bash
+   python3 --version
+   ```
+
+Option 2 - Homebrew (recommended):
+```bash
+brew install python3
+python3 --version
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+sudo apt update
+sudo apt install python3 python3-pip python3-venv
+python3 --version
+```
+
+#### Linux (Fedora/RHEL)
+```bash
+sudo dnf install python3 python3-pip
+python3 --version
+```
+
+### Installing Node.js
+
+#### Windows
+Option 1 - Official Installer:
+1. Download Node.js LTS from [nodejs.org](https://nodejs.org/)
+2. Run the installer (includes npm)
+3. Verify installation:
+   ```powershell
+   node --version
+   npm --version
+   ```
+
+Option 2 - Using Chocolatey:
+```powershell
+choco install nodejs-lts
+```
+
+#### macOS
+Option 1 - Official Installer:
+1. Download Node.js LTS from [nodejs.org](https://nodejs.org/)
+2. Run the `.pkg` installer
+3. Verify installation:
+   ```bash
+   node --version
+   npm --version
+   ```
+
+Option 2 - Homebrew (recommended):
+```bash
+brew install node
+node --version
+npm --version
+```
+
+#### Linux (Ubuntu/Debian)
+Using NodeSource repository (recommended):
+```bash
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt-get install -y nodejs
+node --version
+npm --version
+```
+
+#### Linux (Fedora/RHEL)
+```bash
+sudo dnf install nodejs npm
+node --version
+npm --version
+```
 
 ## Getting Started
 
-### Option 1: Docker (Quick Start)
+### Local Development Setup
 
-1. Clone this repository
-2. Run `docker-compose up --build` to start the containers
-3. Frontend is available at [http://localhost:3000](http://localhost:3000)
-4. API is available at [http://localhost:5000](http://localhost:5000)
+This project consists of two applications that need to run simultaneously:
+1. **Flask Backend** (Python) - API server on port 5000
+2. **React Frontend** (Node.js) - Web interface on port 3000
 
-The frontend hot-reloads when you make changes, but changes to the backend or database schema will require you to delete and rebuild the containers.
+#### Step 1: Set Up the Backend
 
-### Option 2: Local Development
-
-#### Backend (Flask)
-```bash
+**Windows (PowerShell):**
+```powershell
 cd flask_backend
 
 # Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python -m venv venv
+
+# Activate virtual environment
+.\venv\Scripts\Activate.ps1
 
 # Install dependencies
 pip install -e .
@@ -56,10 +142,31 @@ pip install -r requirements-dev.txt
 # Initialize database
 flask init_db
 
-# Create first admin user
-flask create_admin
+# Add sample users (or use 'flask create_admin' for first admin)
+flask add_users
 
-# Or create sample users
+# Run development server
+flask run
+```
+
+**macOS/Linux:**
+```bash
+cd flask_backend
+
+# Create virtual environment
+python3 -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate
+
+# Install dependencies
+pip install -e .
+pip install -r requirements-dev.txt
+
+# Initialize database
+flask init_db
+
+# Add sample users (or use 'flask create_admin' for first admin)
 flask add_users
 
 # Run development server
@@ -68,7 +175,11 @@ flask run
 
 Backend will be available at [http://localhost:5000](http://localhost:5000)
 
-#### Frontend (React)
+#### Step 2: Set Up the Frontend
+
+Open a **new terminal window** (keep the backend running) and run:
+
+**All Platforms:**
 ```bash
 cd frontend
 
@@ -80,6 +191,30 @@ npm run dev
 ```
 
 Frontend will be available at [http://localhost:3000](http://localhost:3000)
+
+### Default Login Credentials
+
+After running `flask add_users`, you can log in with:
+- **Admin**: admin@example.com / admin123
+- **Teacher**: teacher@example.com / teacher123
+- **Student**: student@example.com / student123
+
+## Project Structure
+
+```
+├── flask_backend/        # Flask REST API (Python)
+│   ├── api/              # Application code
+│   │   ├── controllers/  # Route handlers
+│   │   ├── models/       # Database models
+│   │   └── cli/          # CLI commands
+│   └── tests/            # Backend tests
+├── frontend/             # React app (TypeScript)
+│   └── src/
+│       ├── components/   # React components
+│       ├── pages/        # Page components
+│       └── util/         # API client & utilities
+└── docs/                 # Documentation
+```
 
 ## Documentation
 
@@ -93,17 +228,22 @@ Frontend will be available at [http://localhost:3000](http://localhost:3000)
 ## Testing
 
 ### Backend Tests (Flask)
+
+**Windows (PowerShell):**
+```powershell
+cd flask_backend
+.\venv\Scripts\Activate.ps1
+pytest tests/ -v
+```
+
+**macOS/Linux:**
 ```bash
 cd flask_backend
 source venv/bin/activate
 pytest tests/ -v
 ```
 
-### Frontend Tests (TypeScript/Jest)
-```bash
-cd backend  # Note: TypeScript backend, not flask_backend
-pnpm test
-```
+See [flask_backend/README.md](flask_backend/README.md) for more testing options.
 
 ## API Quick Reference
 
@@ -140,25 +280,6 @@ flask init_db           # Initialize database
 flask create_admin      # Create admin user (interactive)
 flask add_users         # Create sample users (student, teacher, admin)
 flask drop_db           # Drop all tables (careful!)
-```
-
-## Project Structure
-
-```
-├── backend/               # TypeScript/Node.js backend (legacy)
-├── flask_backend/         # Flask/Python backend (current)
-│   ├── api/
-│   │   ├── controllers/   # Route handlers
-│   │   ├── models/        # Database models
-│   │   └── cli/           # CLI commands
-│   └── tests/             # Backend tests
-├── frontend/              # React + TypeScript frontend
-│   └── src/
-│       ├── components/    # React components
-│       ├── pages/         # Page components
-│       └── util/          # Utilities (API, auth)
-├── docs/                  # Documentation
-└── schema.sql            # Database schema
 ```
 
 ## Important Notes

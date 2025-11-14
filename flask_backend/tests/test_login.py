@@ -1,10 +1,5 @@
-
-import os
-import zipfile
 import json
-
-from werkzeug.datastructures import FileStorage
-
+import os
 
 CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
@@ -16,12 +11,12 @@ def test_register(test_client):
     THEN a new user should be created
     """
     response = test_client.post(
-        '/auth/register',
-        data=json.dumps({'name': 'testuser', 'password': '123456', 'email': 'test@example.com'}),
-        headers={'Content-Type': 'application/json'}
+        "/auth/register",
+        data=json.dumps({"name": "testuser", "password": "123456", "email": "test@example.com"}),
+        headers={"Content-Type": "application/json"},
     )
     assert response.status_code == 201
-    assert response.json['msg'] == 'User registered successfully'
+    assert response.json["msg"] == "User registered successfully"
 
 
 def test_register_duplicate(test_client):
@@ -32,19 +27,19 @@ def test_register_duplicate(test_client):
     """
     # Create first user
     test_client.post(
-        '/auth/register',
-        data=json.dumps({'name': 'testuser', 'password': '123456', 'email': 'test@example.com'}),
-        headers={'Content-Type': 'application/json'}
+        "/auth/register",
+        data=json.dumps({"name": "testuser", "password": "123456", "email": "test@example.com"}),
+        headers={"Content-Type": "application/json"},
     )
-    
+
     # Try to create duplicate
     response = test_client.post(
-        '/auth/register',
-        data=json.dumps({'name': 'testuser', 'password': '123456', 'email': 'test@example.com'}),
-        headers={'Content-Type': 'application/json'}
+        "/auth/register",
+        data=json.dumps({"name": "testuser", "password": "123456", "email": "test@example.com"}),
+        headers={"Content-Type": "application/json"},
     )
     assert response.status_code == 400
-    assert 'already registered' in response.json['msg']
+    assert "already registered" in response.json["msg"]
 
 
 def test_login(test_client):
@@ -55,25 +50,25 @@ def test_login(test_client):
     """
     # First register a user
     test_client.post(
-        '/auth/register',
-        data=json.dumps({'name': 'example', 'password': '123456', 'email': 'example@example.com'}),
-        headers={'Content-Type': 'application/json'}
+        "/auth/register",
+        data=json.dumps({"name": "example", "password": "123456", "email": "example@example.com"}),
+        headers={"Content-Type": "application/json"},
     )
-    
+
     # Then login
     token_request = test_client.post(
-        '/auth/login',
-        data=json.dumps({'email': 'example@example.com', 'password': '123456'}),
-        headers={'Content-Type': 'application/json'}
+        "/auth/login",
+        data=json.dumps({"email": "example@example.com", "password": "123456"}),
+        headers={"Content-Type": "application/json"},
     )
     assert token_request.status_code == 200
     # Should NOT return access_token in JSON anymore
-    assert 'access_token' not in token_request.json
+    assert "access_token" not in token_request.json
     # Should return user info
-    assert token_request.json['role'] == 'student'
-    assert token_request.json['name'] == 'example'
+    assert token_request.json["role"] == "student"
+    assert token_request.json["name"] == "example"
     # Should set a cookie
-    assert 'Set-Cookie' in token_request.headers
+    assert "Set-Cookie" in token_request.headers
 
 
 def test_login_invalid_credentials(test_client):
@@ -83,12 +78,12 @@ def test_login_invalid_credentials(test_client):
     THEN it should return 401
     """
     response = test_client.post(
-        '/auth/login',
-        data=json.dumps({'email': 'nonexistent@example.com', 'password': 'wrong'}),
-        headers={'Content-Type': 'application/json'}
+        "/auth/login",
+        data=json.dumps({"email": "nonexistent@example.com", "password": "wrong"}),
+        headers={"Content-Type": "application/json"},
     )
     assert response.status_code == 401
-    assert response.json['msg'] == 'Bad email or password'
+    assert response.json["msg"] == "Bad email or password"
 
 
 def test_logout(test_client):
@@ -99,21 +94,21 @@ def test_logout(test_client):
     """
     # Register and login first
     test_client.post(
-        '/auth/register',
-        data=json.dumps({'name': 'example', 'password': '123456', 'email': 'example@example.com'}),
-        headers={'Content-Type': 'application/json'}
+        "/auth/register",
+        data=json.dumps({"name": "example", "password": "123456", "email": "example@example.com"}),
+        headers={"Content-Type": "application/json"},
     )
-    
+
     test_client.post(
-        '/auth/login',
-        data=json.dumps({'email': 'example@example.com', 'password': '123456'}),
-        headers={'Content-Type': 'application/json'}
+        "/auth/login",
+        data=json.dumps({"email": "example@example.com", "password": "123456"}),
+        headers={"Content-Type": "application/json"},
     )
     # Cookie is automatically stored in test_client
-    
+
     # Logout
-    response = test_client.post('/auth/logout')
+    response = test_client.post("/auth/logout")
     assert response.status_code == 200
-    assert response.json['msg'] == 'Successfully logged out'
+    assert response.json["msg"] == "Successfully logged out"
     # Should clear the cookie
-    assert 'Set-Cookie' in response.headers
+    assert "Set-Cookie" in response.headers

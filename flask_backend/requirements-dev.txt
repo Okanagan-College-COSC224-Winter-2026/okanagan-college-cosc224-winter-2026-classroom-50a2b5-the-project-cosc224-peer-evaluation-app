@@ -3,4 +3,12 @@ ipython
 pytest
 pytest-cov
 psycopg2-binary
+
+# Code quality tools
+black
+flake8
+isort
+mypy
+pre-commit
+
 -r requirements-ci.txt

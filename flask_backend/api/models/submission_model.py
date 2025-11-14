@@ -1,20 +1,23 @@
 """
 Submission model for the peer evaluation app.
 """
-from .db import db, ma
+
+from .db import db
+
 
 class Submission(db.Model):
     """Submission model representing student submissions"""
-    __tablename__ = 'Submission'
+
+    __tablename__ = "Submission"
 
     id = db.Column(db.Integer, primary_key=True)
     path = db.Column(db.String(255), nullable=True)
-    studentID = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=False, index=True)
-    assignmentID = db.Column(db.Integer, db.ForeignKey('Assignment.id'), nullable=False, index=True)
+    studentID = db.Column(db.Integer, db.ForeignKey("User.id"), nullable=False, index=True)
+    assignmentID = db.Column(db.Integer, db.ForeignKey("Assignment.id"), nullable=False, index=True)
 
     # relationships
-    student = db.relationship('User', back_populates='submissions')
-    assignment = db.relationship('Assignment', back_populates='submissions')
+    student = db.relationship("User", back_populates="submissions")
+    assignment = db.relationship("Assignment", back_populates="submissions")
 
     def __init__(self, path, studentID, assignmentID):
         self.path = path
@@ -22,20 +25,20 @@ class Submission(db.Model):
         self.assignmentID = assignmentID
 
     def __repr__(self):
-        return f'<Submission id={self.id} student={self.studentID} assignment={self.assignmentID}>'
-    
+        return f"<Submission id={self.id} student={self.studentID} assignment={self.assignmentID}>"
+
     @classmethod
     def get_by_id(cls, submission_id):
         """Get submission by ID"""
         return db.session.get(cls, int(submission_id))
-    
+
     @classmethod
     def create_submission(cls, submission):
         """Add a new submission to the database"""
         db.session.add(submission)
         db.session.commit()
         return submission
-    
+
     def update(self):
         """Update submission in the database"""
         db.session.commit()

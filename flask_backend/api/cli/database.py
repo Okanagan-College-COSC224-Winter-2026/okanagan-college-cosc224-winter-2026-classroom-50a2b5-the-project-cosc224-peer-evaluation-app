@@ -2,36 +2,51 @@ import click
 from flask.cli import with_appcontext
 from werkzeug.security import generate_password_hash
 
-from ..models.db import db
 from ..models import User
+from ..models.db import db
 
 
-@click.command('init_db')
+@click.command("init_db")
 @with_appcontext
 def init_db_command():
     """Initialize the database"""
     db.create_all()
-    click.echo('Database is created')
+    click.echo("Database is created")
 
 
-@click.command('drop_db')
+@click.command("drop_db")
 @with_appcontext
 def drop_db_command():
     """Drop all database tables"""
-    if click.confirm('Are you sure you want to drop all tables?'):
+    if click.confirm("Are you sure you want to drop all tables?"):
         db.drop_all()
-        click.echo('Database tables dropped')
+        click.echo("Database tables dropped")
 
 
-@click.command('add_users')
+@click.command("add_users")
 @with_appcontext
 def add_users_command():
     """Add sample users to the database"""
     # Create mock users that match the User model: (name, email, hash_pass, role)
     sample_users = [
-        {"name": "Example Student", "email": "student@example.com", "password": "123456", "role": "student"},
-        {"name": "Example Teacher", "email": "teacher@example.com", "password": "123456", "role": "teacher"},
-        {"name": "Example Admin", "email": "admin@example.com", "password": "123456", "role": "admin"},
+        {
+            "name": "Example Student",
+            "email": "student@example.com",
+            "password": "123456",
+            "role": "student",
+        },
+        {
+            "name": "Example Teacher",
+            "email": "teacher@example.com",
+            "password": "123456",
+            "role": "teacher",
+        },
+        {
+            "name": "Example Admin",
+            "email": "admin@example.com",
+            "password": "123456",
+            "role": "admin",
+        },
     ]
 
     for u in sample_users:
@@ -45,22 +60,22 @@ def add_users_command():
             click.echo(f"User '{u['email']}' already exists")
 
 
-@click.command('create_admin')
+@click.command("create_admin")
 @with_appcontext
 def create_admin_command():
     """Create an admin user"""
-    name = click.prompt('Admin name')
-    email = click.prompt('Admin email')
-    password = click.prompt('Password', hide_input=True, confirmation_prompt=True)
-    
+    name = click.prompt("Admin name")
+    email = click.prompt("Admin email")
+    password = click.prompt("Password", hide_input=True, confirmation_prompt=True)
+
     # Check if user already exists
     if User.get_by_email(email):
         click.echo(f"Error: User with email '{email}' already exists", err=True)
         return
-    
+
     # Create admin user
     hashed = generate_password_hash(password, method="pbkdf2:sha256")
-    admin = User(name=name, email=email, hash_pass=hashed, role='admin')
+    admin = User(name=name, email=email, hash_pass=hashed, role="admin")
     User.create_user(admin)
     click.echo(f"Admin user '{email}' created successfully")
 
