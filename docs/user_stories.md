@@ -187,4 +187,168 @@
 ### Acceptance Criteria
 - [ ] Student can open an assignment and see received feedback  
 - [ ] Feedback shows rubric scores and comments  
-- [ ] Feedback remains available after viewing  
+- [ ] Feedback remains available after viewing
+
+---
+
+## US13 – Teacher Change Password
+**As a teacher, I want to change my password so that I can update my login information.**
+
+### Assumptions and Details
+- The teacher has a current password  
+- A way to change the password exists  
+
+### Acceptance Criteria
+Given the teacher has a current password  
+When the teacher changes their password  
+Then the teacher’s password is updated  
+
+---
+
+## US14 – Teacher Dashboard Visibility
+**As a teacher, I want to see my dashboard so that I can view my teaching-related items.**
+
+### Assumptions and Details
+- A dashboard exists for teachers  
+
+### Acceptance Criteria
+Given the teacher has accessed the system  
+When the teacher views their dashboard  
+Then the teacher sees their dashboard content  
+
+---
+
+## US15 – Course Page Shows Assignments
+**As a teacher, I want my dashboard to show my courses and their assignments so that I can see what I have created.**
+
+### Assumptions and Details
+- Courses exist  
+- Assignments exist for those courses  
+
+### Acceptance Criteria
+Given the teacher has created courses and assignments  
+When the teacher views their dashboard  
+Then the dashboard shows the courses and the assignments within them  
+
+---
+
+## US16 – Student Login After Roster Upload
+**As a student, I want to log in after my teacher uploads the roster so that I can access the system.**
+
+### Assumptions and Details
+- The student is included on a roster  
+- Logging in is possible  
+
+### Acceptance Criteria
+Given the student is on the roster  
+When the student logs in  
+Then the student gains access to the system  
+
+---
+
+## US17 – Student Course Search
+**As a student, I want to search for my course so that I can find it easily.**
+
+### Assumptions and Details
+- A course exists to be found  
+
+### Acceptance Criteria
+Given a course exists  
+When the student searches for the course  
+Then the course appears in the search results  
+
+---
+
+## US18 – Student Registration (Roster-Matched)
+**As a student, I want to register if my email is already part of the course roster so that I can join my course.**
+
+### Assumptions and Details
+- The student’s email appears in the roster  
+- Registration is possible  
+
+### Acceptance Criteria
+Given the student’s email is on the roster  
+When the student registers  
+Then the student joins the course  
+
+---
+
+## US19 – Student Access Registered Courses
+**As a student, I want to view courses I am registered for so that I can access course content.**
+
+### Assumptions and Details
+- The student is registered for courses  
+
+### Acceptance Criteria
+Given the student is registered for courses  
+When the student logs into the system  
+Then the student can access those courses  
+
+---
+
+## US20 – Student Course Grade on Course Card
+**As a student, I want to see my total grade on each course card so that I know how I am performing.**
+
+### Assumptions and Details
+- The student has a total grade for the course  
+
+### Acceptance Criteria
+Given the student has a total grade  
+When the student views the course card  
+Then the total grade is displayed on the card  
+
+---
+
+## US21 – Student Profile Viewing
+**As a student, I want to see my profile information so that I can confirm my details.**
+
+### Assumptions and Details
+- The student has profile information stored  
+
+### Acceptance Criteria
+Given the student has profile information  
+When the student views their profile  
+Then the student sees their information  
+
+---
+
+## US22 – Student View Team Submissions
+**As a student, I want to see the submitted assignments from my team members so that I can review their work.**
+
+### Assumptions and Details
+- The student has team members  
+- Team members have submitted assignments  
+
+### Acceptance Criteria
+Given submitted assignments from team members exist  
+When the student views the team submissions  
+Then the student sees the submitted assignments  
+
+---
+
+## US23 – Peer Review Team Members
+**As a student, I want to peer review my team members privately so that I can evaluate their contributions.**
+
+### Assumptions and Details
+- The student has team members  
+- Peer reviews are allowed  
+
+### Acceptance Criteria
+Given the student has team members  
+When the student performs a peer review  
+Then the review is submitted privately  
+
+---
+
+## US24 – Developer Documentation
+**As a developer, I want instructions on how to start and test the project with mock credentials so that I can work on the system.**
+
+### Assumptions and Details
+- Documentation is provided  
+- Mock credentials exist  
+
+### Acceptance Criteria
+Given a developer needs to start and test the project  
+When the developer reads the documentation  
+Then the developer can start and test the project using the mock credentials  
+
