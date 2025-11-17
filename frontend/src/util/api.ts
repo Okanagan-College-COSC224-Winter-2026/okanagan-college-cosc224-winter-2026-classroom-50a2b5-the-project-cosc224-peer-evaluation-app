@@ -23,7 +23,7 @@ export const tryLogin = async (email: string, password: string) => {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ email: username, password: password }),
+      body: JSON.stringify({ email: email, password: password }),
       credentials: 'include'  // Include cookies in request/response
     });
     
@@ -72,7 +72,7 @@ export const tryRegister = async (name: string, email: string, password: string,
 }
 
 export const createClass = async (name: string) => {
-  const response = await fetch(`${BASE_URL}/create_class`, {
+  const response = await fetch(`${BASE_URL}/class/create_class`, {
     method: 'POST',
     body: JSON.stringify({
       name,
@@ -93,7 +93,7 @@ export const createClass = async (name: string) => {
 
 export const listClasses = async () => {
   // TODO get session info and whatnot
-  const resp = await fetch(`${BASE_URL}/classes`, {
+  const resp = await fetch(`${BASE_URL}/class/classes`, {
     method: 'GET',
     credentials: 'include'  // Include cookies (JWT token)
   })

@@ -9,7 +9,7 @@ from sqlalchemy.engine import Engine
 from api.models.course_model import Course
 from api.models.schemas import CourseSchema
 from api.models.user_course_model import User_Course
-from api.models.users_model import User
+from api.models.user_model import User
 
 
 class QueryCounter:

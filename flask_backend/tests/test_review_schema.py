@@ -10,7 +10,7 @@ from api.models.assignment_model import Assignment
 from api.models.course_model import Course
 from api.models.review_model import Review
 from api.models.schemas import ReviewSchema
-from api.models.users_model import User
+from api.models.user_model import User
 
 
 class QueryCounter:

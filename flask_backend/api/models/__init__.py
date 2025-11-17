@@ -26,7 +26,7 @@ from .schemas import (
 )
 from .submission_model import Submission
 from .user_course_model import User_Course
-from .users_model import User
+from .user_model import User
 
 __all__ = [
     "db",

@@ -11,7 +11,7 @@ from .review_model import Review
 from .rubric_model import Rubric
 from .submission_model import Submission
 from .user_course_model import User_Course
-from .users_model import User
+from .user_model import User
 
 # ============================================================
 # USER SCHEMAS
