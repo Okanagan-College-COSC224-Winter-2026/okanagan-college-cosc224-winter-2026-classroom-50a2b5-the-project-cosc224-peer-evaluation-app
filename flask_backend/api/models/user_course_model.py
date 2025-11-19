@@ -27,6 +27,10 @@ class User_Course(db.Model):
     @classmethod
     def get(cls, userID, courseID):
         return cls.query.get((int(userID), int(courseID)))
+    
+    @classmethod
+    def get_courses_by_student(cls, user_id):
+        return cls.query.filter_by(userID=user_id).all()
 
     @classmethod
     def add(cls, user_id, course_id):

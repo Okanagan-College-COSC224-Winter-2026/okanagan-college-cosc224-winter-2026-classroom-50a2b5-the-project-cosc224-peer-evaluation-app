@@ -147,11 +147,11 @@ export default function Group() {
         tabs={[
           {
             label: "Home",
-            path: `/assignments/${id}`,
+            path: `/assignment/${id}`,
           },
           {
             label: "Group",
-            path: `/assignments/${id}/group`,
+            path: `/assignment/${id}/group`,
           }
         ]}
       />

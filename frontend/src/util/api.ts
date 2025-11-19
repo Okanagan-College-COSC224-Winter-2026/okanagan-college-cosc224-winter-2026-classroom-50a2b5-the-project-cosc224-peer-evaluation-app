@@ -128,7 +128,7 @@ export const importStudentsForCourse = async (courseID: number, students: string
 }
 
 export const listAssignments = async (classId: string) => {
-  const resp = await fetch(`${BASE_URL}/assignments/`+classId, {
+  const resp = await fetch(`${BASE_URL}/assignment/`+classId, {
     method: 'GET',
     headers: {
        'Content-Type': 'application/json',

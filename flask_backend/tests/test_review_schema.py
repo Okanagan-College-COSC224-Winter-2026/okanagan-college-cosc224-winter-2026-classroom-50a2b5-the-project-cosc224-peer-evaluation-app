@@ -72,7 +72,7 @@ def course_with_assignment(db, teacher_user):
     db.session.add(course)
     db.session.commit()
 
-    assignment = Assignment(courseID=course.id, name="Test Assignment", rubric="Test Rubric")
+    assignment = Assignment(courseID=course.id, name="Test Assignment", rubric_text="Test Rubric")
     db.session.add(assignment)
     db.session.commit()
 

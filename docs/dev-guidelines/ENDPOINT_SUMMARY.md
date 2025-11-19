@@ -63,11 +63,14 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 
 | Method | Path | Params | Query | Body | Response | Notes |
 |--------|------|--------|-------|------|----------|-------|
-| GET | `/assignments/:course` | `{ course: string }` | — | — | `Array<Assignment>` | Returns all assignments for a course. |
-| POST | `/classes/members` | — | — | `{ id: number }` | `Array<User { id, name, email }>` | Uses `User_Course` to look up members. |
-| GET | `/class/classes` | — | — | — | `Array<Course>` | Currently returns all classes; TODO: filter by student membership. |
-| POST | `/create_assignment` | — | — | `{ courseID: number, name: string }` | `{ message: string, id: number }` | Creates assignment and returns created id. |
-| POST | `/class/create_class` | — | — | `{ name: string }` | `201 { message: 'Class created', id }` or `400 { message: 'Class already exists' }` | TeacherID currently hardcoded to 0 (TODO: use session). |
+| GET | `/assignment/:class_id` | `{ class_id: number }` | — | — | `Array<Assignment>` | Returns all assignments for a course. |
+| POST | `/class/members` | — | — | `{ id: number }` | `Array<User { id, name, email }>` | Uses `User_Course` to look up members. |
+| GET | `/class/classes` | — | — | — | `Array<Course>` | Currently returns classes for student / Instructor |
+| GET | `/class/browse_classes` | — | — | — | `Array<Course>` | Returns all classes |
+| POST | `/assignment/create_assignment` | — | — | `{ courseID: number, name: string, rubric: string, due_date?: string }` | `{ msg: string, assignment: Assignment }` | Creates assignment and returns created id. |
+| PATCH | `/assignment/edit_assignment/:assignment_id` | `{ assignment_id: string }` | — | `{ name: string, rubric: string, due_date: string }` | `{ msg: string, assignment: Assignment }` | Edits assignment and returns updated assignment |
+| DELETE | `/assignment/delete_assignment/:assignment_id` | `{ assignment_id: string }` | — | — | `{ msg: string}` | Deletes assignment and returns message |
+| POST | `/class/create_class` | — | — | `{ name: string }` | `201 { message: 'Class created', id }` or `400 { message: 'Class already exists' }` | Creates a class for the given teacher |
 | POST | `/create_criteria` | — | — | `{ id: number, rubricID: number, question: string, scoreMax: number, hasScore: boolean }` | `{ message: string, id: number }` | Creates a `Criteria_Description` row. Field `id` is taken from body. |
 | POST | `/create_criterion` | — | — | `{ reviewID: number, criterionRowID: number, grade: number, comments: string }` | `{ message: string, id: number }` | Creates one `Criterion` (row within a Review). |
 | POST | `/create_group` | — | — | `{ id: number, name: string, assignmentID: number }` | `{ message: string, id: number }` | Creates `CourseGroup`; route swallows DB errors and logs them. |

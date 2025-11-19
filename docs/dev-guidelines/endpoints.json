@@ -4,8 +4,8 @@
   "endpoints": [
     {
       "method": "GET",
-      "path": "/assignments/:course",
-      "params": { "course": "string" },
+      "path": "/assignment/:class_id",
+      "params": { "class_id": "number" },
       "query": null,
       "body": null,
       "response": "Array<Assignment> (Sequelize findAll result)",

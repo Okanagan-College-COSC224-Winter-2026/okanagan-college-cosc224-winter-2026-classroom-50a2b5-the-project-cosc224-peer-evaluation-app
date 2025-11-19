@@ -30,8 +30,8 @@ function App() {
               <Route path="/profile/:id" element={<Profile />} />
               <Route path="/classes/:id/home" element={<ClassHome />} />
               <Route path="/classes/:id/members" element={<ClassMembers />} />
-              <Route path="/assignments/:id" element={<Assignment />} />
-              <Route path="/assignments/:id/group" element={<Group />} />
+              <Route path="/assignment/:id" element={<Assignment />} />
+              <Route path="/assignment/:id/group" element={<Group />} />
             </Routes>
           </div>
       </BrowserRouter>

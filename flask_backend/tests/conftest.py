@@ -2,7 +2,7 @@ import pytest
 from werkzeug.security import generate_password_hash
 
 from api import create_app
-from api.models import User
+from api.models import User, Course, User_Course
 from api.models.db import db as _db
 
 base_url = "http://localhost:5000/assets"
@@ -75,3 +75,27 @@ def make_admin():
         return user
 
     return _make_admin
+
+@pytest.fixture
+def enroll_user_in_course():
+    """Fixture to enroll a user in a course."""
+
+    def _enroll_user_in_course(user_id, course_id):
+        user = _db.session.get(User, user_id)
+        if user is None:
+            raise ValueError(f"User with id {user_id} does not exist")
+        course = _db.session.get(Course, course_id)
+        if course is None:
+            raise ValueError(f"Course with id {course_id} does not exist")
+        
+        existing_enrollment = _db.session.get(User_Course, (user_id, course_id))
+        if existing_enrollment:
+            return existing_enrollment  # Already enrolled
+        
+        enrollment = User_Course(userID=user_id, courseID=course_id)
+        _db.session.add(enrollment)
+        _db.session.commit()
+        return enrollment
+
+    return _enroll_user_in_course
+        
