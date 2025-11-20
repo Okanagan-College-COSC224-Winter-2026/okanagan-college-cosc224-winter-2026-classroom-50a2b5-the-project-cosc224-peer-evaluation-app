@@ -3,7 +3,7 @@ import TabNavigation from "../components/TabNavigation";
 import { useEffect, useState } from "react";
 import Button from "../components/Button";
 import { importCSV } from "../util/csv";
-import { listCourseMembers, getClassName } from "../util/api";
+import { listCourseMembers, listClasses } from "../util/api";
 
 import './ClassMembers.css'
 import { isTeacher } from "../util/login";
@@ -16,9 +16,10 @@ export default function ClassMembers() {
   useEffect(() => {
     ;(async () => {
       const members = await listCourseMembers(id as string)
-      const classData = await getClassName(String(id));
+      const classes = await listClasses();
+      const currentClass = classes.find((c: { id: number }) => c.id === Number(id));
       setMembers(members)
-      setClassName(classData.className);
+      setClassName(currentClass?.name || null);
     })()
   }, [])  
 

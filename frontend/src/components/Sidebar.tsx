@@ -8,7 +8,7 @@ export default function Sidebar() {
   return (
     <div className="Sidebar">
       <div className="SidebarLogo">
-        <img src="/public/oc_logo.png" alt="OC Logo" />
+        <img src="/oc_logo.png" alt="OC Logo" />
       </div>
 
       <div className="SidebarTop">

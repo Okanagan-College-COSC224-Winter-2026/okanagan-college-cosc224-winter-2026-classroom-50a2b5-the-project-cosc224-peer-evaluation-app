@@ -218,43 +218,7 @@ export const listCourseMembers = async (classId: string) => {
 } 
 
 
-/*
-export const getClassName = async (classId: string) => {
-  const resp = await fetch(`${BASE_URL}/get_class/${classId}`, {
-    method: 'GET',
-    headers: {
-      credentials: 'include',
-      'Content-Type': 'application/json',
-    },
-  });
 
-  maybeHandleExpire(resp);
-
-  if (!resp.ok) {
-    throw new Error(`Response status: ${resp.status}`);
-  }
-
-  const data = await resp.json();
-  return data.className;
-};
-*/
-
-export const getClassName = async (classId: string) => {
-  const resp = await fetch(`${BASE_URL}/get_className/${classId}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-  });
-
-  maybeHandleExpire(resp);
-
-  if (!resp.ok) {
-    throw new Error(`Response status: ${resp.status}`);
-  }
-  return await resp.json();
-};
 
 export const listGroupMembers = async (assignmentId : number, groupID: number) => {
   const resp = await fetch(`${BASE_URL}/list_group_members/` + assignmentId + '/' + groupID, {

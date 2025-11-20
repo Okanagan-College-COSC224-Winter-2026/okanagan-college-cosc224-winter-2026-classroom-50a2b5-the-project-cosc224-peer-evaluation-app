@@ -3,7 +3,7 @@ import Button from "../components/Button";
 import "./ClassHome.css";
 import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { listAssignments, getClassName, createAssignment } from "../util/api";
+import { listAssignments, listClasses, createAssignment } from "../util/api";
 import TabNavigation from "../components/TabNavigation";
 import { importCSV } from "../util/csv";
 import Textbox from "../components/Textbox";
@@ -19,9 +19,10 @@ export default function ClassHome() {
   useEffect(() => {
     (async () => {
       const resp = await listAssignments(String(id));
-      const classData = await getClassName(String(id));
+      const classes = await listClasses();
+      const currentClass = classes.find((c: { id: number }) => c.id === Number(id));
       setAssignments(resp);
-      setClassName(classData.className);
+      setClassName(currentClass?.name || null);
     })();
   }, []);
     
