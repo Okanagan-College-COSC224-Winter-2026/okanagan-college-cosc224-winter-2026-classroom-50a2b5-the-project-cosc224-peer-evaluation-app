@@ -12,6 +12,13 @@ export default function Sidebar() {
       </div>
 
       <div className="SidebarTop">
+        <SidebarRow
+          onClick={() => logout()}
+          href='#'
+          selected={false}
+        >
+          Logout
+        </SidebarRow>
 
         <SidebarRow selected={location === '/home'} href="/home">
           Home
@@ -22,16 +29,6 @@ export default function Sidebar() {
           My Info
         </SidebarRow>
       </div>
-
-      <div className="SidebarBottom">
-        <SidebarRow
-          onclick={() => logout()}
-          href='#'
-          selected={false}
-        >
-          Logout
-        </SidebarRow>
-      </div>
     </div>
   )
 }
@@ -40,12 +37,12 @@ interface SidebarRowProps {
   selected: boolean
   href: string
   children: React.ReactNode
-  onclick?: () => void
+  onClick?: () => void
 }
 
 function SidebarRow(props: SidebarRowProps) {
   return (
-    <div className={`SidebarRow ${props.selected ? 'selected' : ''}`} onClick={props.onclick}>
+    <div className={`SidebarRow ${props.selected ? 'selected' : ''}`} onClick={props.onClick}>
       <a href={props.selected ? '#' : props.href}>{props.children}</a>
     </div>
   )

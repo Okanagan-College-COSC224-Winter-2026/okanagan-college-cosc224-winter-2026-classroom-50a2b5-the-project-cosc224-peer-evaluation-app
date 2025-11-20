@@ -1,5 +1,6 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./components/Sidebar";
 
 import "./App.css";
@@ -12,30 +13,70 @@ import Assignment from "./pages/Assignment";
 import Group from "./pages/Group";
 import RegisterPage from "./pages/RegisterPage";
 
-function App() {
-  const arr = window.location.pathname.toString().split("/");
-  const current = arr[arr.length - 1];
-  const noSidebarPaths = ["", "register"];
+function AppContent() {
+  const location = useLocation();
+  const noSidebarPaths = ["/", "/login", "/register"];
 
   return (
     <div className="App">
-      <BrowserRouter>
-        {!noSidebarPaths.includes(current) && <Sidebar />}
-          <div className="inner">
-            <Routes>
-              <Route path="/" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/home" element={<Home />} />
-              <Route path="/classes/create" element={<CreateClass />} />
-              <Route path="/profile/:id" element={<Profile />} />
-              <Route path="/classes/:id/home" element={<ClassHome />} />
-              <Route path="/classes/:id/members" element={<ClassMembers />} />
-              <Route path="/assignment/:id" element={<Assignment />} />
-              <Route path="/assignment/:id/group" element={<Group />} />
-            </Routes>
-          </div>
-      </BrowserRouter>
+      {!noSidebarPaths.includes(location.pathname) && <Sidebar />}
+      <div className="inner">
+        <Routes>
+          <Route path="/" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          <Route path="/home" element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/classes/create" element={
+            <ProtectedRoute>
+              <CreateClass />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/profile/:id" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/classes/:id/home" element={
+            <ProtectedRoute>
+              <ClassHome />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/classes/:id/members" element={
+            <ProtectedRoute>
+              <ClassMembers />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/assignments/:id" element={
+            <ProtectedRoute>
+              <Assignment />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/assignments/:id/group" element={
+            <ProtectedRoute>
+              <Group />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
 
