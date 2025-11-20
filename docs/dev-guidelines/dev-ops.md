@@ -35,35 +35,12 @@
 - Commit changes with clear messages.
 - Open a pull request to `dev` branch and request approval from one other dev.
 - Run CI/CD workflows via GitHub Actions.
-- Merge after approval and successful build.
+- Merge (squash-and-merge) after approval and successful build.
 - Tag releases from `main` after merging `release/` branches.
 
 ---
 
 ## CI/CD
-
-### Docker
-
-Docker containers will be used for working builds of the application's 3 main components. We will have a Model, a View, and a Controller each containerized. These containers will be spun up using Docker Compose and then deployed on the Knebel Knotes platform whether that is Azure, AWS, or Google cloud etc.
-
-**Purpose in CI/CD:**
-
-Docker enables consistent environments across development, testing, and production by packaging applications and dependencies into containers.
-
-**Why We Use Docker:**
-
-- Ensures environment parity between local and server deployments.
-- Simplifies dependency management.
-- Enables isolated builds and testing.
-- Works seamlessly with Docker Compose for multi-container setups.
-
-**Team Standards:**
-
-- Each major component (Model, View, Controller) must have its own Dockerfile.
-- Use `docker-compose.yml` to define and manage multi-container applications.
-- Tag images using semantic versioning (e.g., `backend-controller:v1.2.0`)
-- Keep Dockerfiles clean and minimal; avoid installing unnecessary packages.
-- Use `.dockerignore` to reduce build context and improve performance.
 
 ### GitHub Actions
 
@@ -91,6 +68,29 @@ GitHub Actions automates workflows triggered by events such as commits, pull req
 - Use caching to speed up builds (e.g., `actions/cache`)
 - Document each workflow's purpose in comments at the top of the YAML file.
 
+### Docker
+
+Docker containers will be used for working builds of the application's 3 main components. We will have a Model, a View, and a Controller each containerized. These containers will be spun up using Docker Compose and then deployed on the PaaS platform whether that is Azure, AWS, or Google cloud etc.
+
+**Purpose in CI/CD:**
+
+Docker enables consistent environments across development, testing, and production by packaging applications and dependencies into containers.
+
+**Why We Use Docker:**
+
+- Ensures environment parity between local and server deployments.
+- Simplifies dependency management.
+- Enables isolated builds and testing.
+- Works seamlessly with Docker Compose for multi-container setups.
+
+**Team Standards:**
+
+- Each major component (Model, View, Controller) must have its own Dockerfile.
+- Use `docker-compose.yml` to define and manage multi-container applications.
+- Tag images using semantic versioning (e.g., `backend-controller:v1.2.0`)
+- Keep Dockerfiles clean and minimal; avoid installing unnecessary packages.
+- Use `.dockerignore` to reduce build context and improve performance.
+
 ---
 
 ## Database Technology
@@ -101,7 +101,7 @@ SQLAlchemy is the Python SQL toolkit and Object Relational Mapper that gives app
 
 It provides a full suite of well-known enterprise-level persistence patterns, designed for efficient and high-performing database access, adapted into a simple and Pythonic domain language.
 
-We will be using an ORM (object relational mapper) to create the database for Knebel Knotes.
+We will be using an ORM (object relational mapper) to create and manage the database.
 
 **Why We Use SQLAlchemy:**
 
@@ -141,7 +141,7 @@ We will be using an ORM (object relational mapper) to create the database for Kn
 
 **Purpose in Our Architecture:**
 
-Flask is a lightweight and flexible Python web framework used to build the backend of Knebel Knotes. It handles HTTP requests, routes, and integrates with our database and services.
+Flask is a lightweight and flexible Python web framework used to build the backend server logic and routing. It handles HTTP requests, routes, and integrates with our database and services.
 
 **Why We Use Flask:**
 
@@ -225,7 +225,59 @@ def create_app(test_config=None):
     return app
 ```
 
-**Configuration Management:**
+## 📋 Checklist for New Endpoints
+
+When creating new protected endpoints:
+
+- [ ] **Backend**: Use `@jwt_required()` decorator
+- [ ] **Frontend**: Include `credentials: 'include'` in fetch options
+- [ ] **Frontend**: Remove any `Authorization` headers
+- [ ] **Tests**: Don't manually pass tokens - test_client handles it
+
+## ⚠️ Important Notes
+
+1. **CORS must be configured** properly for cookies to work across origins
+2. **credentials: 'include'** must be in every authenticated request
+3. **Production**: Set `JWT_COOKIE_SECURE=True` to require HTTPS
+
+## 🔍 Debugging Tips
+
+If auth isn't working:
+
+1. Check browser DevTools → Network → Look for `Set-Cookie` header in login response
+2. Verify `Cookie` header is sent in subsequent requests
+3. Ensure `credentials: 'include'` is present in fetch options
+4. Check CORS configuration allows credentials
+5. Verify frontend and backend URLs match CORS whitelist
+
+## Security Benefits of JWT in HTTPOnly Cookies
+
+1. **XSS Protection**: HTTPOnly cookies cannot be accessed by JavaScript, preventing token theft via XSS attacks
+2. **Automatic Cookie Management**: Browser handles cookie storage and sending automatically
+3. **CSRF Protection**: SameSite=Lax provides basic CSRF protection
+4. **Secure Flag**: Can be enabled in production to ensure cookies only sent over HTTPS
+
+## Production Checklist
+
+Before deploying to production, update these settings in `flask_backend/api/__init__.py`:
+
+```python
+JWT_COOKIE_SECURE = True  # Require HTTPS
+JWT_COOKIE_CSRF_PROTECT = True  # Enable CSRF protection
+JWT_COOKIE_SAMESITE = 'Strict'  # Stricter CSRF protection
+SECRET_KEY = os.environ.get('SECRET_KEY')  # Use env var
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')  # Use env var
+```
+
+Also update CORS origins to match your production domain:
+
+```python
+CORS(app, 
+     origins=['https://your-production-domain.com'],
+     supports_credentials=True)
+```
+
+## Configuration Management
 
 - Use environment variables for sensitive data (e.g., API keys, DB credentials)
 - Separate config files for development, testing, and production

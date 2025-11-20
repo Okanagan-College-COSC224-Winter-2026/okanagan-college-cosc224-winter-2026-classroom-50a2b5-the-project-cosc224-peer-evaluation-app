@@ -15,58 +15,58 @@ Field types, primary keys, and notable constraints are included for quick refere
 ### Users, Courses, and Enrollment
 
 - User
-	- id (PK), name, email (unique), hash_pass, is_teacher (default FALSE)
+  - id (PK), name, email (unique), hash_pass, role (default student)
 - Course
-	- id (PK), teacherID (User.id), name
-	- A User who is a teacher can own many Courses via `teacherID`
+  - id (PK), teacherID (User.id), name
+  - A User who is a teacher can own many Courses via `teacherID`
 - User_Courses (enrollment many-to-many)
-	- PK: (userID, courseID)
-	- Links Users to Courses as students or teachers (role inferred via `User.is_teacher` and app logic)
+  - PK: (userID, courseID)
+  - Links Users to Courses as students or teachers (role inferred via `User.role` and app logic)
 
 ### Assignments and Grouping
 
 - Assignment
-	- id (PK), courseID (Course.id), name, rubric (label/name string)
+  - id (PK), courseID (Course.id), name, rubric (label/name string)
 - CourseGroup
-	- id (PK), name, assignmentID (Assignment.id)
+  - id (PK), name, assignmentID (Assignment.id)
 - Group_Members
-	- PK: (userID, groupID)
-	- Columns: groupID (CourseGroup.id), userID (User.id), assignmentID (Assignment.id)
-	- Represents assignment-specific grouping for users
+  - PK: (userID, groupID)
+  - Columns: groupID (CourseGroup.id), userID (User.id), assignmentID (Assignment.id)
+  - Represents assignment-specific grouping for users
 
 ### Submissions
 
 - Submission
-	- id (PK), path, studentID (User.id), assignmentID (Assignment.id)
-	- Stores a file path or location to the submitted artifact
+  - id (PK), path, studentID (User.id), assignmentID (Assignment.id)
+  - Stores a file path or location to the submitted artifact
 
 ### Reviews, Rubrics, and Criteria
 
 - Review
-	- id (PK), assignmentID, reviewerID (User.id), revieweeID (User.id)
-	- Peer review instances scoped to an assignment
+  - id (PK), assignmentID, reviewerID (User.id), revieweeID (User.id)
+  - Peer review instances scoped to an assignment
 - Rubric
-	- id (PK), assignmentID (Assignment.id), canComment (BOOLEAN)
-	- The app currently allows multiple rubrics per assignment; uniqueness is not enforced at the DB layer
+  - id (PK), assignmentID (Assignment.id), canComment (BOOLEAN)
+  - The app currently allows multiple rubrics per assignment; uniqueness is not enforced at the DB layer
 - Criteria_Description (rubric rows)
-	- id (PK), rubricID (Rubric.id), question, scoreMax, hasScore (default TRUE)
-	- Describes each rubric row/question and whether it’s scored
+  - id (PK), rubricID (Rubric.id), question, scoreMax, hasScore (default TRUE)
+  - Describes each rubric row/question and whether it’s scored
 - Criterion (filled-in responses per review)
-	- id (PK), reviewID (Review.id), criterionRowID (Criteria_Description.id), grade, comments
-	- Captures the reviewer’s grade/comments for a specific rubric row
+  - id (PK), reviewID (Review.id), criterionRowID (Criteria_Description.id), grade, comments
+  - Captures the reviewer’s grade/comments for a specific rubric row
 
 ## Constraints and Defaults
 
 - Auto-incrementing primary keys for all base tables except the two join tables which use composite primary keys
 - `User.email` is unique
 - Defaults
-	- `User.is_teacher` defaults to `FALSE`
-	- `Criteria_Description.hasScore` defaults to `TRUE`
+  - `User.role` defaults to `STUDENT`
+  - `Criteria_Description.hasScore` defaults to `TRUE`
 - Foreign keys
-	- Present logically but commented out in `schema.sql`; application code assumes these relationships
+  - Present logically but commented out in `schema.sql`; application code assumes these relationships
 
 ## Alignment With Code
 
-- Sequelize models live in `backend/src/sequelize` and mirror the tables above
-- Route handlers under `backend/src/routes` operate on these models; see `docs/dev-guidelines/ENDPOINT_SUMMARY.md` for API-level interactions
+- Sequelize models live in `flask_backend/api/models` and mirror the tables above
+- Route handlers under `flask_backend/api/controllers` operate on these models; see `docs/dev-guidelines/ENDPOINT_SUMMARY.md` for API-level interactions
 If you update `schema.sql`, please keep this document in sync.

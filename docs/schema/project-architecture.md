@@ -115,13 +115,12 @@ graph TB
 2. Flask routes request to appropriate controller/blueprint
 3. Controller validates JWT and permissions
 4. Business logic processes the request
-5. ORM queries PostgreSQL database
+5. ORM queries database Can output to any type of database (just needs to be set in [backend](../../flask_backend/api/__init__.py))
 6. Marshmallow serializes response (excludes sensitive fields)
 7. JSON response returned to client
 
-**Container Architecture:**
+## Container Architecture
 
 - **Backend**: Self-contained Flask app with all dependencies
 - **Frontend**: React + TypeScript SPA (Vite) served separately
 - **Database**: Relational DB (MySQL/MariaDB or PostgreSQL) with persistent volume
-- **Migration**: Alembic/Flask-Migrate for schema changes; optional one-time seed data

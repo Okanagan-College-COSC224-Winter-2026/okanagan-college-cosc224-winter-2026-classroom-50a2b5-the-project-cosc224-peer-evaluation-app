@@ -50,16 +50,20 @@ When `FLASK_ENV=production` or `PRODUCTION=true` is set, the application automat
 ### 3. CSRF Protection
 
 With `JWT_COOKIE_CSRF_PROTECT=True` in production, the application will:
+
 - Generate CSRF tokens and include them in cookies
 - Require CSRF tokens in request headers for state-changing operations (POST, PUT, DELETE)
 - Reject requests without valid CSRF tokens
 
 **Frontend Integration Required:**
+
 Your frontend must be updated to:
+
 1. Read the CSRF token from the cookie
 2. Include it in the `X-CSRF-TOKEN` header for non-GET requests
 
 Example frontend code (React):
+
 ```typescript
 // Get CSRF token from cookie
 function getCsrfToken(): string | null {

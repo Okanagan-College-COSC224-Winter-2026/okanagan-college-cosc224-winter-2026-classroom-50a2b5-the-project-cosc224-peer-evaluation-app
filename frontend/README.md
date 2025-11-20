@@ -13,31 +13,40 @@ Note: The frontend's dev server is configured to listen on port 3000.
 ### Installing Node.js
 
 #### Windows
+
 Option 1 - Official Installer:
+
 1. Download Node.js LTS from [nodejs.org](https://nodejs.org/)
 2. Run the installer (includes npm)
 3. Verify installation:
+
    ```powershell
+
    node --version
    npm --version
    ```
 
 Option 2 - Using Chocolatey:
+
 ```powershell
 choco install nodejs-lts
 ```
 
 #### macOS
+
 Option 1 - Official Installer:
+
 1. Download Node.js LTS from [nodejs.org](https://nodejs.org/)
 2. Run the `.pkg` installer
 3. Verify installation:
+
    ```bash
    node --version
    npm --version
    ```
 
 Option 2 - Homebrew (recommended):
+
 ```bash
 brew install node
 node --version
@@ -45,7 +54,9 @@ npm --version
 ```
 
 #### Linux (Ubuntu/Debian)
+
 Using NodeSource repository (recommended):
+
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 sudo apt-get install -y nodejs
@@ -54,6 +65,7 @@ npm --version
 ```
 
 #### Linux (Fedora/RHEL)
+
 ```bash
 sudo dnf install nodejs npm
 node --version

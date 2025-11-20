@@ -16,31 +16,38 @@ This is the Flask REST API backend for the Peer Evaluation App, built using the 
 ### Installing Python
 
 #### Windows
+
 1. Download Python 3.8+ from [python.org](https://www.python.org/downloads/)
 2. Run the installer and **check "Add Python to PATH"**
 3. Verify installation:
+
    ```powershell
    python --version
    pip --version
    ```
 
 #### macOS
+
 Option 1 - Official Installer:
+
 1. Download Python from [python.org](https://www.python.org/downloads/)
 2. Run the `.pkg` installer
 
 Option 2 - Homebrew (recommended):
+
 ```bash
 brew install python3
 ```
 
 Verify installation:
+
 ```bash
 python3 --version
 pip3 --version
 ```
 
 #### Linux (Ubuntu/Debian)
+
 ```bash
 sudo apt update
 sudo apt install python3 python3-pip python3-venv
@@ -49,58 +56,76 @@ pip3 --version
 ```
 
 #### Linux (Fedora/RHEL)
+
 ```bash
 sudo dnf install python3 python3-pip
 python3 --version
 pip3 --version
 ```
 
-## Installation
+## Local Development Setup
 
 ### Windows (PowerShell)
 
 1. **Navigate to the backend directory:**
+
    ```powershell
    cd flask_backend
    ```
 
 2. **Create a virtual environment:**
+
    ```powershell
    python -m venv venv
    ```
 
 3. **Activate the virtual environment:**
+
    ```powershell
    .\venv\Scripts\Activate.ps1
    ```
-   
+
    *Note: If you get an execution policy error, run:*
+
    ```powershell
    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
    ```
 
 4. **Install the package and dependencies:**
+
    ```powershell
    pip install -e .
    pip install -r requirements-dev.txt
    ```
 
-5. **Initialize the database:**
+5. **Set the environment variable:**
+
+   ```powershell
+   $env:FLASK_APP = "api"
+   ```
+
+   *Optional:* run `setx FLASK_APP "api"` if you want a persistent value outside the current PowerShell session.
+
+6. **Initialize the database:**
+
    ```powershell
    flask init_db
    ```
 
-6. **Add sample users:**
+7. **Add sample users:**
+
    ```powershell
    flask add_users
    ```
-   
+
    Or create just an admin:
+
    ```powershell
    flask create_admin
    ```
 
-7. **Run the development server:**
+8. **Run the development server:**
+
    ```powershell
    flask run
    ```
@@ -110,42 +135,56 @@ The API will be available at [http://localhost:5000](http://localhost:5000)
 ### macOS/Linux (Bash)
 
 1. **Navigate to the backend directory:**
+
    ```bash
    cd flask_backend
    ```
 
 2. **Create a virtual environment:**
+
    ```bash
    python3 -m venv venv
    ```
 
 3. **Activate the virtual environment:**
+
    ```bash
    source venv/bin/activate
    ```
 
 4. **Install the package and dependencies:**
+
    ```bash
    pip install -e .
    pip install -r requirements-dev.txt
    ```
 
-5. **Initialize the database:**
+5. **Set the environment variable:**
+
+   ```bash
+   export FLASK_APP=api
+   ```
+
+6. **Initialize the database:**
+
    ```bash
    flask init_db
    ```
 
-6. **Add sample users:**
+7. **Add sample users:**
+
    ```bash
    flask add_users
    ```
-   
+
    Or create just an admin:
+
    ```bash
    flask create_admin
    ```
 
-7. **Run the development server:**
+8. **Run the development server:**
+
    ```bash
    flask run
    ```
@@ -227,7 +266,7 @@ pytest --cov=api --cov-report=html
 
 ## Project Structure
 
-```
+```text
 flask_backend/
 ├── api/
 │   ├── __init__.py           # Flask app factory
@@ -329,7 +368,6 @@ flask add_users
 ## Next Steps
 
 - See [../docs/ROLE_QUICK_REFERENCE.md](../docs/ROLE_QUICK_REFERENCE.md) for API usage examples
-- See [../docs/schema/database-schema.md](../docs/schema/database-schema.md) for database structure
 - See [../frontend/README.md](../frontend/README.md) to set up the frontend
 
 Coverage plugin (`pytest-cov`) is installed via `requirements-dev.txt`. Run:
