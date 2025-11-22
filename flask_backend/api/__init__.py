@@ -28,6 +28,15 @@ def create_app(test_config=None):
         or os.environ.get("PRODUCTION", "false").lower() == "true"
     )
 
+    # Validate required secrets in production
+    if is_production:
+        required_secrets = ["SECRET_KEY", "JWT_SECRET_KEY", "DATABASE_URL"]
+        missing = [key for key in required_secrets if not os.environ.get(key)]
+        if missing:
+            raise RuntimeError(
+                f"Production mode requires these environment variables: {', '.join(missing)}"
+            )
+
     # Default configuration
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY", "dev"),
@@ -70,9 +79,15 @@ def create_app(test_config=None):
     jwt.init_app(app)
 
     # Configure CORS to allow credentials (cookies)
+    # In production, configure allowed origins via CORS_ORIGINS env var (comma-separated)
+    cors_origins = (
+        os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+        if os.environ.get("CORS_ORIGINS")
+        else ["http://localhost:3000", "http://localhost:5173"]
+    )
     CORS(
         app,
-        origins=["http://localhost:3000", "http://localhost:5173"],  # Vite dev server ports
+        origins=cors_origins,
         supports_credentials=True,
         allow_headers=["Content-Type", "X-CSRF-TOKEN"],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],

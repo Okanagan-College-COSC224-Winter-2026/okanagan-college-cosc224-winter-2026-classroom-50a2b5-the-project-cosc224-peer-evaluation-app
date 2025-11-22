@@ -1,0 +1,50 @@
+# Docker Compose for local development/testing
+# For production, use cloud provider's secret management
+# When local development/testing:
+#   1. Run: docker-compose up --build
+#   2. curl http://localhost:5000/hello to verify the backend is running
+#   3. Run: docker-compose down -v to stop and remove volumes
+# Never hardcode secrets in this file for production use
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: peereval
+      POSTGRES_USER: peereval_user
+      POSTGRES_PASSWORD: dev_password_change_in_prod
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U peereval_user -d peereval"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  flask_backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      # Secrets passed at runtime, not baked into image
+      FLASK_APP: api
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-jwt-secret}
+      DATABASE_URL: postgresql://peereval_user:dev_password_change_in_prod@postgres:5432/peereval
+      CORS_ORIGINS: http://localhost:3000,http://localhost:5173
+      # Optional: Gunicorn worker configuration
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
+      GUNICORN_THREADS: ${GUNICORN_THREADS:-2}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Optional: Load additional variables from .env file (git-ignored)
+    # Create .env file if you want to override the defaults above
+
+volumes:
+  postgres_data:

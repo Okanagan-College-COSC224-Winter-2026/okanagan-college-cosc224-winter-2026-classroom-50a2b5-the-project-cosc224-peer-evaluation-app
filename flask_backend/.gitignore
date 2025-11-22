@@ -12,3 +12,13 @@ venv/
 .vscode/
 *.sqlite
 *.sqlite3
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+instance/config.py
+
+# Coverage reports
+.coverage
+htmlcov/
