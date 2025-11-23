@@ -26,7 +26,7 @@ class User_Course(db.Model):
 
     @classmethod
     def get(cls, userID, courseID):
-        return cls.query.get((int(userID), int(courseID)))
+        return cls.query.filter_by(userID=userID, courseID=courseID).first()
     
     @classmethod
     def get_courses_by_student(cls, user_id):

@@ -215,3 +215,328 @@ def test_get_courses_not_logged_in(test_client):
     """
     response = test_client.get("/class/classes", headers={"Content-Type": "application/json"})
     assert response.status_code == 401
+
+def test_enroll_in_class(test_client, make_admin):
+    """
+    GIVEN a logged-in teacher user
+    WHEN POST /class/enroll_students is called with valid data
+    THEN the teacher should enroll students in the class
+    """
+    # Set the admin user by default into the database
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    # Login as teacher/admin
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    # Create a class
+    response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "Science 101"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = response.json["class"]["id"]
+    # Enroll students
+    csv_text = (
+        "id,name,email\n"
+        "300325853,Gregory Bigglesworth,gbizzle@yandex.ru\n"
+        "300325854,Sarah Connor,sconnor@example.com\n"
+    )
+    response = test_client.post(
+        "/class/enroll_students",
+        data=json.dumps({"class_id": class_id, "students": csv_text}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 200
+    assert response.json["msg"] == "2 students added to course Science 101"
+
+def test_enroll_in_class_not_teacher(test_client):
+    """
+    GIVEN a logged-in non-teacher user
+    WHEN POST /class/enroll_students is called
+    THEN the request should be forbidden
+    """
+    # Register and login as non-teacher
+    test_client.post(
+        "/auth/register",
+        data=json.dumps(
+            {"name": "studentuser", "password": "123456", "email": "student@example.com"}),
+        headers={"Content-Type": "application/json"},
+    )
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "student@example.com", "password": "123456"}),
+        headers={"Content-Type": "application/json"},
+    )
+    # Attempt to enroll students
+    csv_text = (
+        "id,name,email\n"
+        "300325853,Gregory Bigglesworth,gbizzle@yandex.ru\n"
+        "300325854,Sarah Connor,sconnor@example.com\n"
+    )
+    response = test_client.post(
+        "/class/enroll_students",
+        data=json.dumps({"class_id": 1, "students": csv_text}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 403
+    assert response.json["msg"] == "Insufficient permissions"
+
+def test_enroll_in_class_missing_data(test_client, make_admin):
+    """
+    GIVEN a logged-in teacher user
+    WHEN POST /class/enroll_students is called with missing data
+    THEN the request should return a 400 error
+    """
+    # Set the admin user by default into the database
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    # Login as teacher/admin
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    # Attempt to enroll students with missing data
+    response = test_client.post(
+        "/class/enroll_students",
+        data=json.dumps({"class_id": 1}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 400
+    assert response.json["msg"] == "Class ID and student emails are required"
+
+def test_enroll_in_class_not_found(test_client, make_admin):
+    """
+    GIVEN a logged-in teacher user
+    WHEN POST /class/enroll_students is called with a non-existent class ID
+    THEN the request should return a 404 error
+    """
+    # Set the admin user by default into the database
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    # Login as teacher/admin
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    # Attempt to enroll students in a non-existent class
+    csv_text = (
+        "id,name,email\n"
+        "300325853,Gregory Bigglesworth,gbizzle@yandex.ru\n"
+        "300325854,Sarah Connor,sconnor@example.com\n"
+    )
+    response = test_client.post(
+        "/class/enroll_students",
+        data=json.dumps({"class_id": 9999, "students": csv_text}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 404
+    assert response.json["msg"] == "Class not found"
+
+def test_enroll_in_class_unauthorized(test_client, make_admin):
+    """
+    GIVEN a logged-in teacher user who is not the teacher of the class
+    WHEN POST /class/enroll_students is called
+    THEN the request should return a 403 error
+    """
+    # Set the admin user by default into the database
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    make_admin(email="otherteacher@example.com", password="teacher", name="otherteacheruser")
+    # Login as teacher/admin
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "otherteacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    # Create a class as the first teacher
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "Science 101"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = response.json["class"]["id"]
+    # Login as other teacher
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "otherteacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    # Attempt to enroll students
+    csv_text = (
+        "id,name,email\n"
+        "300325853,Gregory Bigglesworth,gbizzle@yandex.ru\n"
+        "300325854,Sarah Connor,sconnor@example.com\n"
+    )
+    response = test_client.post(
+        "/class/enroll_students",
+        data=json.dumps({"class_id": class_id, "students": csv_text}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 403
+    assert response.json["msg"] == "You are not authorized to enroll students in this class"
+
+def test_enroll_in_class_not_logged_in(test_client):
+    """
+    GIVEN a non-logged-in user
+    WHEN POST /class/enroll_students is called
+    THEN the request should be unauthorized
+    """
+    csv_text = (
+        "id,name,email\n"
+        "300325853,Gregory Bigglesworth,gbizzle@yandex.ru\n"
+        "300325854,Sarah Connor,sconnor@example.com\n"
+    )
+    response = test_client.post(
+        "/class/enroll_students",
+        data=json.dumps({"class_id": 1, "students": csv_text}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 401
+
+def test_enroll_in_class_empty_csv(test_client, make_admin):
+    """
+    GIVEN a logged-in teacher user
+    WHEN POST /class/enroll_students is called with an empty CSV
+    THEN no students should be enrolled
+    """
+    # Set the admin user by default into the database
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    # Login as teacher/admin
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    # Create a class
+    response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "Science 101"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = response.json["class"]["id"]
+    # Enroll students with empty CSV
+    csv_text = ""
+    response = test_client.post(
+        "/class/enroll_students",
+        data=json.dumps({"class_id": class_id, "students": csv_text}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 400
+    assert response.json["msg"] == "Class ID and student emails are required"
+
+def test_enroll_in_class_malformed_csv(test_client, make_admin):
+    """
+    GIVEN a logged-in teacher user
+    WHEN POST /class/enroll_students is called with a malformed CSV
+    THEN the request should return a 400 error
+    """
+    # Set the admin user by default into the database
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    # Login as teacher/admin
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    # Create a class
+    response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "Science 101"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = response.json["class"]["id"]
+    # Enroll students with malformed CSV
+    csv_text = (
+        "id,name,email\n"
+        "300325853,Gregory Bigglesworth\n"  # Missing email
+        "300325854,Sarah Connor,sconnor@example.com\n"
+    )
+    response = test_client.post(
+        "/class/enroll_students",
+        data=json.dumps({"class_id": class_id, "students": csv_text}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 400
+    assert response.json["msg"] == "Errors in CSV"
+
+def test_enroll_in_class_existing_student(test_client, make_admin):
+    """
+    GIVEN a logged-in teacher user
+    WHEN POST /class/enroll_students is called with a student already enrolled
+    THEN the student should not be enrolled again
+    """
+    # Set the admin user by default into the database
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    # Login as teacher/admin
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    # Create a class
+    response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "Science 101"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = response.json["class"]["id"]
+    # Enroll a student
+    csv_text = (
+        "id,name,email\n"
+        "300325854,Sarah Connor,sconnor@example.com\n"
+    )
+    test_client.post(
+        "/class/enroll_students",
+        data=json.dumps({"class_id": class_id, "students": csv_text}),
+        headers={"Content-Type": "application/json"},
+    )
+    # Enroll the same student again
+    response = test_client.post(
+        "/class/enroll_students",
+        data=json.dumps({"class_id": class_id, "students": csv_text}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 200
+    assert response.json["msg"] == "0 students added to course Science 101"
+
+def test_enroll_in_class_invalid_email_format(test_client, make_admin):
+    """
+    GIVEN a logged-in teacher user
+    WHEN POST /class/enroll_students is called with an invalid email format
+    THEN the request should return a 400 error
+    """
+    # Set the admin user by default into the database
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    # Login as teacher/admin
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    # Create a class
+    response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "Science 101"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = response.json["class"]["id"]
+    # Enroll students with invalid email format
+    csv_text = (
+        "id,name,email\n"
+        "300500123,John Doe,johndoeatexample.com\n"
+        "300325853,Gregory Bigglesworth,gbizzle-at-yandex.ru\n"  # Invalid email
+        "300325854,Sarah Connor,sconnor@example.com\n"
+    )
+    response = test_client.post(
+        "/class/enroll_students",
+        data=json.dumps({"class_id": class_id, "students": csv_text}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 400
+    assert response.json["msg"] == "Invalid email format: johndoeatexample.com"

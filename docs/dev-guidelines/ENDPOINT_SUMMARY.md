@@ -87,7 +87,7 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 | GET | `/list_ua_groups/:assignmentID` | `{ assignmentID: number }` | — | — | `Array<Group_Member>` | Unassigned students for an assignment (`groupID === -1`). |
 | GET | `/next_groupid` | — | — | — | `number` | Count of groups with `id > 0` (Sequelize `count` with `Op.gt`). |
 | POST | `/save_groups` | — | — | `{ groupID: number, userID: number, assignmentID: number }` | `{ message: 'successful DB post!' }` or `401` | Updates `Group_Member` rows to set `groupID` for a user in an assignment. |
-| POST | `/student_import` | — | — | `{ students: string (CSV), courseID: number }` | `400 if missing course; 200 { message: '<n> students added to course <name>' }` or `500` | Parses CSV, creates `User` and `User_Course` rows. See `backend/src/util/csv.ts`. |
+| POST | `/class/enroll_students` | — | — | `{ class_id: number, students: string (CSV) }` | `{ msg: string }` | Enrolls specified students on the csv to the course, if student doesn't exist it creates it. TODO: change the default password to random and email it to the user. |
 | GET | `/user_id` | — | — | — | `number` | Reads `app.session[token].id`. Handler assumes session contains token; no explicit 401 check. |
 
 ---

@@ -235,7 +235,7 @@
     },
     {
       "method": "POST",
-      "path": "/student_import",
+      "path": "/class/enroll_students",
       "params": null,
       "query": null,
       "body": { "students": "string (CSV)", "courseID": "number" },
