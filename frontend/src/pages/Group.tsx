@@ -33,7 +33,7 @@ function fisherYates<T>(array: T[]): T[] {
 
 export default function Group() {
   const { id } = useParams();
-  const [classMembers, setclassMembers] = useState<Member[]>([]);
+  const [classMembers, setclassMembers] = useState<User[]>([]);
   const [stuGroup, setStuGroup] = useState<StudentGroups[]>([]);
   const [groups, setGroups] = useState<CourseGroup[]>([]);
   const [groupTable, setGroupTable] = useState<GroupTable>({});

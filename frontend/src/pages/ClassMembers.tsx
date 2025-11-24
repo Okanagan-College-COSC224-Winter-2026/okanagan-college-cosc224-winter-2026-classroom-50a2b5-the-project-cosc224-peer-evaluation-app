@@ -10,7 +10,7 @@ import { isTeacher } from "../util/login";
 
 export default function ClassMembers() {
   const { id } = useParams()
-  const [members, setMembers] = useState<Member[]>([])
+  const [members, setMembers] = useState<User[]>([])
   const [className, setClassName] = useState<string | null>(null);
 
   useEffect(() => {
