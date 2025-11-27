@@ -39,3 +39,16 @@ interface Criterion {
   scoreMax: number;
   hasScore: boolean;
 }
+
+interface Assignment {
+  id: number;
+  name: string;
+  courseID: number;
+  rubric?: string;
+  due_date?: string;
+}
+
+interface CourseWithAssignments extends Course {
+  assignments?: Assignment[];
+  assignmentCount?: number;
+}

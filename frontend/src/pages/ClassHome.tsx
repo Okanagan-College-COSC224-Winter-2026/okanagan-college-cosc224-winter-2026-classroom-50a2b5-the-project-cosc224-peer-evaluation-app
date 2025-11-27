@@ -12,7 +12,7 @@ import { isTeacher } from "../util/login";
 export default function ClassHome() {
   const { id } = useParams();
   const idNew = Number(id)
-  const [assignments, setAssignments] = useState<Course[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [newAssignmentName, setNewAssignmentName] = useState("");
   const [className, setClassName] = useState<string | null>(null);
 
@@ -29,18 +29,19 @@ export default function ClassHome() {
     const tryCreateAssingment = async () => {
       try {
         const response = await createAssignment(idNew, newAssignmentName);
-        
-        if (!response.id) {
+        const createdAssignment = response?.assignment;
+
+        if (!createdAssignment?.id) {
           throw new Error('Failed to create assignment');
         }
 
+        setAssignments((prev) => [...prev, createdAssignment]);
+        setNewAssignmentName("");
         alert('Assignment created successfully!');
       } catch (error) {
         console.error('Error creating assignment:', error);
         alert('Error creating assignment.');
       }
-
-      window.location.reload();
     };
     
     return (
@@ -77,7 +78,7 @@ export default function ClassHome() {
           <ul className="Assignment">
             {assignments.map((assignment) => {
               return (
-                <li>
+                <li key={assignment.id}>
                   <AssignmentCard id={assignment.id}>
                     {assignment.name}
                   </AssignmentCard>

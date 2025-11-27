@@ -341,7 +341,7 @@ export const getRubric = async (rubricID: number) => {
 
 
 export const createAssignment = async (courseID: number, name: string)=> {
-  const response = await fetch(`${BASE_URL}/create_assignment`, {
+  const response = await fetch(`${BASE_URL}/assignment/create_assignment`, {
     method: 'POST',
     body: JSON.stringify({
       courseID, name

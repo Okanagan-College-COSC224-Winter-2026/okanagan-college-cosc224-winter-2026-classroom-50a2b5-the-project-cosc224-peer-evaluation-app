@@ -2,7 +2,7 @@ import click
 from flask.cli import with_appcontext
 from werkzeug.security import generate_password_hash
 
-from ..models import User
+from ..models import User, Course, Assignment
 from ..models.db import db
 
 
@@ -80,9 +80,53 @@ def create_admin_command():
     click.echo(f"Admin user '{email}' created successfully")
 
 
+@click.command("add_sample_courses")
+@with_appcontext
+def add_sample_courses_command():
+    """Add sample courses and assignments to the database"""
+    # Get the teacher user (or create one if it doesn't exist)
+    teacher = User.get_by_email("teacher@example.com")
+    if not teacher:
+        click.echo("Error: Teacher user 'teacher@example.com' not found. Run 'flask add_users' first.", err=True)
+        return
+
+    # Define sample courses
+    sample_courses = [
+        {"name": "COSC 404 Advanced Database Management Systems"},
+        {"name": "COSC 470 Software Engineering"},
+        {"name": "COSC 360 Server Platform As A Service"},
+    ]
+
+    for course_data in sample_courses:
+        # Check if course already exists
+        existing_course = Course.get_by_name_teacher(course_data["name"], teacher.id)
+        if existing_course:
+            click.echo(f"Course '{course_data['name']}' already exists")
+            continue
+
+        # Create course
+        course = Course(teacherID=teacher.id, name=course_data["name"])
+        Course.create_course(course)
+        click.echo(f"Course '{course.name}' created (id={course.id})")
+
+        # Add an example assignment to the course
+        assignment = Assignment(
+            courseID=course.id,
+            name="Example Assignment",
+            rubric_text="Example rubric",
+            # due_date=None
+            # due_date is currently not in the Assignment table
+        )
+        Assignment.create(assignment)
+        click.echo(f"  - Assignment 'Example Assignment' added to '{course.name}'")
+
+    click.echo("Sample courses and assignments created successfully")
+
+
 def init_app(app):
     """Register CLI commands with the Flask app"""
     app.cli.add_command(init_db_command)
     app.cli.add_command(drop_db_command)
     app.cli.add_command(add_users_command)
+    app.cli.add_command(add_sample_courses_command)
     app.cli.add_command(create_admin_command)

@@ -14,6 +14,7 @@ export default function TabNavigation(props: Props) {
         props.tabs.map(tab => {
           return (
             <div
+              key={tab.path}
               className={`Tab ${tab.path === window.location.pathname ? 'active' : ''}`}
               onClick={() => window.location.href = tab.path}
             >
