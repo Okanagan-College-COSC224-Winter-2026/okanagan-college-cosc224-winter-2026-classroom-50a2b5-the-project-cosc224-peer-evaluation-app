@@ -61,34 +61,34 @@ This summary is generated from `docs/dev-guidelines/endpoints.json` (generatedAt
 
 All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests must include `credentials: 'include'`.
 
-| Method | Path | Params | Query | Body | Response | Notes |
-|--------|------|--------|-------|------|----------|-------|
-| GET | `/assignment/:class_id` | `{ class_id: number }` | — | — | `Array<Assignment>` | Returns all assignments for a course. |
-| POST | `/class/members` | — | — | `{ id: number }` | `Array<User { id, name, email }>` | Uses `User_Course` to look up members. |
-| GET | `/class/classes` | — | — | — | `Array<Course>` | Currently returns classes for student / Instructor |
-| GET | `/class/browse_classes` | — | — | — | `Array<Course>` | Returns all classes |
-| POST | `/assignment/create_assignment` | — | — | `{ courseID: number, name: string, rubric: string, due_date?: string }` | `{ msg: string, assignment: Assignment }` | Creates assignment and returns created id. |
-| PATCH | `/assignment/edit_assignment/:assignment_id` | `{ assignment_id: string }` | — | `{ name: string, rubric: string, due_date: string }` | `{ msg: string, assignment: Assignment }` | Edits assignment and returns updated assignment |
-| DELETE | `/assignment/delete_assignment/:assignment_id` | `{ assignment_id: string }` | — | — | `{ msg: string}` | Deletes assignment and returns message |
-| POST | `/class/create_class` | — | — | `{ name: string }` | `201 { message: 'Class created', id }` or `400 { message: 'Class already exists' }` | Creates a class for the given teacher |
-| POST | `/create_criteria` | — | — | `{ id: number, rubricID: number, question: string, scoreMax: number, hasScore: boolean }` | `{ message: string, id: number }` | Creates a `Criteria_Description` row. Field `id` is taken from body. |
-| POST | `/create_criterion` | — | — | `{ reviewID: number, criterionRowID: number, grade: number, comments: string }` | `{ message: string, id: number }` | Creates one `Criterion` (row within a Review). |
-| POST | `/create_group` | — | — | `{ id: number, name: string, assignmentID: number }` | `{ message: string, id: number }` | Creates `CourseGroup`; route swallows DB errors and logs them. |
-| POST | `/create_review` | — | — | `{ assignmentID: number, reviewerID: number, revieweeID: number }` | `{ message: string, id: number }` | Links reviewer and reviewee for an assignment. |
-| POST | `/create_rubric` | — | — | `{ id: number, assignmentID: number, canComment: boolean }` | `{ message: string, id: number }` | Destroys existing rubric with same id before creating new one. |
-| GET | `/criteria` | — | `{ rubricID: string }` | — | `400 if missing` or `Array<Criteria_Description>` | Query param parsed with `parseInt` before DB lookup. |
-| POST | `/delete_group` | — | — | `{ groupID: number }` | `{ message: string, id: number, groupMembers: update result }` | Sets members' `groupID` to `-1` then destroys the `CourseGroup`. |
-| GET | `/get_className/:classID` | `{ classID: number }` | — | — | `404 if not found; else { className: string }` | Finds Course by id and returns its name. |
-| GET | `/review` | — | `{ assignmentID: string, reviewerID: string, revieweeID: string }` | — | `400/404` or `{ grades: number[] }` | Aggregates grade fields from `Criterion` rows. |
-| GET | `/rubric` | — | `{ rubricID: string }` | — | `400/404` or `{ id, assignmentID, canComment }` | Returns a simplified rubric object. |
-| GET | `/list_all_groups/:assignmentID` | `{ assignmentID: number }` | — | — | `Array<CourseGroup>` | Finds all `CourseGroup` rows where `assignmentID` matches. |
-| GET | `/list_group_members/:assignmentID/:groupID` | `{ assignmentID: number, groupID: string }` | — | — | `Array<Group_Member>` | `groupID` treated as string in route typing. |
-| GET | `/list_stu_groups/:assignmentID/:studentID` | `{ assignmentID: number, studentID: number }` | — | — | `300 { msg: 'student has no group' }` or `Array<Group_Member>` | Returns peers in the student's group. |
-| GET | `/list_ua_groups/:assignmentID` | `{ assignmentID: number }` | — | — | `Array<Group_Member>` | Unassigned students for an assignment (`groupID === -1`). |
-| GET | `/next_groupid` | — | — | — | `number` | Count of groups with `id > 0` (Sequelize `count` with `Op.gt`). |
-| POST | `/save_groups` | — | — | `{ groupID: number, userID: number, assignmentID: number }` | `{ message: 'successful DB post!' }` or `401` | Updates `Group_Member` rows to set `groupID` for a user in an assignment. |
-| POST | `/class/enroll_students` | — | — | `{ class_id: number, students: string (CSV) }` | `{ msg: string }` | Enrolls specified students on the csv to the course, if student doesn't exist it creates it. TODO: change the default password to random and email it to the user. |
-| GET | `/user_id` | — | — | — | `number` | Reads `app.session[token].id`. Handler assumes session contains token; no explicit 401 check. |
+| Method | Path | Params | Query | Body | Response | Status | Notes |
+|--------|------|--------|-------|------|----------|--------|-------|
+| GET | `/assignment/:class_id` | `{ class_id: number }` | — | — | `Array<Assignment>` | ✅Implemented |Returns all assignments for a course. |
+| POST | `/class/members` | — | — | `{ id: number }` | `Array<User { id, name, email }>` | ✅Implemented | Uses `User_Course` to look up members. |
+| GET | `/class/classes` | — | — | — | `Array<Course>` | ✅Implemented | Currently returns classes for student / Instructor |
+| GET | `/class/browse_classes` | — | — | — | `Array<Course>` | ✅Implemented | Returns all classes |
+| POST | `/assignment/create_assignment` | — | — | `{ courseID: number, name: string, rubric: string, due_date?: string }` | `{ msg: string, assignment: Assignment }` | ✅Implemented | Creates assignment and returns created id. |
+| PATCH | `/assignment/edit_assignment/:assignment_id` | `{ assignment_id: string }` | — | `{ name: string, rubric: string, due_date: string }` | `{ msg: string, assignment: Assignment }` | ✅Implemented | Edits assignment and returns updated assignment |
+| DELETE | `/assignment/delete_assignment/:assignment_id` | `{ assignment_id: string }` | — | — | `{ msg: string}` | ✅Implemented | Deletes assignment and returns message |
+| POST | `/class/create_class` | — | — | `{ name: string }` | `201 { message: 'Class created', id }` or `400 { message: 'Class already exists' }` | ✅Implemented | Creates a class for the given teacher |
+| POST | `/rubric/create_criteria` | — | — | `{ id: number, rubricID: number, question: string, scoreMax: number, hasScore: boolean }` | `{ message: string, id: number }` | Not Implemented: TODO | Creates a `Criteria_Description` row. Field `id` is taken from body. |
+| POST | `/criterion/create_criterion` | — | — | `{ reviewID: number, criterionRowID: number, grade: number, comments: string }` | `{ message: string, id: number }` | Not Implemented: TODO | Creates one `Criterion` (row within a Review). |
+| POST | `/group/create_group` | — | — | `{ id: number, name: string, assignmentID: number }` | `{ message: string, id: number }` | Not Implemented: TODO | Creates `CourseGroup`; route swallows DB errors and logs them. |
+| POST | `/review/create_review` | — | — | `{ assignmentID: number, reviewerID: number, revieweeID: number }` | `{ message: string, id: number }` | Not Implemented: TODO | Links reviewer and reviewee for an assignment. |
+| POST | `/rubric/create_rubric` | — | — | `{ id: number, assignmentID: number, canComment: boolean }` | `{ message: string, id: number }` | Not Implemented: TODO | Destroys existing rubric with same id before creating new one. |
+| GET | `/rubric/criteria` | — | `{ rubricID: string }` | — | `400 if missing` or `Array<Criteria_Description>` | Not Implemented: TODO | Query param parsed with `parseInt` before DB lookup. |
+| POST | `/group/delete_group` | — | — | `{ groupID: number }` | `{ message: string, id: number, groupMembers: update result }` | Not Implemented: TODO | Sets members' `groupID` to `-1` then destroys the `CourseGroup`. |
+| GET | `/class/get_className/:classID` | `{ classID: number }` | — | — | `404 if not found; else { className: string }` | Not Implemented: TODO | Finds Course by id and returns its name. |
+| GET | `/review/` | — | `{ assignmentID: string, reviewerID: string, revieweeID: string }` | — | `400/404` or `{ grades: number[] }` | Not Implemented: TODO | Aggregates grade fields from `Criterion` rows. |
+| GET | `/rubric/` | — | `{ rubricID: string }` | — | `400/404` or `{ id, assignmentID, canComment }` | Not Implemented: TODO | Returns a simplified rubric object. |
+| GET | `/group/list_all_groups/:assignmentID` | `{ assignmentID: number }` | — | — | `Array<CourseGroup>` | Not Implemented: TODO | Finds all `CourseGroup` rows where `assignmentID` matches. |
+| GET | `/group/list_group_members/:assignmentID/:groupID` | `{ assignmentID: number, groupID: string }` | — | — | `Array<Group_Member>` | Not Implemented: TODO | `groupID` treated as string in route typing. |
+| GET | `/group/list_stu_groups/:assignmentID/:studentID` | `{ assignmentID: number, studentID: number }` | — | — | `300 { msg: 'student has no group' }` or `Array<Group_Member>` | Not Implemented: TODO | Returns peers in the student's group. |
+| GET | `/group/list_ua_groups/:assignmentID` | `{ assignmentID: number }` | — | — | `Array<Group_Member>` | Not Implemented: TODO | Unassigned students for an assignment (`groupID === -1`). |
+| GET | `/group/next_groupid` | — | — | — | `number` | Not Implemented: TODO | Count of groups with `id > 0` (Sequelize `count` with `Op.gt`). |
+| POST | `/group/save_groups` | — | — | `{ groupID: number, userID: number, assignmentID: number }` | `{ message: 'successful DB post!' }` or `401` | Not Implemented: TODO | Updates `Group_Member` rows to set `groupID` for a user in an assignment. |
+| POST | `/class/enroll_students` | — | — | `{ class_id: number, students: string (CSV) }` | `{ msg: string }` | ✅Implemented | Enrolls specified students on the csv to the course, if student doesn't exist it creates it. TODO: change the default password to random and email it to the user. |
+| GET | `/user/user_id` | — | — | — | `number` | Not Implemented: TODO | Reads `app.session[token].id`. Handler assumes session contains token; no explicit 401 check. |
 
 ---
 

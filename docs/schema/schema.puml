@@ -25,6 +25,7 @@ entity "Assignment" as A {
   courseID : INT <<FK Course.id>>
   name : VARCHAR(255)
   rubric : VARCHAR(255)
+  due_date : DATE
 }
 
 entity "CourseGroup" as CG {
