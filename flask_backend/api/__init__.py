@@ -90,7 +90,7 @@ def create_app(test_config=None):
         origins=cors_origins,
         supports_credentials=True,
         allow_headers=["Content-Type", "X-CSRF-TOKEN"],
-        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     )
 
     # a simple page that says hello

@@ -20,6 +20,7 @@ This document summarizes all API endpoints documented across the user stories an
 | `/user/` | PUT | N/A | ✅ Implemented | Update current user information |
 | `/user/<id>` | GET | N/A | ✅ Implemented | Get user by ID (self or admin) |
 | `/user/<id>` | DELETE | N/A | ✅ Implemented | Delete user (self or admin) |
+| `/user/password` | PATCH | N/A | ✅ Implemented | Changes the current user's password |
 
 ## Authentication Requirements
 

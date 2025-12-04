@@ -12,10 +12,12 @@ import ClassMembers from "./pages/ClassMembers";
 import Assignment from "./pages/Assignment";
 import Group from "./pages/Group";
 import RegisterPage from "./pages/RegisterPage";
+import ChangePassword from "./pages/ChangePassword";
+import CreateTeacher from "./pages/CreateTeacher";
 
 function AppContent() {
   const location = useLocation();
-  const noSidebarPaths = ["/", "/login", "/register"];
+  const noSidebarPaths = ["/", "/login", "/register", "/change-password"];
 
   return (
     <div className="App">
@@ -24,10 +26,17 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/change-password" element={<ChangePassword />} />
 
           <Route path="/home" element={
             <ProtectedRoute>
               <Home />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/create-teacher" element={
+            <ProtectedRoute>
+              <CreateTeacher />
             </ProtectedRoute>
           } />
 

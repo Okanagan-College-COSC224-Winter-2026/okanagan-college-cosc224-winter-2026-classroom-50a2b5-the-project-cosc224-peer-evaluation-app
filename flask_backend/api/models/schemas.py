@@ -35,6 +35,7 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
     role = fields.Str(
         dump_default="student", validate=validate.OneOf(["student", "teacher", "admin"])
     )
+    must_change_password = fields.Bool(dump_default=False)
 
 
 class UserRegistrationSchema(ma.Schema):

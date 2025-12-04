@@ -14,6 +14,7 @@ import {
 import { useParams } from "react-router-dom";
 import "./Group.css";
 import TabNavigation from "../components/TabNavigation";
+import StatusMessage from "../components/StatusMessage";
 import { isTeacher } from "../util/login";
 import Textbox from "../components/Textbox";
 
@@ -40,6 +41,8 @@ export default function Group() {
   const [selectedGroup, setSelectedGroup] = useState<number>(-1);
   const [memberTable, setMemberTable] = useState<GroupTable>({});
   const [groupName, setGroupName] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusType, setStatusType] = useState<'error' | 'success'>('error');
 
   const nameFromId = (id: number) => {
     return classMembers.find((mem) => mem.id === id)?.name || 'N/A';
@@ -155,6 +158,8 @@ export default function Group() {
           }
         ]}
       />
+
+      <StatusMessage message={statusMessage} type={statusType} />
 
       <div className="AssignmentPage">
         {isTeacher() ? (
@@ -279,7 +284,8 @@ export default function Group() {
                   }
                 }
 
-                alert("Changes saved!");
+                setStatusType('success');
+                setStatusMessage('Changes saved!');
               }}
             >
               Confirm Changes
@@ -298,7 +304,8 @@ export default function Group() {
                 delete localGroup[selectedGroup];
                 setGroupTable(localGroup);
                 deleteGroup(selectedGroup);
-                alert("Group deleted!");
+                setStatusType('success');
+                setStatusMessage('Group deleted!');
               }}>
               Delete Selected Group
               </button>

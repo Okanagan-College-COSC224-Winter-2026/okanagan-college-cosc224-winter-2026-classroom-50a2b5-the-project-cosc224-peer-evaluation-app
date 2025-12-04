@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Button from './Button';
+import StatusMessage from './StatusMessage';
 import { createCriteria, createRubric } from '../util/api';
 import './RubricCreator.css';
 
@@ -11,21 +12,27 @@ interface RubricCreatorProps {
 export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProps) {
     const [newCriteria, setNewCriteria] = useState<Criterion[]>([{ rubricID: 0, question: '', scoreMax: 0, hasScore: true }]);
     const [canComment, setCanComment] = useState(false);
+    const [statusMessage, setStatusMessage] = useState('');
+    const [statusType, setStatusType] = useState<'error' | 'success'>('error');
 
     const handleCreate = async () => {
         try {
+            setStatusMessage('');
             const rubricResponse = await createRubric(id, id, canComment);
             const newRubricID = rubricResponse.id;
             await Promise.all(newCriteria.map(({ question, scoreMax, hasScore }) => 
                 createCriteria(newRubricID, question, scoreMax, canComment, hasScore)
             ));
-            alert("Rubric created successfully!");
-            window.location.reload();
+            setStatusType('success');
+            setStatusMessage('Rubric created successfully!');
+            setTimeout(() => window.location.reload(), 2000);
             if (onRubricCreated) {
                 onRubricCreated(newRubricID);
             }
         } catch (error) {
             console.error("Error creating criteria:", error);
+            setStatusType('error');
+            setStatusMessage('Error creating rubric.');
         }
     };
 
@@ -57,6 +64,8 @@ export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProp
     return (
         <div className="RubricCreator">
             <h2>Create New Criteria</h2>
+
+            <StatusMessage message={statusMessage} type={statusType} />
 
             <label className="comment-checkbox">
                 Reviewer can comment:

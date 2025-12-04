@@ -2,7 +2,7 @@ import { useState } from 'react';
 import './RegisterPage.css';
 import Textbox from '../components/Textbox';
 import Button from '../components/Button';
-import ErrorMessage from '../components/ErrorMessage';
+import StatusMessage from '../components/StatusMessage';
 import { tryRegister } from '../util/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -28,7 +28,7 @@ export default function RegisterPage() {
 
   return (
     <div className="RegisterPage">
-      {error && <ErrorMessage message={error} className="RegisterError" />}
+      {error && <StatusMessage message={error} type="error" className="RegisterError" />}
       <div className="RegisterBlock">
         <h1>Register</h1>
 

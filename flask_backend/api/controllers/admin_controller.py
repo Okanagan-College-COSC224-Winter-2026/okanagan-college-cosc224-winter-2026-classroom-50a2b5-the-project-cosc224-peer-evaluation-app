@@ -32,6 +32,7 @@ def create_user():
     password = request.json.get("password", None)
     email = request.json.get("email", None)
     role = request.json.get("role", "student")
+    must_change_password = request.json.get("must_change_password", False)
 
     if not name:
         return jsonify({"msg": "Name is required"}), 400
@@ -50,7 +51,13 @@ def create_user():
         return jsonify({"msg": f"User with email {email} is already registered"}), 400
 
     # Create new user
-    new_user = User(name=name, hash_pass=generate_password_hash(password), email=email, role=role)
+    new_user = User(
+        name=name,
+        hash_pass=generate_password_hash(password),
+        email=email,
+        role=role,
+        must_change_password=must_change_password
+    )
     User.create_user(new_user)
 
     return (

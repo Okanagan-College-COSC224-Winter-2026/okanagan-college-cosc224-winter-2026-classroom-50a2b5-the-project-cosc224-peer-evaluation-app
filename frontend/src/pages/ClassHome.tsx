@@ -7,6 +7,7 @@ import { listAssignments, listClasses, createAssignment } from "../util/api";
 import TabNavigation from "../components/TabNavigation";
 import { importCSV } from "../util/csv";
 import Textbox from "../components/Textbox";
+import StatusMessage from "../components/StatusMessage";
 import { isTeacher } from "../util/login";
 
 export default function ClassHome() {
@@ -15,6 +16,8 @@ export default function ClassHome() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [newAssignmentName, setNewAssignmentName] = useState("");
   const [className, setClassName] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusType, setStatusType] = useState<'error' | 'success'>('error');
 
   useEffect(() => {
     (async () => {
@@ -28,6 +31,7 @@ export default function ClassHome() {
     
     const tryCreateAssingment = async () => {
       try {
+        setStatusMessage('');
         const response = await createAssignment(idNew, newAssignmentName);
         const createdAssignment = response?.assignment;
 
@@ -37,10 +41,12 @@ export default function ClassHome() {
 
         setAssignments((prev) => [...prev, createdAssignment]);
         setNewAssignmentName("");
-        alert('Assignment created successfully!');
+        setStatusType('success');
+        setStatusMessage('Assignment created successfully!');
       } catch (error) {
         console.error('Error creating assignment:', error);
-        alert('Error creating assignment.');
+        setStatusType('error');
+        setStatusMessage('Error creating assignment.');
       }
     };
     
@@ -72,6 +78,8 @@ export default function ClassHome() {
           },
         ]}
       />
+
+      <StatusMessage message={statusMessage} type={statusType} />
 
       <div className="Class">
         <div className="Assignments">

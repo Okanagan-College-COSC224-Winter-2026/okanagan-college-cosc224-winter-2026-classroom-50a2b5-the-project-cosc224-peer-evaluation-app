@@ -5,6 +5,7 @@ User management endpoints
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from marshmallow import Schema, ValidationError, fields, validate
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from ..models import User, UserSchema
 
@@ -105,3 +106,42 @@ def delete_user(user_id):
     user.delete()
 
     return jsonify({"msg": "User deleted successfully"}), 200
+
+
+@bp.route("/password", methods=["PATCH"])
+@jwt_required()
+def change_password():
+    """Change current user's password (only if must_change_password is True)"""
+    if not request.is_json:
+        return jsonify({"msg": "Missing JSON in request"}), 400
+
+    current_password = request.json.get("current_password", None)
+    new_password = request.json.get("new_password", None)
+
+    if not current_password:
+        return jsonify({"msg": "Current password is required"}), 400
+    if not new_password:
+        return jsonify({"msg": "New password is required"}), 400
+    if len(new_password) < 6:
+        return jsonify({"msg": "New password must be at least 6 characters"}), 400
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    # Security: Only allow password changes if must_change_password is True
+    if not user.must_change_password:
+        return jsonify({"msg": "Password change not required for this account"}), 403
+
+    # Verify current password
+    if not check_password_hash(user.hash_pass, current_password):
+        return jsonify({"msg": "Current password is incorrect"}), 401
+
+    # Update password and clear must_change_password flag
+    user.hash_pass = generate_password_hash(new_password)
+    user.must_change_password = False
+    user.update()
+
+    return jsonify({"msg": "Password updated successfully"}), 200

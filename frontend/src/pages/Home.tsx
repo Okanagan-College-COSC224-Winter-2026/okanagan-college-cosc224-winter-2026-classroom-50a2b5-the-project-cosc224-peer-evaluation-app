@@ -3,7 +3,7 @@ import ClassCard from "../components/ClassCard";
 
 import './Home.css'
 import { listClasses, listAssignments } from "../util/api";
-import { isTeacher } from "../util/login";
+import { isTeacher, isAdmin } from "../util/login";
 
 export default function Home() {
   const [courses, setCourses] = useState<CourseWithAssignments[]>([]);
@@ -76,9 +76,12 @@ export default function Home() {
           })
         }
 
-        { /* TODO only show when session is teacher */ }
         {isTeacher() && <div className="ClassCreateButton" onClick={() => window.location.href = '/classes/create'}>
           <h2>Create Class</h2>
+        </div>}
+        
+        {isAdmin() && <div className="ClassCreateButton" onClick={() => window.location.href = '/admin/create-teacher'}>
+          <h2>Create Teacher</h2>
         </div>}
       </div>
     </div>
