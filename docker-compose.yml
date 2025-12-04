@@ -59,13 +59,14 @@ services:
       # Flask configuration
       FLASK_APP: api
       FLASK_ENV: ${FLASK_ENV:-production}
+      # To enable development mode, set FLASK_ENV=development in your .env file or environment.
       
       # Security secrets (override via .env file or environment)
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-prod}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-jwt-secret-change-in-prod}
       
       # Database connection (uses environment variables to avoid hardcoded credentials)
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-peereval_user}:${POSTGRES_PASSWORD:-dev_password_change_in_prod}@postgres:5432/${POSTGRES_DB:-peereval}}
       
       # CORS configuration (allow frontend origin)
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:80,http://localhost:3000}
@@ -77,6 +78,10 @@ services:
       # Gunicorn worker configuration
       GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
       GUNICORN_THREADS: ${GUNICORN_THREADS:-2}
+      # Default admin bootstrap (consumed by run_gunicorn.sh)
+      DEFAULT_ADMIN_NAME: ${DEFAULT_ADMIN_NAME:-}
+      DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL:-}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-}
     depends_on:
       postgres:
         condition: service_healthy

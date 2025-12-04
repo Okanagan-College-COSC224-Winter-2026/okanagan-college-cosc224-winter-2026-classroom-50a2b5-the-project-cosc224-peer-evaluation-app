@@ -50,6 +50,10 @@ COPY --from=builder /opt/venv /opt/venv
 
 # Copy application code
 COPY api/ /app/api/
+COPY run_gunicorn.sh /app/run_gunicorn.sh
+
+# Ensure entrypoint script is executable
+RUN chmod +x /app/run_gunicorn.sh
 
 # Set ownership to non-root user
 RUN chown -R flask:flask /app
@@ -85,18 +89,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/hello').read()"
 
-# Production command using gunicorn WSGI server
-# - Bind to 0.0.0.0:5000 to accept external connections
-# - Use 4 workers (adjust based on CPU cores: 2-4 x NUM_CORES)
-# - Use 2 threads per worker for better concurrency
-# - Set 120s timeout for long-running requests
-# - Enable access logging for monitoring
-CMD gunicorn \
-    --bind 0.0.0.0:5000 \
-    --workers ${GUNICORN_WORKERS:-4} \
-    --threads ${GUNICORN_THREADS:-2} \
-    --timeout 120 \
-    --access-logfile - \
-    --error-logfile - \
-    --log-level info \
-    "api:create_app()"
+# Run entrypoint script that initializes the DB schema then launches Gunicorn
+CMD ["/app/run_gunicorn.sh"]

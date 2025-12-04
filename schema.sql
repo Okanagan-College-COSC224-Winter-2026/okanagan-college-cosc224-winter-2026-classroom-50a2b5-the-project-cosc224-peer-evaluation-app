@@ -19,7 +19,8 @@ CREATE TABLE Assignment (
     id SERIAL PRIMARY KEY,
     courseID INT,
     name VARCHAR(255),
-    rubric VARCHAR(255)
+    rubric VARCHAR(255),
+    due_date TIMESTAMP NULL
 );
 
 CREATE TABLE CourseGroup (
@@ -31,8 +32,8 @@ CREATE TABLE CourseGroup (
 CREATE TABLE Submission (
     id SERIAL PRIMARY KEY,
     path VARCHAR(255),
-    studentID INT,
-    assignmentID INT
+    studentID INT NOT NULL,
+    assignmentID INT NOT NULL
 );
 
 CREATE TABLE Group_Members (
@@ -50,31 +51,31 @@ CREATE TABLE User_Courses (
 
 CREATE TABLE Review (
     id SERIAL PRIMARY KEY,
-    assignmentID INT,
-    reviewerID INT,
-    revieweeID INT
+    assignmentID INT NOT NULL,
+    reviewerID INT NOT NULL,
+    revieweeID INT NOT NULL
 );
 
 CREATE TABLE Criterion (
     id SERIAL PRIMARY KEY,
-    reviewID INT,
-    criterionRowID INT,
+    reviewID INT NOT NULL,
+    criterionRowID INT NOT NULL,
     grade INT,
     comments VARCHAR(255)
 );
 
 CREATE TABLE Rubric (
     id SERIAL PRIMARY KEY,
-    assignmentID INT,
-    canComment BOOLEAN
+    assignmentID INT NOT NULL,
+    canComment BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE Criteria_Description (
     id SERIAL PRIMARY KEY,
-    rubricID INT,
+    rubricID INT NOT NULL,
     question VARCHAR(255),
     scoreMax INT,
-    hasScore BOOLEAN DEFAULT TRUE
+    hasScore BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- TEST VALUES
@@ -84,7 +85,7 @@ INSERT INTO User (id, name, email, role, hash_pass)
          (2, 'test2', 'test2@test.com', 'teacher', 'd404559f602eab6fd602ac7680dacbfaadd13630335e951f097af3900e9de176b6db28512f2e000b9d04fba5133e8b1c6e8df59db3a8ab9d60be4b97cc9e81db'),
          (3, 'admin', 'admin@test.com', 'admin', 'd404559f602eab6fd602ac7680dacbfaadd13630335e951f097af3900e9de176b6db28512f2e000b9d04fba5133e8b1c6e8df59db3a8ab9d60be4b97cc9e81db');
 INSERT INTO Assignment(id, courseID, name, rubric)
-    VALUES(1,1,"test","test-rubric");
+    VALUES (1, 1, 'test', 'test-rubric');
 
 -- Insert dummy Users (Students and Teachers)
 -- actually make them hashed passwords, these wont login the dummy users (itll de-hash "hashedpassword2" instead of husidhgjashkjyh;y23421g)
@@ -171,8 +172,8 @@ VALUES
     (4, 2, 3),
     (5, 4, 5); */
 
--- Insert dummy Criteria
-/* INSERT INTO Criteria (reviewID, grade, comments)
+-- Insert dummy Criterion rows
+/* INSERT INTO Criterion (reviewID, grade, comments)
 VALUES
     (1, 85, 'Good job!'),
     (2, 90, 'Excellent work!'),
@@ -189,14 +190,14 @@ VALUES
     (4),
     (5); */
 
--- Insert dummy Criteria_Description
-/* INSERT INTO Criteria_Description (scoreMax, canComment)
+-- Insert dummy Criteria_Description rows
+/* INSERT INTO Criteria_Description (rubricID, question, scoreMax, hasScore)
 VALUES
-    (100, TRUE),
-    (100, TRUE),
-    (100, FALSE),
-    (100, TRUE),
-    (100, TRUE); */
+    (1, 'Overall contribution', 100, TRUE),
+    (1, 'Communication', 100, TRUE),
+    (2, 'Timeliness', 100, FALSE),
+    (2, 'Technical quality', 100, TRUE),
+    (3, 'Peer support', 100, TRUE); */
 -- -- Add foreign key constraints
 -- ALTER TABLE Assignment
 --     ADD CONSTRAINT fk_assignment_course
@@ -232,7 +233,7 @@ VALUES
 --     ADD CONSTRAINT fk_review_reviewee
 --     FOREIGN KEY (revieweeID) REFERENCES User(id);
 
--- ALTER TABLE Criteria
+-- ALTER TABLE Criterion
 --     ADD CONSTRAINT fk_criteria_review
 --     FOREIGN KEY (reviewID) REFERENCES Review(id);
 

@@ -29,7 +29,323 @@
 - Use the body to explain why the change was made, not just what changed.
 - Reference issues or pull requests in the footer (e.g., `Closes #42`)
 
+**Examples (Good):**
+
+```text
+feat(auth): Add password reset endpoint
+
+Implemented /auth/reset-password endpoint with email verification.
+Uses JWT tokens with 15-minute expiration for security.
+
+Closes #42
+```
+
+```text
+fix(classes): Handle empty roster CSV upload
+
+Added validation to prevent 500 error when CSV has no data rows.
+Now returns 400 with clear error message.
+
+Fixes #58
+```
+
+```text
+refactor(user): Extract role checking to User model
+
+Moved is_admin(), is_teacher(), has_role() methods from controller
+to User model for reusability and testability.
+```
+
+```text
+test(assignments): Add tests for assignment creation
+
+Added unit tests covering:
+- Valid assignment creation
+- Missing required fields
+- Unauthorized access
+
+Coverage: 87% → 92%
+```
+
+```text
+docs(readme): Update backend setup instructions
+
+Added environment variables section with .env examples
+and production vs development configuration differences.
+```
+
+**Examples (Bad - Don't Do This):**
+
+```text
+❌ fixed bug
+   (Too vague - what bug? where?)
+
+❌ Updated some files
+   (No type, no context, not imperative)
+
+❌ WIP: trying to get auth working
+   (Don't commit WIP to shared branches)
+
+❌ feat: Added the new feature that allows users to create assignments and also fixed a bug with login and updated documentation
+   (Way too long, multiple changes in one commit)
+```
+
 ### Workflow
+
+**1. Starting New Work**
+
+Before creating a branch, ensure you're up-to-date:
+
+```bash
+# Switch to dev branch
+git checkout dev
+
+# Pull latest changes
+git pull origin dev
+
+# Verify you're on dev and up-to-date
+git status
+```
+
+**2. Create a Feature Branch**
+
+Use clear, descriptive branch names following the convention `<type>/<brief-description>`:
+
+```bash
+# Examples of good branch names:
+git checkout -b feature/password-reset
+git checkout -b fix/csv-upload-validation
+git checkout -b docs/api-endpoints
+git checkout -b refactor/user-role-methods
+git checkout -b test/assignment-creation
+
+# Check current branch
+git branch
+```
+
+**Branch Naming Convention:**
+
+| Type | When to Use | Example |
+|------|-------------|---------|
+| `feature/` | Adding new functionality | `feature/rubric-crud-endpoints` |
+| `fix/` | Fixing bugs | `fix/cors-cookie-issue` |
+| `refactor/` | Restructuring existing code | `refactor/extract-validation-helpers` |
+| `docs/` | Documentation only | `docs/update-contributing-guide` |
+| `test/` | Adding/updating tests | `test/assignment-model-coverage` |
+| `chore/` | Maintenance (deps, config) | `chore/update-flask-3.1` |
+
+**3. Make Changes and Commit**
+
+Work in small, logical commits:
+
+```bash
+# Check what files changed
+git status
+
+# Stage specific files
+git add flask_backend/api/controllers/auth_controller.py
+git add flask_backend/tests/test_auth.py
+
+# Commit with descriptive message
+git commit -m "feat(auth): Add password reset endpoint
+
+Implemented /auth/reset-password with email verification.
+Uses JWT tokens with 15-minute expiration.
+
+Closes #42"
+
+# Make more commits as you progress
+git add flask_backend/api/models/users_model.py
+git commit -m "refactor(user): Add reset_token field to User model"
+```
+
+**Pro Tips:**
+
+- Commit frequently (every logical change)
+- Each commit should pass tests
+- Don't commit broken code to shared branches
+- Use `git diff` before committing to review changes
+
+**4. Push Your Branch**
+
+```bash
+# First push (creates remote branch)
+git push -u origin feature/password-reset
+
+# Subsequent pushes
+git push
+```
+
+**5. Open a Pull Request**
+
+Open a PR to merge your branch into `dev`:
+
+1. Go to GitHub repository
+2. Click "Compare & pull request"
+3. **Base branch**: `dev` (NOT `main`)
+4. **Compare branch**: Your feature branch
+5. Fill out the PR template (see [CONTRIBUTING.md](../CONTRIBUTING.md))
+6. Request review from at least one team member
+7. Link related issues (e.g., "Closes #42")
+
+**6. Address Review Feedback**
+
+If reviewers request changes:
+
+```bash
+# Make requested changes
+git add changed-files
+git commit -m "fix(auth): Address review feedback - add input validation"
+
+# Push updates (PR auto-updates)
+git push
+```
+
+**7. Merge After Approval**
+
+Once approved and CI passes:
+
+1. Use **Squash and Merge** on GitHub
+2. Delete the feature branch after merge
+3. Pull latest `dev` locally:
+
+```bash
+git checkout dev
+git pull origin dev
+
+# Delete local feature branch
+git branch -d feature/password-reset
+```
+
+### Handling Merge Conflicts
+
+**Symptom:** Git says "CONFLICT" when pulling or merging
+
+**Step-by-Step Resolution:**
+
+**Scenario 1: Conflict During Pull**
+
+```bash
+# You're on your feature branch
+git pull origin dev
+
+# Git says: CONFLICT (content): Merge conflict in auth_controller.py
+```
+
+**Solution:**
+
+1. **Open conflicted files** (Git marks them with `<<<<<<<`, `=======`, `>>>>>>>`)
+
+   ```python
+   # Example conflict in auth_controller.py
+   <<<<<<< HEAD
+   # Your changes
+   @bp.route('/reset-password', methods=['POST'])
+   def reset_password():
+       # your implementation
+   =======
+   # Changes from dev branch
+   @bp.route('/forgot-password', methods=['POST'])
+   def forgot_password():
+       # their implementation
+   >>>>>>> origin/dev
+   ```
+
+2. **Resolve the conflict** by editing the file:
+
+   ```python
+   # Keep what you need, remove conflict markers
+   @bp.route('/reset-password', methods=['POST'])
+   def reset_password():
+       # merged implementation
+   ```
+
+3. **Stage the resolved file:**
+
+   ```bash
+   git add flask_backend/api/controllers/auth_controller.py
+   ```
+
+4. **Complete the merge:**
+
+   ```bash
+   git commit -m "Merge dev into feature/password-reset"
+   git push
+   ```
+
+**Scenario 2: Prevent Conflicts (Proactive)**
+
+Keep your branch updated with `dev` regularly:
+
+```bash
+# While on your feature branch
+git fetch origin
+git merge origin/dev
+
+# Or use rebase (creates cleaner history):
+git fetch origin
+git rebase origin/dev
+```
+
+**When to Ask for Help:**
+
+- Large conflicts across many files
+- Conflicts in code you didn't write
+- Unsure which version to keep
+
+### Common Git Mistakes and Fixes
+
+**Mistake 1: Committed to Wrong Branch**
+
+```bash
+# Oh no! I committed to dev instead of my feature branch
+
+# 1. Create the feature branch (keeps your commits)
+git checkout -b feature/my-feature
+
+# 2. Switch back to dev
+git checkout dev
+
+# 3. Reset dev to match remote (removes your commits from dev)
+git reset --hard origin/dev
+
+# Your commits are now only on feature/my-feature
+git checkout feature/my-feature
+git push -u origin feature/my-feature
+```
+
+**Mistake 2: Want to Undo Last Commit (Not Pushed Yet)**
+
+```bash
+# Undo commit but keep changes
+git reset --soft HEAD~1
+
+# Undo commit and discard changes (careful!)
+git reset --hard HEAD~1
+```
+
+**Mistake 3: Pushed Bad Commit to Feature Branch**
+
+```bash
+# Revert the commit (creates new commit)
+git revert HEAD
+git push
+
+# Or reset (rewrites history - use only if no one else pulled your branch)
+git reset --hard HEAD~1
+git push --force
+```
+
+**Mistake 4: Need to Update Commit Message (Not Pushed)**
+
+```bash
+# Change last commit message
+git commit --amend -m "fix(auth): Correct typo in error message"
+```
+
+---
+
+## Summary: Development Workflow
 
 - Create a `feature/` branch from the `dev` branch.
 - Commit changes with clear messages.

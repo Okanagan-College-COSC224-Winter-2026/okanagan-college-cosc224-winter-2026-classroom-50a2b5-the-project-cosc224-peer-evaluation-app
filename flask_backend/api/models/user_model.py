@@ -15,7 +15,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), nullable=False, unique=True, index=True)
-    hash_pass = db.Column(db.String(128), nullable=False)
+    hash_pass = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(50), default="student", nullable=False)
 
     __table_args__ = (

@@ -48,15 +48,14 @@ export const tryLogin = async (email: string, password: string) => {
   return false
 }
 
-export const tryRegister = async (name: string, email: string, password: string, is_teacher: boolean) => {
+export const tryRegister = async (name: string, email: string, password: string) => {
   try {
     const response = await fetch(`${BASE_URL}/auth/register`, {
       method: 'POST',
       body: JSON.stringify({
         name,
         email,
-        password,
-        is_teacher
+        password
       }),
       headers: {
         'Content-Type': 'application/json'

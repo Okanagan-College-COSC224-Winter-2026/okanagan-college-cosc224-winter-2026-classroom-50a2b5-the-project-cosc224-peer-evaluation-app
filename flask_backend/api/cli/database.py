@@ -1,3 +1,5 @@
+import os
+
 import click
 from flask.cli import with_appcontext
 from werkzeug.security import generate_password_hash
@@ -80,6 +82,47 @@ def create_admin_command():
     click.echo(f"Admin user '{email}' created successfully")
 
 
+@click.command("ensure_admin")
+@with_appcontext
+def ensure_admin_command():
+    """Ensure a default admin exists using environment variables.
+
+    Requires DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD.
+    Safe to run repeatedly; updates role/password if the user already exists.
+    """
+
+    name = os.environ.get("DEFAULT_ADMIN_NAME")
+    email = os.environ.get("DEFAULT_ADMIN_EMAIL")
+    password = os.environ.get("DEFAULT_ADMIN_PASSWORD")
+
+    if not all([name, email, password]):
+        click.echo(
+            "DEFAULT_ADMIN_* environment variables not fully set; skipping admin bootstrap"
+        )
+        return
+
+    assert name is not None
+    assert email is not None
+    assert password is not None
+
+    existing_user = User.get_by_email(email)
+    hashed = generate_password_hash(password, method="pbkdf2:sha256")
+
+    if existing_user:
+        if existing_user.role != "admin" or existing_user.hash_pass != hashed:
+            existing_user.role = "admin"
+            existing_user.hash_pass = hashed
+            existing_user.update()
+            click.echo(f"Updated existing user '{email}' to admin role")
+        else:
+            click.echo(f"Admin user '{email}' already exists; no changes made")
+        return
+
+    admin = User(name=name, email=email, hash_pass=hashed, role="admin")
+    User.create_user(admin)
+    click.echo(f"Admin user '{email}' created successfully")
+
+
 @click.command("add_sample_courses")
 @with_appcontext
 def add_sample_courses_command():
@@ -128,5 +171,6 @@ def init_app(app):
     app.cli.add_command(init_db_command)
     app.cli.add_command(drop_db_command)
     app.cli.add_command(add_users_command)
-    app.cli.add_command(add_sample_courses_command)
     app.cli.add_command(create_admin_command)
+    app.cli.add_command(ensure_admin_command)
+    app.cli.add_command(add_sample_courses_command)

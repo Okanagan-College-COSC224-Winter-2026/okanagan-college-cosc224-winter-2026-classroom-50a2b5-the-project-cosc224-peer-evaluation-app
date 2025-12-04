@@ -140,6 +140,210 @@ npm run preview
 
 ## Troubleshooting
 
-- **Port 3000 already in use**: Stop the other process or change the port in `vite.config.ts` and re‑run.
-- **Cannot connect to backend**: Ensure the Flask backend is running on port 5000 (see [flask_backend/README.md](../flask_backend/README.md)).
-- **CORS errors**: Ensure the backend CORS config allows requests from `http://localhost:3000`.
+### Port 3000 Already in Use
+
+The dev server strictly requires port 3000 and will fail if it's busy.
+
+**Find and kill the process:**
+
+```bash
+# Linux/macOS
+lsof -ti:3000 | xargs kill -9
+
+# Windows (PowerShell)
+Get-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess | Stop-Process -Force
+```
+
+**Or change the port in `vite.config.ts`:**
+
+```ts
+export default defineConfig({
+  server: {
+    port: 3001,  // Change to any available port
+    // ...
+  }
+})
+```
+
+**Note:** If you change the port, update CORS configuration in Flask backend (`api/__init__.py`).
+
+### Cannot Connect to Backend
+
+**Symptom:** Network errors, 404s, or timeouts when calling APIs
+
+**Solutions:**
+
+1. **Verify backend is running:**
+
+   ```bash
+   curl http://localhost:5000/ping
+   # Should return: {"message": "pong"}
+   ```
+
+2. **Check BASE_URL configuration:**
+
+   Open `src/util/api.ts` and verify:
+
+   ```ts
+   const BASE_URL = 'http://localhost:5000';  // Must match backend port
+   ```
+
+3. **Test backend from browser:**
+
+   Open <http://localhost:5000/ping> directly in your browser
+
+4. **Check for port conflicts:**
+
+   ```bash
+   # Linux/macOS
+   lsof -i :5000
+   
+   # Windows (PowerShell)
+   Get-NetTCPConnection -LocalPort 5000
+   ```
+
+### CORS Errors
+
+**Symptom:** Console shows "CORS policy" or "Access-Control-Allow-Origin" errors
+
+**Root Cause:** Backend not allowing requests from `http://localhost:3000`
+
+**Solution:**
+
+1. **Check Flask backend CORS config** (`flask_backend/api/__init__.py`):
+
+   ```python
+   CORS(app, 
+        resources={r"/*": {"origins": ["http://localhost:3000"]}},
+        supports_credentials=True)
+   ```
+
+2. **If you changed frontend port**, update backend CORS:
+
+   ```python
+   origins=["http://localhost:3001"]  # Match your new port
+   ```
+
+3. **Restart Flask backend** after CORS changes
+
+4. **Check browser console** for specific CORS error details
+
+### Authentication Issues (401 Unauthorized)
+
+**Symptom:** Login works but subsequent requests fail with 401
+
+**Causes and Solutions:**
+
+1. **Cookies not being sent:**
+
+   Verify all API calls include `credentials: 'include'`:
+
+   ```ts
+   // src/util/api.ts - Correct pattern
+   fetch(`${BASE_URL}/user/profile`, {
+     credentials: 'include'  // Required for HTTPOnly cookies
+   })
+   ```
+
+2. **JWT token expired:**
+
+   Tokens expire after 1 hour by default. Log out and log back in.
+
+3. **Browser blocking cookies (Safari/Private mode):**
+
+   - Safari: Enable "Allow all cookies" in Preferences → Privacy
+   - Private/Incognito: Use regular browsing mode for development
+
+4. **Cross-domain cookie issues:**
+
+   Backend and frontend must be on same domain in production (e.g., both on `example.com`, not `api.example.com` vs `app.example.com`)
+
+### Blank Page / White Screen
+
+**Symptom:** Frontend loads but shows blank white page
+
+**Solutions:**
+
+1. **Check browser console** for errors (F12 → Console tab)
+
+2. **Clear browser cache:**
+
+   - Chrome/Edge: Ctrl+Shift+Delete → Clear cached images and files
+   - Firefox: Ctrl+Shift+Delete → Cache
+   - Safari: Develop → Empty Caches
+
+3. **Restart dev server:**
+
+   ```bash
+   # Ctrl+C to stop, then:
+   npm run dev
+   ```
+
+4. **Delete node_modules and reinstall:**
+
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   npm run dev
+   ```
+
+### Hot Module Replacement (HMR) Not Working
+
+**Symptom:** Changes to code don't appear in browser without manual refresh
+
+**Solutions:**
+
+1. **Check Vite dev server output** for warnings about file watchers
+
+2. **Increase file watcher limits (Linux):**
+
+   ```bash
+   echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf
+   sudo sysctl -p
+   ```
+
+3. **Disable polling (if too slow):**
+
+   Edit `vite.config.ts`:
+
+   ```ts
+   export default defineConfig({
+     server: {
+       watch: {
+         usePolling: false  // Try disabling polling
+       }
+     }
+   })
+   ```
+
+### TypeScript Errors During Build
+
+**Symptom:** `npm run build` fails with type errors
+
+**Solutions:**
+
+1. **Check TypeScript version:**
+
+   ```bash
+   npx tsc --version
+   # Should be 5.x or newer
+   ```
+
+2. **Run type checking separately:**
+
+   ```bash
+   npx tsc --noEmit
+   # Shows all type errors without building
+   ```
+
+3. **Fix type errors** before building (build enforces strict type checking)
+
+4. **Check `tsconfig.json`** for strict settings (do not disable `strict` mode)
+
+### Need More Help?
+
+- **Full troubleshooting guide:** [../docs/TROUBLESHOOTING.md](../docs/TROUBLESHOOTING.md)
+- **Backend issues:** [../flask_backend/README.md](../flask_backend/README.md)
+- **Architecture overview:** [../docs/ARCHITECTURE_OVERVIEW.md](../docs/ARCHITECTURE_OVERVIEW.md)
+
+

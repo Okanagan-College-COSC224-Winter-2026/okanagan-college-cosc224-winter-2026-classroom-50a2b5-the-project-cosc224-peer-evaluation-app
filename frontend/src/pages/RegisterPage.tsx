@@ -2,7 +2,6 @@ import { useState } from 'react';
 import './RegisterPage.css';
 import Textbox from '../components/Textbox';
 import Button from '../components/Button';
-import Checkbox from '../components/Checkbox';
 import ErrorMessage from '../components/ErrorMessage';
 import { tryRegister } from '../util/api';
 import { useNavigate } from 'react-router-dom';
@@ -12,7 +11,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [is_teacher, setIsTeacher] = useState(false);
   const navigate = useNavigate();
   const [error, setError] = useState('');
 
@@ -23,7 +21,7 @@ export default function RegisterPage() {
       return;
     }
 
-    if (await tryRegister(name, email, password, is_teacher)) {
+    if (await tryRegister(name, email, password)) {
       navigate('/');
     }
   }
@@ -75,14 +73,6 @@ export default function RegisterPage() {
               />
             </div>
 
-            <div className="RegisterInputChunk">
-              <Checkbox
-                checked={is_teacher}
-                onChange={() => setIsTeacher(!is_teacher)}
-                label="Register as Teacher"
-              />
-            </div>
-            
           </div>
 
         </div>

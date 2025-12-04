@@ -118,13 +118,19 @@ pip3 --version
    flask add_users
    ```
 
+8. **Add sample courses and assignments:**
+
+   ```powershell
+   flask add_sample_courses
+   ```
+
    Or create just an admin:
 
    ```powershell
    flask create_admin
    ```
 
-8. **Run the development server:**
+9. **Run the development server:**
 
    ```powershell
    flask run
@@ -176,6 +182,11 @@ The API will be available at [http://localhost:5000](http://localhost:5000)
    ```bash
    flask add_users
    ```
+8. **Add sample courses and assignments:**
+
+   ```powershell
+   flask add_sample_courses
+   ```
 
    Or create just an admin:
 
@@ -183,7 +194,7 @@ The API will be available at [http://localhost:5000](http://localhost:5000)
    flask create_admin
    ```
 
-8. **Run the development server:**
+9. **Run the development server:**
 
    ```bash
    flask run
@@ -191,12 +202,90 @@ The API will be available at [http://localhost:5000](http://localhost:5000)
 
 The API will be available at [http://localhost:5000](http://localhost:5000)
 
+---
+
+## Environment Variables (Local Development)
+
+### Quick Start (No Configuration Needed)
+
+For local development, the app works out-of-the-box with sensible defaults. **You don't need to create a `.env` file** unless you want to customize behavior.
+
+### Optional Configuration
+
+If you want to customize settings, create a `.env` file in the `flask_backend/` directory:
+
+```bash
+# Example .env file for local development (all optional)
+
+# Secret Keys (defaults are generated if not set)
+SECRET_KEY=your-secret-key-here
+JWT_SECRET_KEY=your-jwt-secret-here
+
+# Database (default: SQLite at instance/app.sqlite)
+DATABASE_URL=sqlite:///instance/app.sqlite
+
+# JWT Configuration (defaults shown)
+JWT_ACCESS_TOKEN_EXPIRES=3600  # seconds (1 hour)
+JWT_COOKIE_SECURE=false        # true only in production
+JWT_COOKIE_SAMESITE=Lax        # Strict in production
+
+# CORS (default: localhost:3000)
+CORS_ORIGINS=http://localhost:3000
+
+# Flask Debug (default: true in development)
+FLASK_DEBUG=true
+```
+
+### Environment Variables Explained
+
+| Variable | Required? | Default (Dev) | Purpose |
+|----------|-----------|---------------|---------|
+| `SECRET_KEY` | Optional | Auto-generated | Flask session encryption |
+| `JWT_SECRET_KEY` | Optional | Auto-generated | JWT token signing key |
+| `DATABASE_URL` | Optional | `sqlite:///instance/app.sqlite` | Database connection string |
+| `JWT_ACCESS_TOKEN_EXPIRES` | Optional | `3600` (1 hour) | Token lifetime in seconds |
+| `JWT_COOKIE_SECURE` | Optional | `false` | Require HTTPS for cookies (true in production) |
+| `JWT_COOKIE_SAMESITE` | Optional | `Lax` | Cookie SameSite policy |
+| `CORS_ORIGINS` | Optional | `http://localhost:3000` | Allowed frontend origins |
+| `FLASK_DEBUG` | Optional | `true` | Enable debug mode |
+
+### Production vs Development
+
+The app automatically detects production mode when `FLASK_ENV=production` or `PRODUCTION=true` and enforces secure settings:
+
+| Setting | Development | Production |
+|---------|-------------|------------|
+| Secret Keys | Auto-generated (fine for dev) | **Must be set** (app crashes if missing) |
+| `JWT_COOKIE_SECURE` | `false` | `true` (HTTPS required) |
+| `JWT_COOKIE_SAMESITE` | `Lax` | `Strict` |
+| `JWT_COOKIE_CSRF_PROTECT` | `false` | `true` |
+| Database | SQLite | **PostgreSQL required** |
+
+**For production deployment:** See [docs/dev-guidelines/PRODUCTION_DEPLOYMENT.md](../docs/dev-guidelines/PRODUCTION_DEPLOYMENT.md)
+
+### Generating Secure Keys (Production)
+
+For production, generate cryptographically secure keys:
+
+```bash
+# Generate SECRET_KEY
+python3 -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(32))"
+
+# Generate JWT_SECRET_KEY  
+python3 -c "import secrets; print('JWT_SECRET_KEY=' + secrets.token_urlsafe(32))"
+```
+
+**Never commit these keys to git!**
+
+---
+
 ## Available CLI Commands
 
 The Flask backend includes several CLI commands for database management:
 
 - `flask init_db` - Initialize/reset the database schema
 - `flask add_users` - Add sample users (admin, teacher, student)
+- `flask add_sample_courses` - Add sample courses and assignments
 - `flask create_admin` - Create a single admin user interactively
 - `flask drop_db` - Drop all database tables
 
@@ -206,9 +295,9 @@ After running `flask add_users`, the following accounts are available:
 
 | Role    | Email                 | Password   |
 |---------|-----------------------|------------|
-| Admin   | admin@example.com     | admin123   |
-| Teacher | teacher@example.com   | teacher123 |
-| Student | student@example.com   | student123 |
+| Admin   | admin@example.com     | 123456     |
+| Teacher | teacher@example.com   | 123456     |
+| Student | student@example.com   | 123456     |
 
 ## Running Tests
 

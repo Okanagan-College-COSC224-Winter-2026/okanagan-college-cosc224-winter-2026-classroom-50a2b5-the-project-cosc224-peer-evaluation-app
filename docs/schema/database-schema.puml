@@ -29,6 +29,7 @@ class Assignment {
   +courseID: Integer
   +name: String
   +rubric_text: String
+  +due_date: DateTime (nullable)
 }
 
 class CourseGroup {
@@ -77,7 +78,7 @@ package "Rubrics" {
 class Rubric {
   +id: Integer
   +assignmentID: Integer
-  +canComment: Boolean
+  +canComment: Boolean <<default TRUE>>
 }
 
 class CriteriaDescription {
@@ -85,7 +86,7 @@ class CriteriaDescription {
   +rubricID: Integer
   +question: String
   +scoreMax: Integer
-  +hasScore: Boolean
+  +hasScore: Boolean <<default TRUE>>
 }
 }
 

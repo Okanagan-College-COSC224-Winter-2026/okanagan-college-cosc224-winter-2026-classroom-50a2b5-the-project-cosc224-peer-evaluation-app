@@ -1,10 +1,72 @@
 # Peer Evaluation App
 
-A role-based peer evaluation system for academic courses with support for students, teachers, and administrators.
+## What is This?
+
+The Peer Evaluation App is an academic platform for **structured peer review and group evaluation**. It enables:
+
+- **Instructors** to create courses, assignments, and organize students into groups
+- **Students** to submit work and provide anonymous peer evaluations using rubrics
+- **Fair assessment** of individual contributions in collaborative projects
+
+**Use cases:**
+- Group project evaluations in software engineering courses
+- Peer review of presentations or written assignments
+- Team contribution tracking and accountability
+
+See [Architecture Overview](docs/ARCHITECTURE_OVERVIEW.md) for detailed explanation of workflows and concepts.
+
+---
+
+## 🚀 Quick Start (Docker)
+
+**Want to run the full stack locally?** Follow these steps using Docker Compose:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/COSC470Fall2025/Peer-Evaluation-App-V1.git
+cd Peer-Evaluation-App-V1
+
+# 2. Create a root-level .env (docker compose reads this automatically)
+cp flask_backend/.env.example .env   # or copy the template in docs/GETTING_STARTED.md
+
+#    Minimum values required:
+#    SECRET_KEY=<random-string>
+#    JWT_SECRET_KEY=<random-string>
+#    DEFAULT_ADMIN_NAME="Example Admin"
+#    DEFAULT_ADMIN_EMAIL="admin@example.com"
+#    DEFAULT_ADMIN_PASSWORD="ChangeMe123!"
+#    # Remaining entries already fall back to sensible defaults
+
+# 3. Start all services (initial build may take several minutes)
+docker compose up --build -d
+
+# 4. Access the app
+# Frontend: http://localhost
+# Backend API: http://localhost:5000
+# Default admin credentials are sourced from DEFAULT_ADMIN_* in .env
+```
+
+**What's included:**
+
+- ✅ PostgreSQL database (port 5432)
+- ✅ Flask backend API (port 5000)
+- ✅ React frontend (port 80)
+- ✅ Sample data and test accounts
+
+**Stop the app:**
+
+```bash
+docker-compose down         # Stop services
+docker-compose down -v      # Stop and remove database data
+```
+
+**For detailed setup and local development** (without Docker), see [Getting Started Guide](docs/GETTING_STARTED.md).
+
+---
 
 ## Features
 
-### [Role-Based Access Control](docs/ROLE_PERMISSION_SUMMARY.md)
+### [Role-Based Access Control](docs/dev-guidelines/ROLE_PERMISSION_SUMMARY.md)
 
 - **Students**: Submit assignments, participate in peer reviews, view their courses
 - **Teachers**: Create courses and assignments, manage student rosters, create groups
@@ -12,97 +74,110 @@ A role-based peer evaluation system for academic courses with support for studen
 
 ### Core Functionality
 
-- JWT-based authentication with role-based authorization
-- RESTful API with Flask backend
-- React + TypeScript frontend
-- SQLite/PostgreSQL database support
-- Automated student account creation via roster upload (planned)
-- Course-level and assignment-level group management (planned)
+- ✅ JWT-based authentication with HTTPOnly cookies
+- ✅ Role-based authorization (Student, Teacher, Admin)
+- ✅ RESTful API with Flask backend
+- ✅ React + TypeScript frontend with Vite
+- ✅ SQLite (dev) / PostgreSQL (production) support
+- ✅ Course and assignment management
+- ✅ Student roster upload with auto-account creation
+- 🚧 Group creation and management (in progress)
+- 🚧 Rubric-based peer evaluations (in progress)
+- 🚧 Anonymous peer review workflows (planned)
 
-## Local Development Requirements
+## Prerequisites
 
-- Linux Ubuntu 24.04 (known to work inside of WSL2)
-- Python 3.8+ (for Flask backend)
-- Node.js 20.x or newer (LTS recommended for frontend)
-- npm (package manager)
-- SQLite (included with Python) or PostgreSQL
+Before starting, ensure you have:
 
-## Getting Started
+- **Python 3.8+** for Flask backend
+- **Node.js 20.x LTS** for React frontend  
+- **npm** (comes with Node.js)
+- **Git** for version control
+- **Linux/macOS/Windows** (WSL2 recommended for Windows)
 
-### Local Development Setup
+**Installation help:** See [GETTING_STARTED.md](docs/GETTING_STARTED.md#prerequisites-check)
 
-This project consists of two applications that need to run simultaneously:
-
-- **Flask Backend** (Python) - API server on port 5000
-- **React Frontend** (Node.js) - Web interface on port 3000
-
-Before your first run you will need to do some one-time setup.
-
-#### Step 1
-
-[Set up the backend.](flask_backend/README.md) Backend will be available at [http://localhost:5000](http://localhost:5000)
-
-#### Step 2
-
-[Set up the frontend.](frontend/README.md) Frontend will be available at [http://localhost:3000](http://localhost:3000)
-
-### Default Login Credentials
-
-After running `flask add_users`, the mock database will be populated with fake credentials you can use for local testing.
-
-**Log in with:**
-
-- **Admin**: `admin@example.com` / 123456
-- **Teacher**: `teacher@example.com` / 123456
-- **Student**: `student@example.com` / 123456
+---
 
 ## Project Structure
 
-```
+```text
 ├── flask_backend/        # Flask REST API (Python)
 │   ├── api/              # Application code
-│   │   ├── controllers/  # Route handlers
-│   │   ├── models/       # Database models
+│   │   ├── controllers/  # Route handlers (blueprints)
+│   │   ├── models/       # Database models (SQLAlchemy)
 │   │   └── cli/          # CLI commands
-│   └── tests/            # Backend tests
-├── frontend/             # React app (TypeScript)
+│   └── tests/            # Backend tests (pytest)
+├── frontend/             # React app (TypeScript + Vite)
 │   └── src/
-│       ├── components/   # React components
-│       ├── pages/        # Page components
+│       ├── components/   # Reusable React components
+│       ├── pages/        # Page components (routes)
 │       └── util/         # API client & utilities
-└── docs/                 # Documentation
+└── docs/                 # Project documentation
+    ├── GETTING_STARTED.md        # ⭐ Start here
+    ├── ARCHITECTURE_OVERVIEW.md  # System design & workflows
+    ├── CONTRIBUTING.md           # Development workflow
+    ├── TESTING.md                # Testing guide
+    ├── TROUBLESHOOTING.md        # Common issues
+    ├── dev-guidelines/           # API docs, roles, deployment
+    └── schema/                   # Database schema & architecture
 ```
 
-## Developer Documentation
+## 📚 Documentation
 
-- **[Development Guidelines](docs/dev-guidelines/dev-ops.md)** - Project expectations
-- **[Project Architecture](docs/schema/project-architecture.md)** - High level Overview
-- **[Database ORM](docs/schema/database-schema.md)** - UML class diagram and description of the schema
-- **[Endpoint Documentation](docs/dev-guidelines/ENDPOINT_SUMMARY.md)** - API endpoint specifications
-- **[Production Deployment Guide](docs/dev-guidelines/PRODUCTION_DEPLOYMENT.md)** - Security requirements and deployment checklist
+### For New Developers
 
-## Testing
+1. **[Getting Started](docs/GETTING_STARTED.md)** - ⭐ Setup guide (start here!)
+2. **[Architecture Overview](docs/ARCHITECTURE_OVERVIEW.md)** - Understand the system
+3. **[Contributing](docs/CONTRIBUTING.md)** - Development workflow
+4. **[Testing](docs/TESTING.md)** - How to write and run tests
 
-### Backend Tests (Flask)
+### Reference Documentation
 
-**Linux:**
+- **[API Endpoints](docs/dev-guidelines/ENDPOINT_SUMMARY.md)** - REST API reference
+- **[Role Permissions](docs/dev-guidelines/ROLE_PERMISSION_SUMMARY.md)** - Access control details
+- **[Database Schema](docs/schema/database-schema.md)** - Data model & relationships
+- **[Project Architecture](docs/schema/project-architecture.md)** - Technical stack overview
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues & solutions
+- **[DevOps Guidelines](docs/dev-guidelines/dev-ops.md)** - Git workflow & CI/CD
+- **[Production Deployment](docs/dev-guidelines/PRODUCTION_DEPLOYMENT.md)** - Deployment guide
 
-```bash
-cd flask_backend
-source venv/bin/activate
-pytest tests/ -v
-```
+**Full documentation index:** [docs/README.md](docs/README.md)
 
-See [flask_backend/README.md](flask_backend/README.md) for more testing options.
+---
 
-## CLI Commands
+## 🤝 Contributing
 
-```bash
-flask init_db           # Initialize database
-flask create_admin      # Create admin user (interactive)
-flask add_users         # Create sample users (student, teacher, admin)
-flask drop_db           # Drop all tables (careful!)
-```
+We welcome contributions! Please read:
+
+1. **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** - Development workflow
+2. **[TESTING.md](docs/TESTING.md)** - How to write tests
+3. **[DevOps Guidelines](docs/dev-guidelines/dev-ops.md)** - Git conventions
+
+**Quick contribution workflow:**
+
+1. Fork and clone the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Make changes and write tests
+4. Ensure all tests pass: `pytest`
+5. Push and open a Pull Request to `dev` branch
+
+---
+
+## 📄 License
+
+This project is for educational purposes as part of COSC 470 at Okanagan College.
+
+---
+
+## 🆘 Need Help?
+
+- **Setup issues?** [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+- **How does this work?** [ARCHITECTURE_OVERVIEW.md](docs/ARCHITECTURE_OVERVIEW.md)
+- **Want to contribute?** [CONTRIBUTING.md](docs/CONTRIBUTING.md)
+- **All documentation:** [docs/README.md](docs/README.md)
+
+**Still stuck?** Check existing GitHub Issues or create a new one.
 
 ## Important Notes
 
