@@ -133,3 +133,11 @@ SELECT id, name, email, role FROM User;
 3. Match response shape from `endpoints.json` using Marshmallow schema
 4. Add test covering Node behavior
 5. Update frontend if response differs
+
+## Git Workflow
+
+- **Base branch:** Always use `dev` as the base branch. Never touch `main`.
+- **Branch naming:** Use prefixes like `feature/`, `bug/`, `fix/`, `chore/`.
+- **Commits:** Use conventional commit messages (e.g., `fix(frontend): ...`, `feat(api): ...`).
+- **Pull requests:** Each PR should address one thing (single responsibility).
+- **Before creating a branch:** Always pull latest from `dev` first.
