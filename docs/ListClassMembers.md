@@ -160,7 +160,71 @@ Scenario 2 (no issue):
 - When a teacher uploads a roster with that student's information.
 - Then the course will be added to the student's account
 
-Scenario 3: (edge case):
+Scenario 3 (edge case):
 - Given a student does have an account for the peer review app.
-- When a teacher uploads a roster that does not not match the student's existing account's email.
+- When a teacher uploads a roster that does not match the student's existing account's email.
 - Then another account will be created for the student... not ideal
+
+---
+
+## ✅ Resolution: Implementation Summary (February 2026)
+
+**Status:** RESOLVED  
+**Branch:** `feature/list-members/copilot`
+
+### Changes Made
+
+#### 1. Backend: Added `/class/members` endpoint
+**File:** `flask_backend/api/controllers/class_controller.py`
+
+Added a new route that:
+- Accepts `POST` with `{ "id": <class_id> }` in the request body
+- Returns a list of enrolled students with `id`, `name`, `email` (no password)
+- Handles errors: missing id (400), class not found (404), not logged in (401)
+
+```python
+@bp.route("/members", methods=["POST"])
+@jwt_required()
+def list_class_members():
+    # ... queries User_Course and User tables to get enrolled members
+```
+
+#### 2. Frontend: Fixed API URL
+**File:** `frontend/src/util/api.ts`
+
+Changed the fetch URL from `/classes/members` → `/class/members` to match the Flask blueprint's `/class` prefix.
+
+#### 3. Tests: Added 5 TDD tests
+**File:** `flask_backend/tests/test_classes.py`
+
+| Test | What it verifies |
+|------|------------------|
+| `test_list_class_members` | Returns enrolled students with correct fields |
+| `test_list_class_members_empty_class` | Returns `[]` for class with no students |
+| `test_list_class_members_not_logged_in` | Returns 401 if not authenticated |
+| `test_list_class_members_class_not_found` | Returns 404 for invalid class id |
+| `test_list_class_members_missing_id` | Returns 400 if no id provided |
+
+### Data Flow (Now Working)
+```
+Browser: /classes/5/members
+    ↓
+React Router → ClassMembers.tsx
+    ↓
+listCourseMembers(5) → fetch POST /class/members
+    ↓
+Flask endpoint → queries database
+    ↓
+Returns: [{ id, name, email }, ...]
+```
+
+### Updated Summary Table
+
+| Layer | File | What it does | Current state |
+|-------|------|--------------|---------------|
+| Frontend | `api.ts` | Calls `/class/members` | ✅ Fixed |
+| Frontend | `ClassMembers.tsx` | Displays member list | ✅ Exists |
+| Controller | `class_controller.py` | Handles `/class/members` | ✅ Implemented |
+| Model | `user_course_model.py` | Query enrolled students | ✅ Works via direct query |
+
+
