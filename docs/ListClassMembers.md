@@ -141,30 +141,6 @@ When the teacher uploads a CSV file via `/class/enroll_students`:
 
 **US18 may be redundant** given the current implementation. The student never needs to "register" — their account is created for them when the teacher uploads the roster.
 
-## Where Do We Go From Here?
-This depend on what the client wants for a final product.
-### Questions For The Client:
-Is the following assumption correct? The course and registered students already exist (e.g. within OC and Moodle). 
-Answering this question is important because it limits the scope of this app's functionality.
-User Story 18 indicates that students need to register, but this should not be required if it is already covered by another system. What am I getting at? I am proposing that US18 can be dropped as it's functionality is unnecessary to the requirements of this app.
-
-Now, let's say we drop this US18. What problems might this cause?
-
-Scenario 1 (no issue):
-- Given a student has not created an account for the peer review app.
-- When a teacher uploads a roster with that student's information.
-- Then an account will automatically be created for that student with a default password
-
-Scenario 2 (no issue):
-- Given a student does have an account for the peer review app.
-- When a teacher uploads a roster with that student's information.
-- Then the course will be added to the student's account
-
-Scenario 3 (edge case):
-- Given a student does have an account for the peer review app.
-- When a teacher uploads a roster that does not match the student's existing account's email.
-- Then another account will be created for the student... not ideal
-
 ---
 
 ## ✅ Resolution: Implementation Summary (February 2026)
