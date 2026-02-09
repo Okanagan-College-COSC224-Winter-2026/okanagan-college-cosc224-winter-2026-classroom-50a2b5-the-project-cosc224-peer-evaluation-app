@@ -4,6 +4,8 @@ import os
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from .controllers.dashboard_controller import bp as dashboard_bp
+
 
 from .cli import init_app
 from .controllers import (
@@ -108,5 +110,6 @@ def create_app(test_config=None):
     app.register_blueprint(class_controller.bp)
     app.register_blueprint(assignment_controller.bp)
     app.register_blueprint(fake_api_controller.fake)
+    app.register_blueprint(dashboard_bp)
 
     return app

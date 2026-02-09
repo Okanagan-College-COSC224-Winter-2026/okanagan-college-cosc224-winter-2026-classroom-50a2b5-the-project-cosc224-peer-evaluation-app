@@ -1,5 +1,7 @@
 import { didExpire, removeToken } from "./login";
 
+
+
 const BASE_URL = 'http://localhost:5000'
 
 // export const getProfile = async (id: string) => {
@@ -520,3 +522,17 @@ export const changePassword = async (currentPassword: string, newPassword: strin
 
   return await response.json();
 }
+
+
+export const getDashboard = async () => {
+  const resp = await fetch("http://localhost:5000/dashboard/", {
+    method: "GET",
+    credentials: "include", // important to send JWT cookie
+  });
+
+  if (!resp.ok) {
+    throw new Error(`Dashboard fetch failed: ${resp.status}`);
+  }
+
+  return await resp.json();
+};
