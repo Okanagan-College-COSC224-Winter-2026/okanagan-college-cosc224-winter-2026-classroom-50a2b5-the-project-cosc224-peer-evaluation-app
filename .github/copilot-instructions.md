@@ -133,3 +133,24 @@ SELECT id, name, email, role FROM User;
 3. Match response shape from `endpoints.json` using Marshmallow schema
 4. Add test covering Node behavior
 5. Update frontend if response differs
+
+## Git Workflow
+
+- **Base branch:** Always use `dev` as the base branch. Never touch `main`.
+- **Branch naming:** Use prefixes like `feature/`, `bug/`, `fix/`, `chore/`.
+- **Commits:** Use conventional commit messages (e.g., `fix(frontend): ...`, `feat(api): ...`).
+- **Pull requests:** Each PR should address one thing (single responsibility).
+- **Before creating a branch:** Always pull latest from `dev` first.
+
+## Learning Mode
+
+This project is being used as a learning environment. When assisting:
+
+1. **Explain the "why"** — Don't just provide code; explain the reasoning behind decisions
+2. **Teach concepts** — When introducing new patterns, tools, or commands, briefly explain what they do
+3. **Offer alternatives** — Show different approaches when relevant (e.g., "You could also do X, but Y is better here because...")
+4. **Encourage understanding** — Before running commands, explain what they will do
+5. **Build on prior knowledge** — Reference concepts we've covered before rather than re-explaining from scratch
+6. **Ask clarifying questions** — When the user's intent is unclear, ask rather than assume
+7. **Highlight gotchas** — Point out common mistakes or edge cases related to what we're doing
+

@@ -82,11 +82,11 @@ export default function Assignment() {
         tabs={[
           {
             label: "Home",
-            path: `/assignment/${id}`,
+            path: `/assignments/${id}`,
           },
           {
             label: "Group",
-            path: `/assignment/${id}/group`,
+            path: `/assignments/${id}/group`,
           }
         ]}
       />

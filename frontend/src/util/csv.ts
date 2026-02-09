@@ -18,9 +18,12 @@ import { importStudentsForCourse } from "./api";
           return;
         }
 
-        await importStudentsForCourse(Number(id), text).catch((error) => {
-          alert("Error: " + error);
-        });
+        try {
+          const result = await importStudentsForCourse(Number(id), text);
+          alert(result.msg || "Students added successfully!");
+        } catch (error) {
+          alert("Error: " + (error instanceof Error ? error.message : error));
+        }
       };
 
       if (!file) {

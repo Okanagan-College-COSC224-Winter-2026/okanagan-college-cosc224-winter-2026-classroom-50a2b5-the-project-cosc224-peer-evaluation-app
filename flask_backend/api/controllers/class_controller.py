@@ -12,6 +12,36 @@ from typing import List, Dict, Tuple
 bp = Blueprint("class", __name__, url_prefix="/class")
 
 
+@bp.route("/members", methods=["POST"])
+@jwt_required()
+def list_class_members():
+    """List all members (students) enrolled in a class"""
+    data = request.get_json()
+    class_id = data.get("id")
+    
+    if not class_id:
+        return jsonify({"msg": "Missing class id"}), 400
+    
+    # Check if class exists
+    course = Course.get_by_id(class_id)
+    if not course:
+        return jsonify({"msg": "Class not found"}), 404
+    
+    # Get all enrolled users via User_Course
+    enrollments = User_Course.query.filter_by(courseID=class_id).all()
+    members = []
+    for enrollment in enrollments:
+        user = User.get_by_id(enrollment.userID)
+        if user:
+            members.append({
+                "id": user.id,
+                "name": user.name,
+                "email": user.email
+            })
+    
+    return jsonify(members), 200
+
+
 @bp.route("/create_class", methods=["POST"])
 @jwt_teacher_required
 def create_class():

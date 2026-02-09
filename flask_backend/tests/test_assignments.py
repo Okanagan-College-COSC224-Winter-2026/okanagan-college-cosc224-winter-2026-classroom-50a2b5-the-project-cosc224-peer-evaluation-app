@@ -4,6 +4,7 @@ Tests for assignments endpoints
 
 import json
 import datetime
+from datetime import timedelta
 
 def test_teacher_can_create_assignment(test_client, make_admin):
     """
@@ -30,10 +31,11 @@ def test_teacher_can_create_assignment(test_client, make_admin):
     class_id = class_response.json["class"]["id"]
 
     # Now, create the assignment
+    future_date = datetime.datetime.now() + timedelta(days=30)
     assignment_response = test_client.post(
         "/assignment/create_assignment",
         data=json.dumps(
-            {"courseID": class_id, "name": "Essay 1", "rubric": "Quality of writing", "due_date": datetime.datetime(2025, 12, 31, 23, 59, 59).isoformat()}
+            {"courseID": class_id, "name": "Essay 1", "rubric": "Quality of writing", "due_date": future_date.isoformat()}
         ),
         headers={"Content-Type": "application/json"},
     )
@@ -42,7 +44,8 @@ def test_teacher_can_create_assignment(test_client, make_admin):
     assert assignment_response.json["msg"] == "Assignment created"
     assert assignment_response.json["assignment"]["name"] == "Essay 1"
     assert assignment_response.json["assignment"]["rubric_text"] == "Quality of writing"
-    assert assignment_response.json["assignment"]["due_date"] == "2025-12-31T23:59:59"
+    # Check that due_date is approximately correct (same day)
+    assert assignment_response.json["assignment"]["due_date"].startswith(future_date.strftime("%Y-%m-%d"))
 
 
 def test_create_assignment_missing_fields(test_client, make_admin):
@@ -180,6 +183,7 @@ def test_teacher_can_edit_assignment_before_due_date(test_client, make_admin):
     )
     class_id = class_response.json["class"]["id"]
     # Now, create the assignment with a future due date
+    future_date = datetime.datetime.now() + timedelta(days=60)
     assignment_response = test_client.post(
         "/assignment/create_assignment",
         data=json.dumps(
@@ -187,20 +191,21 @@ def test_teacher_can_edit_assignment_before_due_date(test_client, make_admin):
                 "courseID": class_id,
                 "name": "Lab Report 1",
                 "rubric": "Completeness",
-                "due_date": datetime.datetime(2025, 12, 31, 23, 59, 59).isoformat(),
+                "due_date": future_date.isoformat(),
             }
         ),
         headers={"Content-Type": "application/json"},
     )
     assignment_id = assignment_response.json["assignment"]["id"]
     # Now, edit the assignment
+    new_due_date = datetime.datetime.now() + timedelta(days=30)
     edit_response = test_client.patch(
         f"/assignment/edit_assignment/{assignment_id}",
         data=json.dumps(
             {
                 "name": "Updated Lab Report 1",
                 "rubric": "Thoroughness",
-                "due_date": datetime.datetime(2025, 11, 30, 23, 59, 59).isoformat(),
+                "due_date": new_due_date.isoformat(),
             }
         ),
         headers={"Content-Type": "application/json"},
@@ -209,7 +214,8 @@ def test_teacher_can_edit_assignment_before_due_date(test_client, make_admin):
     assert edit_response.json["msg"] == "Assignment updated"
     assert edit_response.json["assignment"]["name"] == "Updated Lab Report 1"
     assert edit_response.json["assignment"]["rubric_text"] == "Thoroughness"
-    assert edit_response.json["assignment"]["due_date"] == "2025-11-30T23:59:59"
+    # Check that due_date is approximately correct (same day)
+    assert edit_response.json["assignment"]["due_date"].startswith(new_due_date.strftime("%Y-%m-%d"))
 
 def test_teacher_cannot_edit_assignment_after_due_date(test_client, make_admin):
     """
