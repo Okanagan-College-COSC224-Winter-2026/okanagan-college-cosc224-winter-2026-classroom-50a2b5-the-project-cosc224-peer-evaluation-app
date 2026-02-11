@@ -6,6 +6,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
 from .cli import init_app
+from .controllers.student_controller import student_bp
 from .controllers import (
     admin_controller,
     auth_controller,
@@ -108,5 +109,6 @@ def create_app(test_config=None):
     app.register_blueprint(class_controller.bp)
     app.register_blueprint(assignment_controller.bp)
     app.register_blueprint(fake_api_controller.fake)
+    app.register_blueprint(student_bp)
 
     return app
