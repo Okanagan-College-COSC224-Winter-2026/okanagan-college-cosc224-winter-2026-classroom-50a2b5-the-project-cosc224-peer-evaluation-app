@@ -67,6 +67,7 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 | GET | `/assignment/:class_id` | `{ class_id: number }` | — | — | `Array<Assignment>` | ✅Implemented |Returns all assignments for a course. |
 | POST | `/class/members` | — | — | `{ id: number }` | `Array<User { id, name, email }>` | ✅Implemented | Uses `User_Course` to look up members. |
 | GET | `/class/classes` | — | — | — | `Array<Course>` | ✅Implemented | Currently returns classes for student / Instructor |
+| GET | `/student/grades` | — | — | — | `{ student_id: number, courses: Array<CourseGrade> }` | ✅Implemented | Returns per-course grade averages for the authenticated student. |
 | GET | `/class/browse_classes` | — | — | — | `Array<Course>` | ✅Implemented | Returns all classes |
 | POST | `/assignment/create_assignment` | — | — | `{ courseID: number, name: string, rubric: string, due_date?: string }` | `{ msg: string, assignment: Assignment }` | ✅Implemented | Creates assignment and returns created id. |
 | PATCH | `/assignment/edit_assignment/:assignment_id` | `{ assignment_id: string }` | — | `{ name: string, rubric: string, due_date: string }` | `{ msg: string, assignment: Assignment }` | ✅Implemented | Edits assignment and returns updated assignment |
@@ -98,3 +99,6 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 - Parameter types in curly braces are the expected types; some routes accept strings for numeric IDs and cast internally.
 - For stability, prefer sending numeric IDs as numbers where indicated.
 - If any discrepancy arises between this document and `endpoints.json`, treat `endpoints.json` as canonical.
+- `CourseGrade` response shape used by `/student/grades`:
+  `{ course_id, course_name, grade, max_score, graded_assignments, total_assignments, has_grades }`
+
