@@ -520,3 +520,18 @@ export const changePassword = async (currentPassword: string, newPassword: strin
 
   return await response.json();
 }
+
+export const getStudentGrades = async (): Promise<StudentGradesResponse> => {
+  const resp = await fetch(`${BASE_URL}/student/grades`, {
+    method: 'GET',
+    credentials: 'include'
+  })
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json()
+}
