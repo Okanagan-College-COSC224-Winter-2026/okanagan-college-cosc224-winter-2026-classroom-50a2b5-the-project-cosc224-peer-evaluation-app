@@ -94,6 +94,14 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 
 ---
 
+### CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `flask add_sample_reviews` | Seeds peer review data (reviewers, rubrics, criteria, scores) for testing the student grade display. Requires `flask add_users` and `flask add_sample_courses` first. |
+
+---
+
 ### Notes
 
 - Parameter types in curly braces are the expected types; some routes accept strings for numeric IDs and cast internally.
