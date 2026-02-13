@@ -2,24 +2,39 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## US0 – Course Group Creation – **In-Progress**
+
+**As a teacher, I want to create course groups so that every student is part of a team for that course.**
+
+### Assumptions and Details
+
+- Course has a student list
+- Groups are assigned on a per course basis (i.e. students are in the same group for every assignment in the course)
+
+### Capabilities and Acceptance Criteria (⚠️ Verify existing implementation and clarify with client)
+
+- [ ] 
+- [ ]
+- [ ]
+
 ## US1 – Student Peer Review Access — **Backlog**
 
-**As a student, I want to be able to access a set number of assignments assigned by my instructor, so that I can provide feedback on my classmates’ work.**
+**As a student, I want to access a set number of assignments assigned by my instructor, so that I can provide feedback on my classmates’ work.**
 
 ### Assumptions and Details
 
 - User is signed in with valid credentials  
 - User is enrolled in a class that uses the peer review system  
 - Instructor has created the assignment  
-- Instructor has assigned peer reviews to this student  
-- Review window is currently open  
+- Instructor has assigned peer reviews to this student ⚠️ (implemented?)
+- Review window is currently open ⚠️ (implemented?)
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Student can view a list of peer assignments to review  
-- [ ] Number of visible assignments matches what was assigned  
-- [ ] Student cannot open unassigned submissions  
-- [ ] Opening an assigned submission shows the content and review interface  
+- ✅ Student can view a list of peer assignments to review  
+- ✅ Number of visible assignments matches what was assigned  
+- [ ] Student cannot open unassigned submissions
+- [ ] Opening an assigned submission shows the content and review interface (⚠️ review interface is not define anywhere...)
 - [ ] Submitted feedback marks that review as complete  
 - [ ] If the review period has ended, the student cannot submit feedback and is notified  
 
@@ -34,11 +49,11 @@
 - User is signed in with valid credentials  
 - User is part of a group assignment  
 - Instructor has enabled peer evaluation for this project  
-- Review period is active  
+- Review period is active ⚠️ (is this implemented or even defined?)
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Student can see a list of group members  
+- [ ] Student can see a list of group members  ⚠️ (seems partially implemented...)
 - [ ] Student can submit ratings and comments for each group member  
 - [ ] Submitted feedback is stored and visible to the instructor  
 - [ ] Once submitted, an evaluation cannot be edited  
@@ -77,10 +92,10 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Instructor can create a class  
-- [ ] Instructor can create an assignment under that class  
-- [ ] Students in that class can see the assignment  
-- [ ] Instructor can edit or delete the assignment before its start or due date  
+- ✅ Instructor can create a class  
+- ✅ Instructor can create an assignment under that class  
+- ✅ Students in that class can see the assignment  
+- ✅ Instructor can edit or delete the assignment before its start or due date  
 
 ---
 
@@ -102,7 +117,7 @@
 
 ---
 
-## US6 – System Maintenance and Management — **Complete**
+## US6 – System Maintenance and Management — **In Progress**
 
 **As an administrator, I want the ability to maintain and manage the system, so that I can ensure it remains stable and updated.**
 
@@ -132,10 +147,10 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Registration form requires name, email, and password  
-- [ ] System validates email format and password strength  
-- [ ] On success, the user is created in the system  
-- [ ] User can log in afterward with those credentials  
+- ✅ Registration form requires name, email, and password  
+- ✅ System validates email format and password strength  
+- ✅ On success, the user is created in the system  
+- ✅ User can log in afterward with those credentials  
 
 ---
 
@@ -170,7 +185,7 @@
 ### Capabilities and Acceptance Criteria
 
 - [ ] Instructor can view all assignments for a class in one place  
-- [ ] Instructor can open an assignment and view its peer review settings  
+- [ ] Instructor can open an assignment and view its peer review settings ⚠️
 - [ ] Instructor can edit or delete an assignment from the same interface  
 - [ ] Actions provide clear success or error messages  
 
@@ -188,8 +203,8 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Sensitive data is only visible to authorized roles  
-- [ ] Data in transit is protected  
+- [✅] Sensitive data is only visible to authorized roles  
+- [✅] Data in transit is protected  
 
 ---
 
@@ -205,8 +220,8 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Instructor can add multiple rubric criteria  
-- [ ] Instructor can set scale or score for each criterion  
+- ✅ Instructor can add multiple rubric criteria  
+- ✅ Instructor can set scale or score for each criterion  
 - [ ] Instructor can save the rubric and attach it to an assignment  
 - [ ] Students see that rubric when performing a peer review  
 
@@ -246,7 +261,7 @@
 
 ---
 
-## US14 – Teacher Dashboard Visibility — **In-Progress**
+## US14 – Teacher Dashboard Visibility — **Complete**
 
 **As a teacher, I want to see my dashboard so that I can view my teaching-related items.**
 
@@ -257,9 +272,9 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Given the teacher has accessed the system, when they open the dashboard, the expected widgets appear  
-- [ ] Dashboard reflects real-time data for the teacher’s classes and assignments  
-- [ ] Access to the dashboard respects teacher permissions  
+- ✅ Given the teacher has accessed the system, when they open the dashboard, the expected widgets appear 
+- ✅ Dashboard reflects real-time data for the teacher’s classes and assignments  
+- ✅ Access to the dashboard respects teacher permissions  
 
 ---
 
@@ -274,8 +289,8 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Given the teacher has created courses and assignments, the dashboard lists each course  
-- [ ] Each course entry shows the assignments associated with it  
+- ✅ Given the teacher has created courses and assignments, the dashboard lists each course  
+- ✅ Each course entry shows the assignments associated with it  
 - [ ] Assignment listings include key metadata such as due dates or status  
 
 ---
@@ -291,9 +306,9 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Given the student is on the roster, when they log in, the system authenticates them successfully  
-- [ ] Student gains access to the courses tied to that roster  
-- [ ] Student receives guidance if they are missing from the roster  
+- ✅ Given the student is on the roster, when they log in, the system authenticates them successfully  
+- ✅ Student gains access to the courses tied to that roster  
+- ⚠️ Student receives guidance if they are missing from the roster  
 
 ---
 
@@ -341,9 +356,9 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Given the student is registered for courses, their dashboard lists those courses after login  
-- [ ] Each course link opens the associated content  
-- [ ] If no courses exist, the student sees a helpful empty state  
+- ✅ Given the student is registered for courses, their dashboard lists those courses after login  
+- ✅ Each course link opens the associated content  
+- ⚠️ If no courses exist, the student sees a helpful empty state
 
 ---
 
@@ -363,7 +378,7 @@
 
 ---
 
-## US21 – Student Profile Viewing — **Complete**
+## US21 – Student Profile Viewing — **In-Progress**
 
 **As a student, I want to see my profile information so that I can confirm my details.**
 
@@ -378,22 +393,38 @@
 - [ ] Students can request corrections if data is inaccurate  
 
 ---
+## US22.1 - Student Sumbits Group Assignment — **Backlog**
 
-## US22 – Student View Team Submissions — **Backlog**
-
-**As a student, I want to see the submitted assignments from my team members so that I can review their work.**
+**As a student, I want to submit a group assignment so that team members can review eachother's work**
 
 ### Assumptions and Details
 
-- Student has team members  
-- Team members have submitted assignments  
+- Student submission can be viewed by other team members
+- Use Moodle submission as a reference
+
+### Capabilities and Acceptance Criteria
+- [ ] Submission button on assignment page
+- [ ] Other group members can view the student's submission  
+- [ ] Submission is uploaded with status, timestamp, and attachments
+
+---
+
+## US22.2 – Student View Team Submissions — **Backlog**
+
+**As a student, I want to see my group's submission so that I can review my team members' work.**
+
+### Assumptions and Details
+
+- Student is in a group
+- Group has made a submission for the assignment  
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Given submitted assignments from team members exist, the student can view them in a single place  
+- [ ] Given a group submission exists, the student has access to it on the assignment page 
 - [ ] Access is limited to the student’s own team  
 - [ ] Each submission shows status, timestamp, and attachments  
 
+(⚠️ This story is redundant after US1... request deletion)
 ---
 
 ## US23 – Peer Review Team Members — **Backlog**
@@ -424,9 +455,9 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Given a developer needs to start and test the project, the documentation walks through setup  
-- [ ] Developer can run the project locally with mock credentials  
-- [ ] Documentation covers testing workflows and expected results  
+- ✅ Given a developer needs to start and test the project, the documentation walks through setup  
+- ✅ Developer can run the project locally with mock credentials  
+- ✅ Documentation covers testing workflows and expected results  
 
 ---
 
@@ -442,9 +473,9 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Admin can create a teacher account with required fields  
+- ✅ Admin can create a teacher account with required fields  
 - [ ] System prevents duplicate teacher emails  
-- [ ] Newly created teachers receive the `teacher` role automatically  
+- ✅ Newly created teachers receive the `teacher` role automatically  
 - [ ] Admin receives confirmation that the account was created  
 - [ ] Teacher can log in with the provided credentials and is prompted to change the temporary password  
 
@@ -468,4 +499,3 @@
 - [ ] Admin can deactivate or delete a user, with safeguards against self-deletion  
 - [ ] Admin receives success or error feedback for each action  
 - [ ] All actions go through the frontend admin page and persist to the backend
-
