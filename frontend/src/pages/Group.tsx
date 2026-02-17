@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   createGroup,
   listGroupMembers,
@@ -39,12 +39,7 @@ export default function Group() {
   const [myGroup, setMyGroup] = useState<{ name: string; members: GroupMember[] } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load data on mount
-  useEffect(() => {
-    loadData();
-  }, [courseId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -81,7 +76,12 @@ export default function Group() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [courseId]);
+
+  // Load data on mount and when courseId changes
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {

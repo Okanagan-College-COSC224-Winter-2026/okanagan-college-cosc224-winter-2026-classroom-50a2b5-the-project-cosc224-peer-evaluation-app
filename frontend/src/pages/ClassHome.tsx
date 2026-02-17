@@ -27,7 +27,7 @@ export default function ClassHome() {
       setAssignments(resp);
       setClassName(currentClass?.name || null);
     })();
-  }, []);
+  }, [id]);
     
     const tryCreateAssingment = async () => {
       try {
