@@ -31,28 +31,33 @@ flask --app api add_sample_courses  # Optional: add sample courses
 | `models/group_members_model.py` | Removed `assignmentID` column |
 | `models/course_model.py` | Added `groups` relationship |
 | `models/assignment_model.py` | Removed `groups` and `group_members` relationships |
-| `models/schemas.py` | Updated schemas with `include_fk = True` |
-| `controllers/group_controller.py` | **New file** with 8 endpoints |
+| `models/schemas.py` | Updated schemas with `include_fk = True` (CourseGroup, GroupMembers, Assignment) |
+| `controllers/group_controller.py` | **New file** with 8 group management endpoints |
+| `controllers/assignment_controller.py` | Added `GET /assignment/detail/<id>` endpoint |
 | `api/__init__.py` | Registered `group_controller` blueprint |
 
 ### Frontend Changes
 
 | File | Change |
 |------|--------|
-| `util/api.ts` | Updated group functions to use `courseId` instead of `assignmentId` |
+| `util/api.ts` | Updated group functions to use `courseId`; added `getAssignment()` |
 | `App.tsx` | Changed route from `/assignments/:id/group` to `/classes/:id/groups` |
 | `pages/Group.tsx` | Rewrote component for course-level groups |
 | `pages/ClassHome.tsx` | Added "Groups" tab to navigation |
+| `pages/Assignment.tsx` | Fixed group member loading for peer reviews; removed broken "Group" tab |
 
 ### Tests
 
 | File | Status |
 |------|--------|
 | `tests/test_groups.py` | **15 tests, all passing** |
+| `tests/test_assignments.py` | **21 tests, all passing** (added 2 for `get_assignment`) |
 
 ---
 
 ## API Endpoints
+
+### Group Management (`/groups/`)
 
 | Method | Endpoint | Purpose | Auth |
 |--------|----------|---------|------|
@@ -64,6 +69,12 @@ flask --app api add_sample_courses  # Optional: add sample courses
 | `GET` | `/groups/course/<id>/unassigned` | List unassigned students | Teacher |
 | `DELETE` | `/groups/<id>` | Delete a group | Teacher |
 | `GET` | `/groups/course/<id>/my-group` | Student gets their own group | Student |
+
+### Assignment (new endpoint)
+
+| Method | Endpoint | Purpose | Auth |
+|--------|----------|---------|------|
+| `GET` | `/assignment/detail/<id>` | Get single assignment (includes `courseID`) | Any |
 
 ---
 
@@ -106,8 +117,10 @@ flask --app api add_sample_courses  # Optional: add sample courses
 
 - [x] Update `CourseGroup` model (change `assignmentID` → `courseID`)
 - [x] Update `Group_Members` model (remove `assignmentID`)
-- [x] Create `group_controller.py` with endpoints
+- [x] Create `group_controller.py` with 8 endpoints
+- [x] Add `GET /assignment/detail/<id>` endpoint for fetching assignment with `courseID`
 - [x] Register blueprint in `__init__.py`
 - [x] Update frontend routing and API calls
-- [x] All 15 tests passing
+- [x] Fix `Assignment.tsx` to load group members for peer reviews
+- [x] All 36 tests passing (15 group + 21 assignment)
 - [x] Manual testing verified (teacher can create groups, add/remove students)

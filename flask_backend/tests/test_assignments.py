@@ -639,3 +639,60 @@ def test_unauthenticated_user_cannot_get_assignments(test_client):
     # Attempt to retrieve assignments for a class without logging in
     assignments = test_client.get(f"/assignment/1")
     assert assignments.status_code == 401
+
+
+def test_get_single_assignment(test_client, make_admin):
+    """
+    GIVEN an authenticated user
+    WHEN they request a single assignment by ID
+    THEN the assignment details should be returned with courseID
+    """
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    
+    # Create a class
+    class_response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "Test Course"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_response.json["class"]["id"]
+    
+    # Create an assignment
+    assignment_response = test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps({"courseID": class_id, "name": "Test Assignment", "rubric": "Test rubric"}),
+        headers={"Content-Type": "application/json"},
+    )
+    assignment_id = assignment_response.json["assignment"]["id"]
+    
+    # Get the single assignment
+    response = test_client.get(f"/assignment/detail/{assignment_id}")
+    
+    assert response.status_code == 200
+    assert response.json["id"] == assignment_id
+    assert response.json["name"] == "Test Assignment"
+    assert response.json["courseID"] == class_id  # Verify courseID is included
+
+
+def test_get_nonexistent_assignment(test_client, make_admin):
+    """
+    GIVEN an authenticated user
+    WHEN they request an assignment that doesn't exist
+    THEN a 404 error should be returned
+    """
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    
+    response = test_client.get("/assignment/detail/9999")
+    
+    assert response.status_code == 404
+    assert response.json["msg"] == "Assignment not found"

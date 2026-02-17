@@ -105,7 +105,7 @@ class AssignmentSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Assignment
         load_instance = True
-        include_fk = False
+        include_fk = True  # Include courseID in serialization
         sqla_session = db.session
 
     course = fields.Nested(CourseListSchema, dump_only=True)

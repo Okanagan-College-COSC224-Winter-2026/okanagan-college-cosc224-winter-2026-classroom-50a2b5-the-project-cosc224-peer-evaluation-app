@@ -4,15 +4,22 @@ import "./Assignment.css";
 import RubricCreator from "../components/RubricCreator";
 import RubricDisplay from "../components/RubricDisplay";
 import TabNavigation from "../components/TabNavigation";
-import { isTeacher } from "../util/login";
+import { isTeacher, getUserId } from "../util/login";
 
 import { 
+  getAssignment,
   listStuGroup,
-  getUserId,
   createReview,
   createCriterion,
   getReview
 } from "../util/api";
+
+// Group member type returned from listStuGroup
+interface GroupMember {
+  id: number;
+  name: string;
+  email: string;
+}
 
 interface SelectedCriterion {
   row: number;
@@ -21,7 +28,7 @@ interface SelectedCriterion {
 
 export default function Assignment() {
   const { id } = useParams();
-  const [stuGroup, setStuGroup] = useState<StudentGroups[]>([]);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [revieweeID, setRevieweeID] = useState<number>(0);
   const [stuID, setStuID] = useState<number>(0);
   const [selectedCriteria, setSelectedCriteria] = useState<SelectedCriterion[]>([]);
@@ -29,12 +36,27 @@ export default function Assignment() {
 
   useEffect(() => {
       (async () => {
-        const stuID = await getUserId();
-      setStuID(stuID);
-      const stus = await listStuGroup(Number(id), stuID);
-      setStuGroup(stus);
+        const currentUserId = getUserId();
+        if (currentUserId === null) {
+          console.error('User not logged in');
+          return;
+        }
+        setStuID(currentUserId);
+        
+        // Get assignment to find its courseID, then fetch group members
         try {
-          const reviewResponse = await getReview(Number(id), stuID, revieweeID);
+          const assignment = await getAssignment(Number(id));
+          const myGroup = await listStuGroup(assignment.courseID);
+          if (myGroup?.members) {
+            // Filter out self from group members (can't review yourself)
+            setGroupMembers(myGroup.members.filter((m: GroupMember) => m.id !== currentUserId));
+          }
+        } catch (error) {
+          console.error('Error fetching group members:', error);
+        }
+
+        try {
+          const reviewResponse = await getReview(Number(id), currentUserId, revieweeID);
           const reviewData = await reviewResponse.json();
           setReview(reviewData.grades);
           console.log("Review data:", reviewData);
@@ -42,7 +64,7 @@ export default function Assignment() {
           console.error('Error fetching review:', error);
         }
       })();
-  }, [revieweeID, id, stuID]);
+  }, [revieweeID, id]);
 
   const handleCriterionSelect = (row: number, column: number) => {
     // Check if this criterion is already selected
@@ -84,10 +106,7 @@ export default function Assignment() {
             label: "Home",
             path: `/assignments/${id}`,
           },
-          {
-            label: "Group",
-            path: `/assignments/${id}/group`,
-          }
+          // Groups are now at course level - access via ClassHome > Groups tab
         ]}
       />
 
@@ -105,17 +124,22 @@ export default function Assignment() {
       //List group members as radio buttons to select for given review
       !isTeacher() && <div className='groupMembers'>
         <h3>Select a group member to review</h3>
-          {stuGroup.map((stus) => {
-                return (
-                  <>
-                  <input type='radio' id={stus.userID.toString()} value={stus.userID} name='groupMembers' onChange={handleRadioChange}></input>
-                  <label htmlFor={stus.userID.toString()}>{stus.userID}</label>
-                  <br></br>
-                  </>
-                )
-              }
-            )
-          }
+          {groupMembers.length === 0 ? (
+            <p>No group members found. You may not be assigned to a group yet.</p>
+          ) : (
+            groupMembers.map((member) => (
+              <div key={member.id}>
+                <input 
+                  type='radio' 
+                  id={member.id.toString()} 
+                  value={member.id} 
+                  name='groupMembers' 
+                  onChange={handleRadioChange}
+                />
+                <label htmlFor={member.id.toString()}>{member.name}</label>
+              </div>
+            ))
+          )}
           <button className='submitReview' onClick={async () => {
             console.log("Submitting review with selected criteria:", selectedCriteria);
             try {
