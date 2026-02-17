@@ -76,6 +76,10 @@ export default function ClassHome() {
             label: "Members",
             path: `/classes/${id}/members`,
           },
+          {
+            label: "Groups",
+            path: `/classes/${id}/groups`,
+          },
         ]}
       />
 

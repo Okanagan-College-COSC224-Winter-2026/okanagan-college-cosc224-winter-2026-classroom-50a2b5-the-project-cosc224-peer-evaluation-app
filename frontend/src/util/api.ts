@@ -148,8 +148,8 @@ export const listAssignments = async (classId: string) => {
   return await resp.json()
 }
 
-export const listStuGroup = async (assignmentId : number, studentId : number) => {
-  const resp = await fetch(`${BASE_URL}/list_stu_groups/`+ assignmentId + "/" + studentId, {
+export const listStuGroup = async (courseId: number) => {
+  const resp = await fetch(`${BASE_URL}/groups/course/${courseId}/my-group`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -159,6 +159,10 @@ export const listStuGroup = async (assignmentId : number, studentId : number) =>
 
   maybeHandleExpire(resp);
 
+  // Return null if not in a group (404)
+  if (resp.status === 404) {
+    return null;
+  }
 
   if (!resp.ok) {
     throw new Error(`Response status: ${resp.status}`);
@@ -167,8 +171,8 @@ export const listStuGroup = async (assignmentId : number, studentId : number) =>
   return await resp.json()
 } 
 
-export const listGroups = async (assignmentId : number) => {
-  const resp = await fetch(`${BASE_URL}/list_all_groups/` + assignmentId, {
+export const listGroups = async (courseId: number) => {
+  const resp = await fetch(`${BASE_URL}/groups/course/${courseId}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -185,8 +189,8 @@ export const listGroups = async (assignmentId : number) => {
   return await resp.json()
 } 
 
-export const listUnassignedGroups = async (assignmentId : number) => {
-  const resp = await fetch(`${BASE_URL}/list_ua_groups/` + assignmentId, {
+export const listUnassignedStudents = async (courseId: number) => {
+  const resp = await fetch(`${BASE_URL}/groups/course/${courseId}/unassigned`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -195,6 +199,10 @@ export const listUnassignedGroups = async (assignmentId : number) => {
   })
 
   maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
 
   return await resp.json()
 }
@@ -223,8 +231,8 @@ export const listCourseMembers = async (classId: string) => {
 
 
 
-export const listGroupMembers = async (assignmentId : number, groupID: number) => {
-  const resp = await fetch(`${BASE_URL}/list_group_members/` + assignmentId + '/' + groupID, {
+export const listGroupMembers = async (groupId: number) => {
+  const resp = await fetch(`${BASE_URL}/groups/${groupId}/members`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -259,19 +267,48 @@ export const getUserId = async () => {
   return await resp.json()
 } 
 
-export const saveGroups = async (groupID: number, userID: number, assignmentID : number) =>{
-  await fetch(`${BASE_URL}/save_groups`, {
+export const addGroupMember = async (groupId: number, userId: number) => {
+  const resp = await fetch(`${BASE_URL}/groups/members/add`, {
     method: 'POST',
     body: JSON.stringify({
-      groupID,
-      userID,
-      assignmentID
+      groupID: groupId,
+      userID: userId
     }),
     headers: {
       'Content-Type': 'application/json',
    },
     credentials: 'include',
   })
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json()
+}
+
+export const removeGroupMember = async (groupId: number, userId: number) => {
+  const resp = await fetch(`${BASE_URL}/groups/members/remove`, {
+    method: 'POST',
+    body: JSON.stringify({
+      groupID: groupId,
+      userID: userId
+    }),
+    headers: {
+      'Content-Type': 'application/json',
+   },
+    credentials: 'include',
+  })
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json()
 }
 
 export const getCriteria = async (rubricID: number) => {
@@ -364,17 +401,22 @@ export const createAssignment = async (courseID: number, name: string)=> {
   return await response.json();
 }
 
-export const deleteGroup = async (groupID: number) => {
-  await fetch(`${BASE_URL}/delete_group`, {
-    method: 'POST',
-    body: JSON.stringify({
-      groupID,
-    }),
+export const deleteGroup = async (groupId: number) => {
+  const resp = await fetch(`${BASE_URL}/groups/${groupId}`, {
+    method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
    },
     credentials: 'include',
   })
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json()
 }
 
 export const createReview = async (assignmentID: number, reviewerID: number, revieweeID: number) => {
@@ -436,29 +478,12 @@ export const getReview = async (assignmentID: number, reviewerID: number, review
   return resp
 }
 
-export const getNextGroupID = async(assignmentID: number)=> {
-  const response = await fetch(`${BASE_URL}/next_groupid?assignmentID=${assignmentID}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include'
-  })
-
-  maybeHandleExpire(response);
-
-  if (!response.ok) {
-      throw new Error(`Response status: ${response.status}`);
-  }
-
-  return await response.json();
-}
-
-export const createGroup = async(assignmentID: number, name: string, id: number) =>{
-  const response = await fetch(`${BASE_URL}/create_group`,{
-    method:"POST",
+export const createGroup = async (courseId: number, name: string) => {
+  const response = await fetch(`${BASE_URL}/groups/create`, {
+    method: "POST",
     body: JSON.stringify({
-      assignmentID, name, id
+      courseID: courseId,
+      name
     }),
     headers: {
       'Content-Type': 'application/json',

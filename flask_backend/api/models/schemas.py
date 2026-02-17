@@ -192,7 +192,7 @@ class CourseGroupSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = CourseGroup
         load_instance = True
-        include_fk = False
+        include_fk = True  # Include courseID in serialization
         sqla_session = db.session
 
 
@@ -200,7 +200,7 @@ class GroupMembersSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Group_Members
         load_instance = True
-        include_fk = False
+        include_fk = True  # Include userID and groupID in serialization
         sqla_session = db.session
 
 
