@@ -63,8 +63,8 @@ flask --app api add_sample_courses  # Optional: add sample courses
 |--------|----------|---------|------|
 | `POST` | `/groups/create` | Create a new group | Teacher |
 | `GET` | `/groups/course/<id>` | List groups for a course | Any |
-| `POST` | `/groups/members/add` | Add member to group | Teacher |
-| `POST` | `/groups/members/remove` | Remove member from group | Teacher |
+| `POST` | `/groups/<id>/members` | Add member to group | Teacher |
+| `DELETE` | `/groups/<id>/members/<user_id>` | Remove member from group | Teacher |
 | `GET` | `/groups/<id>/members` | List group members | Any |
 | `GET` | `/groups/course/<id>/unassigned` | List unassigned students | Teacher |
 | `DELETE` | `/groups/<id>` | Delete a group | Teacher |
@@ -122,5 +122,12 @@ flask --app api add_sample_courses  # Optional: add sample courses
 - [x] Register blueprint in `__init__.py`
 - [x] Update frontend routing and API calls
 - [x] Fix `Assignment.tsx` to load group members for peer reviews
-- [x] All 36 tests passing (15 group + 21 assignment)
+- [x] All 88 tests passing (15 group + 21 assignment + others)
 - [x] Manual testing verified (teacher can create groups, add/remove students)
+- [x] Documentation updated (`schema.sql`, `ENDPOINT_SUMMARY.md`, `database-schema.md`)
+
+## Related Documentation
+
+- **API Reference**: See `docs/dev-guidelines/ENDPOINT_SUMMARY.md` for full endpoint docs
+- **Database Schema**: See `docs/schema/database-schema.md` for table definitions
+- **SQL Reference**: See `schema.sql` for raw SQL (kept in sync)
