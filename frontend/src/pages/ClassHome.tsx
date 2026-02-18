@@ -27,7 +27,7 @@ export default function ClassHome() {
       setAssignments(resp);
       setClassName(currentClass?.name || null);
     })();
-  }, []);
+  }, [id]);
     
     const tryCreateAssingment = async () => {
       try {
@@ -75,6 +75,10 @@ export default function ClassHome() {
           {
             label: "Members",
             path: `/classes/${id}/members`,
+          },
+          {
+            label: "Groups",
+            path: `/classes/${id}/groups`,
           },
         ]}
       />

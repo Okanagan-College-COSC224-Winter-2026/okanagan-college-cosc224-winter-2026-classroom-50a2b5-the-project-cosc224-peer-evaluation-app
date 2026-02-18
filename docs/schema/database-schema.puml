@@ -35,7 +35,7 @@ class Assignment {
 class CourseGroup {
   +id: Integer
   +name: String
-  +assignmentID: Integer
+  +courseID: Integer
 }
 }
 
@@ -50,7 +50,6 @@ class Submission {
 class Group_Members {
   +userID: Integer
   +groupID: Integer
-  +assignmentID: Integer
 }
 
 class User_Course {
@@ -106,12 +105,11 @@ Course "1" o-- "0..*" User_Course : student links
 
 ' Course & assignment structure
 Course "1" --> "0..*" Assignment : assignments
-Assignment "1" --> "0..*" CourseGroup : groups
+Course "1" --> "0..*" CourseGroup : groups
 
 ' Group membership bridge
 CourseGroup "1" o-- "0..*" Group_Members : members
 User "1" o-- "0..*" Group_Members : memberships
-Assignment "1" o-- "0..*" Group_Members : context
 
 ' Submissions
 User "1" --> "0..*" Submission : submissions

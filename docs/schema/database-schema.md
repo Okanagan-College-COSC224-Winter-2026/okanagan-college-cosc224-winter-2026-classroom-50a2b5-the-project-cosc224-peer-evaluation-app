@@ -34,13 +34,14 @@ Field types, primary keys, and notable constraints are included for quick refere
 
 - Assignment
   - id (PK), courseID (FK -> Course.id), name, `rubric_text` column (stored as `rubric`), `due_date` (nullable, timezone-aware)
-  - Relationships: `course`, `rubrics`, `groups`, `submissions`, `reviews`, `group_members`
+  - Relationships: `course`, `rubrics`, `submissions`, `reviews`
 - CourseGroup
-  - id (PK), name, assignmentID (FK -> Assignment.id, not null)
+  - id (PK), name, courseID (FK -> Course.id, not null)
+  - Groups belong to **courses**, not assignments — students stay in the same group for all assignments in a course
 - Group_Members
   - PK: (userID, groupID)
-  - Columns: groupID (FK -> CourseGroup.id), userID (FK -> User.id), assignmentID (FK -> Assignment.id, nullable)
-  - Represents assignment-scoped group membership for users
+  - Columns: groupID (FK -> CourseGroup.id), userID (FK -> User.id)
+  - Represents course-scoped group membership for users
 
 ### Submissions
 

@@ -114,6 +114,17 @@ def delete_assignment(assignment_id):
 
     assignment.delete()
     return jsonify({"msg": "Assignment deleted"}), 200
+
+
+@bp.route("/detail/<int:assignment_id>", methods=["GET"])
+@jwt_required()
+def get_assignment(assignment_id):
+    """Get a single assignment by ID"""
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    return jsonify(AssignmentSchema().dump(assignment)), 200
     
 
 # the following routes are for getting the assignments for a given course

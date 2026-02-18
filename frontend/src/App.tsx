@@ -64,15 +64,15 @@ function AppContent() {
             </ProtectedRoute>
           } />
 
-          <Route path="/assignments/:id" element={
+          <Route path="/classes/:id/groups" element={
             <ProtectedRoute>
-              <Assignment />
+              <Group />
             </ProtectedRoute>
           } />
 
-          <Route path="/assignments/:id/group" element={
+          <Route path="/assignments/:id" element={
             <ProtectedRoute>
-              <Group />
+              <Assignment />
             </ProtectedRoute>
           } />
         </Routes>
