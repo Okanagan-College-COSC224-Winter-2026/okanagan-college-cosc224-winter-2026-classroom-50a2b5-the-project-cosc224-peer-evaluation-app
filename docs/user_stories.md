@@ -2,7 +2,7 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## US0 – Course Group Creation – **In-Progress**
+## US0 – Course Group Creation – **Complete**
 
 **As a teacher, I want to create course groups so that every student is part of a team for that course.**
 
@@ -10,12 +10,19 @@
 
 - Course has a student list
 - Groups are assigned on a per course basis (i.e. students are in the same group for every assignment in the course)
+- Teacher must be the owner of the course to manage its groups
 
-### Capabilities and Acceptance Criteria (⚠️ Verify existing implementation and clarify with client)
+### Capabilities and Acceptance Criteria
 
-- [ ] 
-- [ ]
-- [ ]
+- ✅ Teacher can create a named group within a course
+- ✅ Teacher can add students to a group
+- ✅ Teacher can remove students from a group
+- ✅ Teacher can delete a group
+- ✅ Teacher can view all groups in a course
+- ✅ Teacher can view unassigned students (not yet in any group)
+- ✅ Students can view their own group and group members
+- ✅ A student can only belong to one group per course
+- ✅ Groups persist across all assignments in the course (course-level, not assignment-level)
 
 ## US1 – Student Peer Review Access — **Backlog**
 
@@ -208,7 +215,7 @@
 
 ---
 
-## US11 – Rubric Creation — **In-Progress**
+## US11 – Rubric Creation — **Complete**
 
 **As an instructor, I want to be able to create a rubric, so that students have a set of criteria to mark against.**
 
@@ -217,13 +224,24 @@
 - Instructor is signed in  
 - Instructor has an assignment to attach the rubric to  
 - Rubric builder UI is available  
+- Each assignment can have one rubric; creating a new one requires deleting the existing one first
+- Rubric criteria support configurable score ranges and optional scoring (comment-only criteria)
 
 ### Capabilities and Acceptance Criteria
 
 - ✅ Instructor can add multiple rubric criteria  
 - ✅ Instructor can set scale or score for each criterion  
-- [ ] Instructor can save the rubric and attach it to an assignment  
-- [ ] Students see that rubric when performing a peer review  
+- ✅ Instructor can save the rubric and attach it to an assignment  
+- ✅ Students see that rubric when performing a peer review  
+- ✅ Instructor can delete a rubric (cascades to all criteria)
+- ✅ Instructor can toggle whether reviewers can leave comments
+- ✅ Rubric creator only appears when no rubric exists for the assignment
+
+### Implementation Notes
+
+- Backend: 6 REST endpoints under `/rubric/` — see `docs/Rubrics.md` for full details
+- Frontend: `RubricCreator.tsx` for creation, `RubricDisplay.tsx` for viewing
+- 21 backend tests in `tests/test_rubrics.py` (109 total passing)
 
 ---
 
