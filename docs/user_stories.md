@@ -88,7 +88,7 @@
 
 ---
 
-## US4 – Class and Assignment Creation — **Complete**
+## US4 – Class and Assignment Creation — **In-Progress**
 
 **As an instructor, I want to be able to create classes and associated assignments with evaluation events, so that I can provide my students with evaluation and review materials.**
 
@@ -100,9 +100,13 @@
 ### Capabilities and Acceptance Criteria
 
 - ✅ Instructor can create a class  
-- ✅ Instructor can create an assignment under that class  
+- ⚠️ Instructor can create an assignment under that class
+    - Title ✅
+    - Description ❌
+    - Startdate ❌
+    - Duedate ❌
 - ✅ Students in that class can see the assignment  
-- ✅ Instructor can edit or delete the assignment before its start or due date  
+- ⚠️ Instructor can edit or delete the assignment before its start or due date  
 
 ---
 
