@@ -59,25 +59,33 @@ export default function Assignment() {
         // Load rubric for this assignment
         await loadRubric();
         
-        // Get assignment to find its courseID, then fetch group members
-        try {
-          const assignment = await getAssignment(Number(id));
-          const myGroup = await listStuGroup(assignment.courseID);
-          if (myGroup?.members) {
-            // Filter out self from group members (can't review yourself)
-            setGroupMembers(myGroup.members.filter((m: GroupMember) => m.id !== currentUserId));
+        // Only fetch group members for students (teachers aren't in groups)
+        if (!isTeacher()) {
+          try {
+            const assignment = await getAssignment(Number(id));
+            const myGroup = await listStuGroup(assignment.courseID);
+            if (myGroup?.members) {
+              // Filter out self from group members (can't review yourself)
+              setGroupMembers(myGroup.members.filter((m: GroupMember) => m.id !== currentUserId));
+            }
+          } catch (error) {
+            console.error('Error fetching group members:', error);
           }
-        } catch (error) {
-          console.error('Error fetching group members:', error);
         }
 
-        try {
-          const reviewResponse = await getReview(Number(id), currentUserId, revieweeID);
-          const reviewData = await reviewResponse.json();
-          setReview(reviewData.grades);
-          console.log("Review data:", reviewData);
-        } catch (error) {
-          console.error('Error fetching review:', error);
+        // Only fetch review if a reviewee has been selected
+        // NOTE: Review endpoints not yet implemented in Flask backend.
+        // This will 404 until the review feature is migrated.
+        if (revieweeID > 0) {
+          try {
+            const reviewResponse = await getReview(Number(id), currentUserId, revieweeID);
+            if (reviewResponse.ok) {
+              const reviewData = await reviewResponse.json();
+              setReview(reviewData.grades);
+            }
+          } catch {
+            // Review endpoint not yet implemented — silently ignore
+          }
         }
       })();
   }, [revieweeID, id]);

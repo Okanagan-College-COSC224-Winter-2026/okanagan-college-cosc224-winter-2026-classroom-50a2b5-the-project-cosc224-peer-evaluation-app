@@ -14,6 +14,7 @@ export default function Criteria(props: props) {
     return (
         <div className="Criteria">
             <table className='criteriaTable'>
+                <tbody>
                 {props.questions.map((question, i) => (
                     <Criterion 
                         key={i}
@@ -25,6 +26,7 @@ export default function Criteria(props: props) {
                         grade={props.grades[i]}
                     />
                 ))}
+                </tbody>
             </table>
             {props.canComment && 
             <textarea className="criteriaText" />}

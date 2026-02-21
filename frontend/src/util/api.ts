@@ -524,10 +524,7 @@ export const getReview = async (assignmentID: number, reviewerID: number, review
 
   maybeHandleExpire(resp);
 
-  if (!resp.ok) {
-    throw new Error(`Response status: ${resp.status}`);
-  }
-
+  // Don't throw on 404 — review endpoint may not be implemented yet
   return resp
 }
 
