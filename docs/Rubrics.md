@@ -22,7 +22,8 @@ This feature uses existing models (`Rubric`, `CriteriaDescription`) that were al
 
 | File | Change |
 |------|--------|
-| *Pending* | `api.ts` routes need updating to point at new Flask endpoints |
+| `util/api.ts` | Updated `getCriteria`, `createCriteria`, `createRubric`, `getRubric` to point at Flask `/rubric/` endpoints |
+| `components/RubricCreator.tsx` | Updated `createRubric(id, id, canComment)` → `createRubric(id, canComment)` (backend auto-generates rubric ID) |
 
 ### Tests
 
@@ -132,9 +133,10 @@ Rubric     (1) ──→ (0..*) CriteriaDescription
 - [x] Update schemas to `include_fk = True`
 - [x] Register blueprint in `__init__.py`
 - [x] 21 tests written and passing (109 total)
-- [ ] Update frontend `api.ts` to use new Flask routes
-- [ ] Verify `RubricCreator.tsx` and `RubricDisplay.tsx` work with new backend
-- [ ] Update `ENDPOINT_SUMMARY.md` with rubric endpoints
+- [x] Update frontend `api.ts` to use new Flask routes
+- [x] Update `RubricCreator.tsx` call signature for new API
+- [ ] Verify `RubricCreator.tsx` and `RubricDisplay.tsx` work end-to-end
+- [x] Update `ENDPOINT_SUMMARY.md` with rubric endpoints
 
 ## Related Documentation
 
