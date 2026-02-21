@@ -330,7 +330,7 @@ export const removeGroupMember = async (groupId: number, userId: number) => {
 }
 
 export const getCriteria = async (rubricID: number) => {
-  const resp = await fetch(`${BASE_URL}/criteria?rubricID=${rubricID}`, {
+  const resp = await fetch(`${BASE_URL}/rubric/${rubricID}/criteria`, {
     credentials: 'include'
   })
 
@@ -343,11 +343,11 @@ export const getCriteria = async (rubricID: number) => {
   return await resp.json()
 }
 
-export const createCriteria = async (rubricID: number, question: string, scoreMax: number, canComment: boolean, hasScore: boolean = true) => {
-  const response = await fetch(`${BASE_URL}/create_criteria`, {
+export const createCriteria = async (rubricID: number, question: string, scoreMax: number, _canComment: boolean, hasScore: boolean = true) => {
+  const response = await fetch(`${BASE_URL}/rubric/${rubricID}/criteria`, {
     method: 'POST',
     body: JSON.stringify({
-      rubricID, question, scoreMax, canComment, hasScore
+      question, scoreMax, hasScore
     }),
     headers: {
       'Content-Type': 'application/json',
@@ -362,11 +362,11 @@ export const createCriteria = async (rubricID: number, question: string, scoreMa
   }
 }
 
-export const createRubric = async (id: number, assignmentID: number, canComment: boolean): Promise<{ id: number }> => {
-  const response = await fetch(`${BASE_URL}/create_rubric`, {
+export const createRubric = async (assignmentID: number, canComment: boolean): Promise<{ id: number }> => {
+  const response = await fetch(`${BASE_URL}/rubric/create`, {
     method: 'POST',
     body: JSON.stringify({
-      id, assignmentID, canComment
+      assignmentID, canComment
     }),
     headers: {
       'Content-Type': 'application/json',
@@ -380,11 +380,12 @@ export const createRubric = async (id: number, assignmentID: number, canComment:
     throw new Error(`Response status: ${response.status}`);
   }
 
-  return await response.json();
+  const data = await response.json();
+  return { id: data.rubric.id };
 }
 
 export const getRubric = async (rubricID: number) => {
-  const resp = await fetch(`${BASE_URL}/rubric?rubricID=${rubricID}`, {
+  const resp = await fetch(`${BASE_URL}/rubric/${rubricID}`, {
       credentials: 'include'
   });
 
