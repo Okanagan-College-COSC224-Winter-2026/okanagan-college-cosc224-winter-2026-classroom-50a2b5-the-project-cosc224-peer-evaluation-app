@@ -25,7 +25,6 @@ export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProp
             ));
             setStatusType('success');
             setStatusMessage('Rubric created successfully!');
-            setTimeout(() => window.location.reload(), 2000);
             if (onRubricCreated) {
                 onRubricCreated(newRubricID);
             }

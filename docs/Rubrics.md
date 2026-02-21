@@ -23,7 +23,10 @@ This feature uses existing models (`Rubric`, `CriteriaDescription`) that were al
 | File | Change |
 |------|--------|
 | `util/api.ts` | Updated `getCriteria`, `createCriteria`, `createRubric`, `getRubric` to point at Flask `/rubric/` endpoints |
-| `components/RubricCreator.tsx` | Updated `createRubric(id, id, canComment)` → `createRubric(id, canComment)` (backend auto-generates rubric ID) |
+| `util/api.ts` | Added `getRubricForAssignment(assignmentID)` — fetches rubric by assignment (returns `null` on 404) |
+| `util/api.ts` | Added `deleteRubric(rubricID)` — calls `DELETE /rubric/<id>` |
+| `components/RubricCreator.tsx` | Updated `createRubric(id, id, canComment)` → `createRubric(id, canComment)` (backend auto-generates rubric ID); removed page reload in favour of `onRubricCreated` callback |
+| `pages/Assignment.tsx` | Fetches rubric by assignment ID on mount; conditionally shows `RubricCreator` (no rubric) or `RubricDisplay` + Delete button (rubric exists); fixed bug where assignment ID was passed as rubric ID |
 
 ### Tests
 
@@ -135,7 +138,8 @@ Rubric     (1) ──→ (0..*) CriteriaDescription
 - [x] 21 tests written and passing (109 total)
 - [x] Update frontend `api.ts` to use new Flask routes
 - [x] Update `RubricCreator.tsx` call signature for new API
-- [ ] Verify `RubricCreator.tsx` and `RubricDisplay.tsx` work end-to-end
+- [x] Fix `Assignment.tsx` — fetch rubric by assignment ID, conditional creator/display, delete button
+- [x] Verify `RubricCreator.tsx` and `RubricDisplay.tsx` work end-to-end
 - [x] Update `ENDPOINT_SUMMARY.md` with rubric endpoints
 
 ## Related Documentation

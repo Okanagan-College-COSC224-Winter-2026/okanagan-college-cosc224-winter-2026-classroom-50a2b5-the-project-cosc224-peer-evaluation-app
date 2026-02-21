@@ -398,6 +398,40 @@ export const getRubric = async (rubricID: number) => {
   return await resp.json();
 }
 
+export const getRubricForAssignment = async (assignmentID: number) => {
+  const resp = await fetch(`${BASE_URL}/rubric/assignment/${assignmentID}`, {
+    credentials: 'include'
+  });
+
+  maybeHandleExpire(resp);
+
+  // 404 means no rubric exists yet — return null instead of throwing
+  if (resp.status === 404) {
+    return null;
+  }
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json();
+}
+
+export const deleteRubric = async (rubricID: number) => {
+  const resp = await fetch(`${BASE_URL}/rubric/${rubricID}`, {
+    method: 'DELETE',
+    credentials: 'include'
+  });
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json();
+}
+
 
 export const createAssignment = async (courseID: number, name: string)=> {
   const response = await fetch(`${BASE_URL}/assignment/create_assignment`, {

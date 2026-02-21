@@ -11,7 +11,9 @@ import {
   listStuGroup,
   createReview,
   createCriterion,
-  getReview
+  getReview,
+  getRubricForAssignment,
+  deleteRubric
 } from "../util/api";
 
 // Group member type returned from listStuGroup
@@ -33,6 +35,17 @@ export default function Assignment() {
   const [stuID, setStuID] = useState<number>(0);
   const [selectedCriteria, setSelectedCriteria] = useState<SelectedCriterion[]>([]);
   const [review, setReview] = useState<number[]>([]);
+  const [rubricId, setRubricId] = useState<number | null>(null);
+
+  const loadRubric = async () => {
+    try {
+      const rubric = await getRubricForAssignment(Number(id));
+      setRubricId(rubric ? rubric.id : null);
+    } catch (error) {
+      console.error('Error fetching rubric:', error);
+      setRubricId(null);
+    }
+  };
 
   useEffect(() => {
       (async () => {
@@ -42,6 +55,9 @@ export default function Assignment() {
           return;
         }
         setStuID(currentUserId);
+
+        // Load rubric for this assignment
+        await loadRubric();
         
         // Get assignment to find its courseID, then fetch group members
         try {
@@ -111,13 +127,30 @@ export default function Assignment() {
       />
 
       <div className='assignmentRubricDisplay'>
-        <RubricDisplay rubricId={Number(id)} onCriterionSelect={handleCriterionSelect} grades={review} />
+        <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
       </div>
       {
-        isTeacher() && 
+        isTeacher() && rubricId && (
           <div className='assignmentRubric'>
-            <RubricCreator id={Number(id)}/>
+            <button className='deleteRubricBtn' onClick={async () => {
+              if (window.confirm('Are you sure you want to delete this rubric? All criteria will be removed.')) {
+                try {
+                  await deleteRubric(rubricId);
+                  setRubricId(null);
+                } catch (error) {
+                  console.error('Error deleting rubric:', error);
+                }
+              }
+            }}>Delete Rubric</button>
           </div>
+        )
+      }
+      {
+        isTeacher() && !rubricId && (
+          <div className='assignmentRubric'>
+            <RubricCreator id={Number(id)} onRubricCreated={(newId) => setRubricId(newId)} />
+          </div>
+        )
       }
 
 {
