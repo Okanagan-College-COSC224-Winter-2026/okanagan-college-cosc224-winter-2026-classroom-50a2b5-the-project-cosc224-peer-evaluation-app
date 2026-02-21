@@ -630,6 +630,90 @@ def test_get_assignments_by_class_id_nonexistent_class(test_client, make_admin):
     assert assignments.status_code == 404
     assert assignments.json["msg"] == "Class not found"
 
+
+def test_get_assignments_by_class_id_includes_due_date_metadata(test_client, make_admin):
+    """
+    GIVEN a teacher with assignments in a class
+    WHEN they request assignments for that class
+    THEN each assignment payload includes key due date metadata
+    """
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    class_response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "US15 Metadata Class"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_response.json["class"]["id"]
+
+    due_date = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=3)).isoformat()
+    test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps(
+            {
+                "courseID": class_id,
+                "name": "Timed Assignment",
+                "rubric": "Completeness",
+                "due_date": due_date,
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assignments_response = test_client.get(f"/assignment/{class_id}")
+    assert assignments_response.status_code == 200
+    assert len(assignments_response.json) == 1
+
+    assignment_payload = assignments_response.json[0]
+    assert "due_date" in assignment_payload
+    assert assignment_payload["due_date"].startswith(due_date[:10])
+
+
+def test_get_assignments_by_class_id_supports_missing_due_date_metadata(test_client, make_admin):
+    """
+    GIVEN a teacher with assignments without due dates
+    WHEN they request assignments for that class
+    THEN due date metadata is still present as null for frontend status handling
+    """
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    class_response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "US15 No Due Date Class"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_response.json["class"]["id"]
+
+    test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps(
+            {
+                "courseID": class_id,
+                "name": "Open Assignment",
+                "rubric": "Participation",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assignments_response = test_client.get(f"/assignment/{class_id}")
+    assert assignments_response.status_code == 200
+    assert len(assignments_response.json) == 1
+
+    assignment_payload = assignments_response.json[0]
+    assert "due_date" in assignment_payload
+    assert assignment_payload["due_date"] is None
+
 def test_unauthenticated_user_cannot_get_assignments(test_client):
     """
     GIVEN an unauthenticated user

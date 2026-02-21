@@ -278,7 +278,7 @@
 
 ---
 
-## US15 – Course Page Shows Assignments — **In-Progress**
+## US15 – Course Page Shows Assignments — **Complete**
 
 **As a teacher, I want my dashboard to show my courses and their assignments so that I can see what I have created.**
 
@@ -291,7 +291,7 @@
 
 - ✅ Given the teacher has created courses and assignments, the dashboard lists each course  
 - ✅ Each course entry shows the assignments associated with it  
-- [ ] Assignment listings include key metadata such as due dates or status  
+- ✅ Assignment listings include key metadata such as due dates or status  
 
 ---
 

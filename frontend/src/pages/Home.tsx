@@ -5,6 +5,32 @@ import './Home.css'
 import { listClasses, listAssignments } from "../util/api";
 import { isTeacher, isAdmin } from "../util/login";
 
+function formatDueDate(dueDate?: string): string {
+  if (!dueDate) {
+    return "No due date";
+  }
+
+  const parsed = new Date(dueDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Invalid due date";
+  }
+
+  return parsed.toLocaleDateString();
+}
+
+function getAssignmentStatus(dueDate?: string): "No due date" | "Upcoming" | "Overdue" {
+  if (!dueDate) {
+    return "No due date";
+  }
+
+  const parsed = new Date(dueDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return "No due date";
+  }
+
+  return parsed.getTime() < Date.now() ? "Overdue" : "Upcoming";
+}
+
 export default function Home() {
   const [courses, setCourses] = useState<CourseWithAssignments[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,17 +87,50 @@ export default function Home() {
         {
           courses.map((course) => {
             const assignmentText = `${course.assignmentCount || 0} assignments`;
+            const assignments = course.assignments || [];
             
             return (
-              <ClassCard
-                key={course.id}
-                image="https://crc.losrios.edu//shared/img/social-1200-630/programs/general-science-social.jpg"
-                name={course.name}
-                subtitle={assignmentText}
-                onclick={() => {
-                  window.location.href = `/classes/${course.id}/home`
-                }}
-              />
+              <div key={course.id} className="CourseDashboardCard">
+                <ClassCard
+                  image="https://crc.losrios.edu//shared/img/social-1200-630/programs/general-science-social.jpg"
+                  name={course.name}
+                  subtitle={assignmentText}
+                  onclick={() => {
+                    window.location.href = `/classes/${course.id}/home`
+                  }}
+                />
+
+                <div className="CourseAssignmentList">
+                  <h3>Assignments</h3>
+
+                  {assignments.length === 0 ? (
+                    <p className="NoAssignments">No assignments yet</p>
+                  ) : (
+                    <ul>
+                      {assignments.map((assignment) => {
+                        const status = getAssignmentStatus(assignment.due_date);
+                        return (
+                          <li
+                            key={assignment.id}
+                            className="CourseAssignmentItem"
+                            onClick={() => {
+                              window.location.href = `/assignments/${assignment.id}`
+                            }}
+                          >
+                            <div className="AssignmentMainRow">
+                              <span className="AssignmentName">{assignment.name}</span>
+                              <span className={`AssignmentStatus AssignmentStatus--${status.replace(/\s+/g, "")}`}>
+                                {status}
+                              </span>
+                            </div>
+                            <div className="AssignmentMeta">Due: {formatDueDate(assignment.due_date)}</div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </div>
             )
           })
         }

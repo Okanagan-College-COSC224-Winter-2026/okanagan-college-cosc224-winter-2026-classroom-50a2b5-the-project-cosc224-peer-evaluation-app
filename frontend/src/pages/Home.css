@@ -15,6 +15,83 @@
   gap: 1rem;
 }
 
+.CourseDashboardCard {
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.CourseAssignmentList {
+  border: 1px solid var(--text-secondary);
+  border-radius: 6px;
+  padding: 0.5rem;
+  background: var(--background-secondary);
+}
+
+.CourseAssignmentList h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.CourseAssignmentList ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.CourseAssignmentItem {
+  padding: 0.4rem;
+  border-radius: 4px;
+  background: var(--background-primary);
+}
+
+.CourseAssignmentItem:hover {
+  cursor: pointer;
+  filter: brightness(0.95);
+}
+
+.AssignmentMainRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.AssignmentName {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.AssignmentMeta {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.AssignmentStatus {
+  font-size: 0.75rem;
+  border: 1px solid var(--text-secondary);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.AssignmentStatus--Overdue {
+  font-weight: 700;
+}
+
+.NoAssignments {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
 .ClassCreateButton {
   display: flex;
   flex-direction: column;
