@@ -9,41 +9,21 @@ import { importCSV } from "../util/csv";
 import Textbox from "../components/Textbox";
 import StatusMessage from "../components/StatusMessage";
 import { isTeacher } from "../util/login";
-
-function formatDueDate(dueDate?: string): string {
-  if (!dueDate) {
-    return "No due date";
-  }
-
-  const parsed = new Date(dueDate);
-  if (Number.isNaN(parsed.getTime())) {
-    return "Invalid due date";
-  }
-
-  return parsed.toLocaleDateString();
-}
-
-function getAssignmentStatus(dueDate?: string): "No due date" | "Upcoming" | "Overdue" {
-  if (!dueDate) {
-    return "No due date";
-  }
-
-  const parsed = new Date(dueDate);
-  if (Number.isNaN(parsed.getTime())) {
-    return "No due date";
-  }
-
-  return parsed.getTime() < Date.now() ? "Overdue" : "Upcoming";
-}
+import { formatDueDate, getAssignmentStatus } from "../util/assignmentDates";
+import Modal from "../components/Modal";
 
 export default function ClassHome() {
   const { id } = useParams();
-  const idNew = Number(id)
+  const courseId = Number(id);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [newAssignmentName, setNewAssignmentName] = useState("");
+  const [newAssignmentDescription, setNewAssignmentDescription] = useState("");
+  const [newAssignmentStartDate, setNewAssignmentStartDate] = useState("");
+  const [newAssignmentDueDate, setNewAssignmentDueDate] = useState("");
   const [className, setClassName] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -55,10 +35,16 @@ export default function ClassHome() {
     })();
   }, [id]);
     
-    const tryCreateAssingment = async () => {
+    const tryCreateAssignment = async () => {
       try {
         setStatusMessage('');
-        const response = await createAssignment(idNew, newAssignmentName);
+        const response = await createAssignment(
+          courseId,
+          newAssignmentName,
+          newAssignmentDescription || undefined,
+          newAssignmentStartDate || undefined,
+          newAssignmentDueDate || undefined,
+        );
         const createdAssignment = response?.assignment;
 
         if (!createdAssignment?.id) {
@@ -67,12 +53,16 @@ export default function ClassHome() {
 
         setAssignments((prev) => [...prev, createdAssignment]);
         setNewAssignmentName("");
+        setNewAssignmentDescription("");
+        setNewAssignmentStartDate("");
+        setNewAssignmentDueDate("");
         setStatusType('success');
         setStatusMessage('Assignment created successfully!');
+        setIsModalOpen(false);
       } catch (error) {
         console.error('Error creating assignment:', error);
         setStatusType('error');
-        setStatusMessage('Error creating assignment.');
+        setStatusMessage(error instanceof Error ? error.message : 'Error creating assignment.');
       }
     };
     
@@ -113,9 +103,16 @@ export default function ClassHome() {
 
       <div className="Class">
         <div className="Assignments">
-          <div className="CourseAssignmentList">
+          <div className="AssignmentsHeader">
             <h3>Assignments</h3>
+            {isTeacher() && (
+              <Button onClick={() => setIsModalOpen(true)}>
+                + New Assignment
+              </Button>
+            )}
+          </div>
 
+          <div className="CourseAssignmentList">
             {assignments.length === 0 ? (
               <p className="NoAssignments">No assignments yet</p>
             ) : (
@@ -144,23 +141,61 @@ export default function ClassHome() {
           </div>
         </div>
 
-        {isTeacher() ? (
-          <div className="AssInputChunk">
-            <span>New Assignment Name:</span>
-            <Textbox
-              placeholder="New Assignment..."
-              onInput={setNewAssignmentName}
-              className="AssignmentInput"
-            />
-            <Button
-              onClick={() =>
-                tryCreateAssingment()
-              }
-            >
-              Add
-            </Button>
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title="Create New Assignment"
+        >
+          <div className="NewAssignmentForm">
+            <label>
+              <span>Assignment Name</span>
+              <Textbox
+                placeholder="Enter assignment name..."
+                onInput={setNewAssignmentName}
+                value={newAssignmentName}
+              />
+            </label>
+
+            <label>
+              <span>Description</span>
+              <Textbox
+                placeholder="Enter assignment description..."
+                onInput={setNewAssignmentDescription}
+                value={newAssignmentDescription}
+              />
+            </label>
+
+            <label>
+              <span>Start Date</span>
+              <Textbox
+                type="datetime-local"
+                onInput={setNewAssignmentStartDate}
+                value={newAssignmentStartDate}
+              />
+            </label>
+
+            <label>
+              <span>Due Date</span>
+              <Textbox
+                type="datetime-local"
+                onInput={setNewAssignmentDueDate}
+                value={newAssignmentDueDate}
+              />
+            </label>
+
+            <div className="ModalActions">
+              <Button
+                onClick={() => setIsModalOpen(false)}
+                type="secondary"
+              >
+                Cancel
+              </Button>
+              <Button onClick={tryCreateAssignment}>
+                Create Assignment
+              </Button>
+            </div>
           </div>
-        ) : null}
+        </Modal>
       </div>
     </>
   );

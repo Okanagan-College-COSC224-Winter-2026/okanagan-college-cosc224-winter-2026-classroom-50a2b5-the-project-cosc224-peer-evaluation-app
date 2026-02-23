@@ -11,6 +11,21 @@
     padding: 12px;
     align-items: stretch;
     width: 100%;
+    gap: 1rem;
+}
+
+.AssignmentsHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.AssignmentsHeader h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+    flex: 1;
 }
 
 .CourseAssignmentList {
@@ -18,12 +33,6 @@
     border-radius: 6px;
     padding: 0.75rem;
     background: var(--background-secondary);
-}
-
-.CourseAssignmentList h3 {
-    margin: 0 0 0.75rem 0;
-    color: var(--text-primary);
-    font-size: 1rem;
 }
 
 .CourseAssignmentList ul {
@@ -108,25 +117,36 @@
     padding: 12px;
 }
 
-
-.AssInputChunk {
-  
-    margin: 8px;
-  
-    width: 30%;
-  
-    background-color: #fff;
-  
-    
-  }
-
-  
-.AssInput {
+.NewAssignmentForm {
     display: flex;
     flex-direction: column;
-    align-items: center;
-  
-    margin-bottom: 12px;
-  
-    width: 100%;
-  }
+    gap: 1rem;
+}
+
+.NewAssignmentForm label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.NewAssignmentForm label span {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.NewAssignmentForm input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--text-secondary);
+    border-radius: 4px;
+    background-color: var(--background-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.NewAssignmentForm input:focus {
+    outline: none;
+    border-color: var(--button-primary);
+    box-shadow: 0 0 0 2px rgba(var(--button-primary-rgb), 0.1);
+}

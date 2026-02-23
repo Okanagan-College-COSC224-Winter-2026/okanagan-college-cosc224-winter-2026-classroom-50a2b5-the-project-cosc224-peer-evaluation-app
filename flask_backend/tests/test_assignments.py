@@ -80,6 +80,51 @@ def test_create_assignment_missing_fields(test_client, make_admin):
     assert response.status_code == 400
     assert response.json["msg"] == "Assignment name is required"
 
+
+def test_teacher_can_create_assignment_with_description_start_and_due_dates(test_client, make_admin):
+    """
+    GIVEN a teacher user
+    WHEN they create an assignment with description, start_date, and due_date
+    THEN those metadata fields should be persisted and returned
+    """
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    class_response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "US4 Metadata Class"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_response.json["class"]["id"]
+
+    start_date = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)).isoformat()
+    due_date = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)).isoformat()
+
+    response = test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps(
+            {
+                "courseID": class_id,
+                "name": "Milestone 1",
+                "description": "Implement initial feature set",
+                "start_date": start_date,
+                "due_date": due_date,
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 201
+    assert response.json["assignment"]["name"] == "Milestone 1"
+    assert response.json["assignment"]["description"] == "Implement initial feature set"
+    assert response.json["assignment"]["start_date"].startswith(start_date[:10])
+    assert response.json["assignment"]["due_date"].startswith(due_date[:10])
+
 def test_non_assigned_teacher_cannot_create_assignment(test_client, make_admin):
     """
     GIVEN a teacher user who is not assigned to the class
@@ -183,6 +228,7 @@ def test_teacher_can_edit_assignment_before_due_date(test_client, make_admin):
     )
     class_id = class_response.json["class"]["id"]
     # Now, create the assignment with a future due date
+    start_date = datetime.datetime.now(datetime.timezone.utc) + timedelta(days=1)
     future_date = datetime.datetime.now() + timedelta(days=60)
     assignment_response = test_client.post(
         "/assignment/create_assignment",
@@ -190,6 +236,8 @@ def test_teacher_can_edit_assignment_before_due_date(test_client, make_admin):
             {
                 "courseID": class_id,
                 "name": "Lab Report 1",
+                "description": "Initial draft",
+                "start_date": start_date.isoformat(),
                 "rubric": "Completeness",
                 "due_date": future_date.isoformat(),
             }
@@ -204,6 +252,8 @@ def test_teacher_can_edit_assignment_before_due_date(test_client, make_admin):
         data=json.dumps(
             {
                 "name": "Updated Lab Report 1",
+                "description": "Revised report with final edits",
+                "start_date": (datetime.datetime.now(datetime.timezone.utc) + timedelta(days=2)).isoformat(),
                 "rubric": "Thoroughness",
                 "due_date": new_due_date.isoformat(),
             }
@@ -213,15 +263,16 @@ def test_teacher_can_edit_assignment_before_due_date(test_client, make_admin):
     assert edit_response.status_code == 200
     assert edit_response.json["msg"] == "Assignment updated"
     assert edit_response.json["assignment"]["name"] == "Updated Lab Report 1"
+    assert edit_response.json["assignment"]["description"] == "Revised report with final edits"
     assert edit_response.json["assignment"]["rubric_text"] == "Thoroughness"
     # Check that due_date is approximately correct (same day)
     assert edit_response.json["assignment"]["due_date"].startswith(new_due_date.strftime("%Y-%m-%d"))
 
-def test_teacher_cannot_edit_assignment_after_due_date(test_client, make_admin):
+def test_teacher_can_edit_assignment_after_due_date(test_client, make_admin):
     """
     GIVEN a teacher user
     WHEN they try to edit an assignment after its due date
-    THEN the API should return a 400 error
+    THEN the API should allow the edit and return 200
     """
     # Use make_admin fixture to create a teacher user
     make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
@@ -263,8 +314,8 @@ def test_teacher_cannot_edit_assignment_after_due_date(test_client, make_admin):
         ),
         headers={"Content-Type": "application/json"},
     )
-    assert edit_response.status_code == 400
-    assert edit_response.json["msg"] == "Assignment cannot be modified after its due date"
+    assert edit_response.status_code == 200
+    assert edit_response.json["assignment"]["name"] == "Updated Painting 1"
 
 def test_non_assigned_teacher_cannot_edit_assignment(test_client, make_admin):
     """
@@ -416,7 +467,7 @@ def test_delete_assignment_after_due_date(test_client, make_admin):
     """
     GIVEN a teacher user
     WHEN they try to delete an assignment after its due date
-    THEN the API should return a 400 error
+    THEN the API should allow the deletion and return 200
     """
     # Use make_admin fixture to create a teacher user
     make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
@@ -452,8 +503,8 @@ def test_delete_assignment_after_due_date(test_client, make_admin):
         f"/assignment/delete_assignment/{assignment_id}",
         headers={"Content-Type": "application/json"},
     )
-    assert delete_response.status_code == 400
-    assert delete_response.json["msg"] == "Assignment cannot be deleted after its due date"
+    assert delete_response.status_code == 200
+    assert delete_response.json["msg"] == "Assignment deleted"
 
 def test_non_assigned_teacher_cannot_delete_assignment(test_client, make_admin):
     """

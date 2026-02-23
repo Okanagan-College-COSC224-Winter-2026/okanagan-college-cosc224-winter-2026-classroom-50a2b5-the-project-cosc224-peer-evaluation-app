@@ -2,10 +2,47 @@ import os
 
 import click
 from flask.cli import with_appcontext
+from sqlalchemy import inspect, text
 from werkzeug.security import generate_password_hash
 
 from ..models import User, Course, Assignment
 from ..models.db import db
+
+
+@click.command("migrate_assignment_columns")
+@with_appcontext
+def migrate_assignment_columns_command():
+    """Add missing Assignment columns for existing databases.
+
+    This command is idempotent and safe to run multiple times.
+    """
+
+    inspector = inspect(db.engine)
+    if not inspector.has_table("Assignment"):
+        click.echo("Assignment table does not exist. Run 'flask init_db' first.", err=True)
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("Assignment")}
+    migrations = [
+        ("description", 'ALTER TABLE "Assignment" ADD COLUMN description TEXT'),
+        ("start_date", 'ALTER TABLE "Assignment" ADD COLUMN start_date TIMESTAMP'),
+        ("due_date", 'ALTER TABLE "Assignment" ADD COLUMN due_date TIMESTAMP'),
+    ]
+
+    applied = 0
+    for column_name, statement in migrations:
+        if column_name in existing_columns:
+            click.echo(f"Column '{column_name}' already exists on Assignment")
+            continue
+        db.session.execute(text(statement))
+        applied += 1
+        click.echo(f"Added column '{column_name}' to Assignment")
+
+    if applied:
+        db.session.commit()
+        click.echo(f"Assignment migration completed ({applied} column(s) added)")
+    else:
+        click.echo("Assignment migration completed (no changes needed)")
 
 
 @click.command("init_db")
@@ -157,8 +194,9 @@ def add_sample_courses_command():
             courseID=course.id,
             name="Example Assignment",
             rubric_text="Example rubric",
-            # due_date=None
-            # due_date is currently not in the Assignment table
+            # description=None,
+            # start_date=None,
+            # due_date=None,
         )
         Assignment.create(assignment)
         click.echo(f"  - Assignment 'Example Assignment' added to '{course.name}'")
@@ -170,6 +208,7 @@ def init_app(app):
     """Register CLI commands with the Flask app"""
     app.cli.add_command(init_db_command)
     app.cli.add_command(drop_db_command)
+    app.cli.add_command(migrate_assignment_columns_command)
     app.cli.add_command(add_users_command)
     app.cli.add_command(create_admin_command)
     app.cli.add_command(ensure_admin_command)
