@@ -10,6 +10,32 @@ import Textbox from "../components/Textbox";
 import StatusMessage from "../components/StatusMessage";
 import { isTeacher } from "../util/login";
 
+function formatDueDate(dueDate?: string): string {
+  if (!dueDate) {
+    return "No due date";
+  }
+
+  const parsed = new Date(dueDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Invalid due date";
+  }
+
+  return parsed.toLocaleDateString();
+}
+
+function getAssignmentStatus(dueDate?: string): "No due date" | "Upcoming" | "Overdue" {
+  if (!dueDate) {
+    return "No due date";
+  }
+
+  const parsed = new Date(dueDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return "No due date";
+  }
+
+  return parsed.getTime() < Date.now() ? "Overdue" : "Upcoming";
+}
+
 export default function ClassHome() {
   const { id } = useParams();
   const idNew = Number(id)
@@ -87,17 +113,35 @@ export default function ClassHome() {
 
       <div className="Class">
         <div className="Assignments">
-          <ul className="Assignment">
-            {assignments.map((assignment) => {
-              return (
-                <li key={assignment.id}>
-                  <AssignmentCard id={assignment.id}>
-                    {assignment.name}
-                  </AssignmentCard>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="CourseAssignmentList">
+            <h3>Assignments</h3>
+
+            {assignments.length === 0 ? (
+              <p className="NoAssignments">No assignments yet</p>
+            ) : (
+              <ul>
+                {assignments.map((assignment) => {
+                  const status = getAssignmentStatus(assignment.due_date);
+                  return (
+                    <li
+                      key={assignment.id}
+                      className="CourseAssignmentItem"
+                    >
+                      <div className="AssignmentMainRow">
+                        <AssignmentCard id={assignment.id}>
+                          {assignment.name}
+                        </AssignmentCard>
+                        <span className={`AssignmentStatus AssignmentStatus--${status.replace(/\s+/g, "")}`}>
+                          {status}
+                        </span>
+                      </div>
+                      <div className="AssignmentMeta">Due: {formatDueDate(assignment.due_date)}</div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </div>
 
         {isTeacher() ? (
