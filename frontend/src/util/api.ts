@@ -523,7 +523,10 @@ export const changePassword = async (currentPassword: string, newPassword: strin
 
 
 // US9 - edit assignment
-export const editAssignment = async (assignmentId: number, updates: { name?: string; due_date?: string; rubric?: string }) => {
+export const editAssignment = async (
+  assignmentId: number,
+  updates: { name?: string; due_date?: string | null; rubric?: string | null }
+) => {
   const response = await fetch(`${BASE_URL}/assignment/edit_assignment/${assignmentId}`, {
     method: 'PATCH',
     body: JSON.stringify(updates),

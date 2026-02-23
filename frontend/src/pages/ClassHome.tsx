@@ -22,6 +22,15 @@ export default function ClassHome() {
   const [className, setClassName] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
+
+  
+  // Define update payload type to avoid `any`
+  type AssignmentUpdate = {
+    name?: string
+    due_date?: string | null
+    rubric?: string | null
+  }
+
   const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null); //edit assignment component state
 
   useEffect(() => {
@@ -32,7 +41,7 @@ export default function ClassHome() {
       setAssignments(resp);
       setClassName(currentClass?.name || null);
     })();
-  }, []);
+  }, [id]);
     
     const tryCreateAssingment = async () => {
       try {
@@ -56,7 +65,7 @@ export default function ClassHome() {
     };
 
     //US9 - handle edit assignment
-    const handleEditAssignment = async (updates: any) => {
+    const handleEditAssignment = async (updates: AssignmentUpdate) => {
       if (!editingAssignment) return;
       try {
       await editAssignment(editingAssignment.id, updates);

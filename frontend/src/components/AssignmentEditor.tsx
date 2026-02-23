@@ -10,7 +10,12 @@ interface Assignment {
 
 interface Props {
   assignment: Assignment
-  onSave: (updates: any) => Promise<void>
+  // Use a structured update type instead of `any` to satisfy eslint
+  onSave: (updates: {
+    name?: string
+    due_date?: string | null
+    rubric?: string | null
+  }) => Promise<void>
   onCancel: () => void
 }
 
@@ -31,8 +36,9 @@ export default function AssignmentEditor(props: Props) {
         rubric: rubric || null,
       })
       props.onCancel() // Close modal on success
-    } catch (err: any) {
-      setError(err.message || 'Failed to save assignment')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(msg || 'Failed to save assignment')
     } finally {
       setLoading(false)
     }
