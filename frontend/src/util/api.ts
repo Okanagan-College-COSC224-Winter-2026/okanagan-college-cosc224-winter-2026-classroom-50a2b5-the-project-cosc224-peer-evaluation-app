@@ -520,3 +520,43 @@ export const changePassword = async (currentPassword: string, newPassword: strin
 
   return await response.json();
 }
+
+
+// US9 - edit assignment
+export const editAssignment = async (assignmentId: number, updates: { name?: string; due_date?: string; rubric?: string }) => {
+  const response = await fetch(`${BASE_URL}/assignment/edit_assignment/${assignmentId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include'
+  })
+  
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    throw new Error(`Response status: ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+// US9 - delete assignment
+export const deleteAssignment = async (assignmentId: number) => {
+  const response = await fetch(`${BASE_URL}/assignment/delete_assignment/${assignmentId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include'
+  })
+  
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    throw new Error(`Response status: ${response.status}`);
+  }
+
+  return await response.json();
+}
