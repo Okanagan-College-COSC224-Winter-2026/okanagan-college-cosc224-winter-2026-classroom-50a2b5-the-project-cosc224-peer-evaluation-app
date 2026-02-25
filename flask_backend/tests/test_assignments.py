@@ -392,6 +392,65 @@ def test_unauthenticated_user_cannot_edit_assignment(test_client):
     )
     assert edit_response.status_code == 401
 
+
+def test_student_cannot_edit_assignment(test_client, make_admin):
+    """
+    GIVEN a student user
+    WHEN they try to edit an assignment
+    THEN the API should return 403
+    """
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    class_response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "US4 Student Edit Restriction Class"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_response.json["class"]["id"]
+
+    assignment_response = test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps(
+            {
+                "courseID": class_id,
+                "name": "Read-only Assignment",
+                "rubric": "Clarity",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+    assignment_id = assignment_response.json["assignment"]["id"]
+
+    test_client.post(
+        "/auth/register",
+        data=json.dumps(
+            {
+                "name": "Student Editor",
+                "email": "student.editor@example.com",
+                "password": "studentpass",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "student.editor@example.com", "password": "studentpass"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    edit_response = test_client.patch(
+        f"/assignment/edit_assignment/{assignment_id}",
+        data=json.dumps({"name": "Student Update Attempt"}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert edit_response.status_code == 403
+    assert edit_response.json["msg"] == "Insufficient permissions"
+
 def test_edit_nonexistent_assignment(test_client, make_admin):
     """
     GIVEN a teacher user
@@ -570,6 +629,64 @@ def test_unauthenticated_user_cannot_delete_assignment(test_client):
     )
     assert delete_response.status_code == 401
 
+
+def test_student_cannot_delete_assignment(test_client, make_admin):
+    """
+    GIVEN a student user
+    WHEN they try to delete an assignment
+    THEN the API should return 403
+    """
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    class_response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "US4 Student Delete Restriction Class"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_response.json["class"]["id"]
+
+    assignment_response = test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps(
+            {
+                "courseID": class_id,
+                "name": "Delete-protected Assignment",
+                "rubric": "Depth",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+    assignment_id = assignment_response.json["assignment"]["id"]
+
+    test_client.post(
+        "/auth/register",
+        data=json.dumps(
+            {
+                "name": "Student Deleter",
+                "email": "student.deleter@example.com",
+                "password": "studentpass",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "student.deleter@example.com", "password": "studentpass"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    delete_response = test_client.delete(
+        f"/assignment/delete_assignment/{assignment_id}",
+        headers={"Content-Type": "application/json"},
+    )
+    assert delete_response.status_code == 403
+    assert delete_response.json["msg"] == "Insufficient permissions"
+
 def test_delete_nonexistent_assignment(test_client, make_admin):
     """
     GIVEN a teacher user
@@ -635,6 +752,116 @@ def test_get_assignments_by_class_id(test_client, make_admin):
     returned_names = [assignment["name"] for assignment in assignments.json]
     for name in assignment_names:
         assert name in returned_names
+
+
+def test_enrolled_student_can_see_assignments_for_class(test_client, make_admin):
+    """
+    GIVEN an enrolled student in a class
+    WHEN the student requests assignments for that class
+    THEN the API should return assignments successfully
+    """
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    class_response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "US4 Student Visibility Class"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_response.json["class"]["id"]
+
+    test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps(
+            {
+                "courseID": class_id,
+                "name": "Visible Assignment",
+                "rubric": "Completion",
+                "due_date": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)).isoformat(),
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+
+    test_client.post(
+        "/class/enroll_students",
+        data=json.dumps(
+            {
+                "class_id": class_id,
+                "students": "id,name,email\n1,Student One,student.one@example.com",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "student.one@example.com", "password": "password123"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assignments_response = test_client.get(f"/assignment/{class_id}")
+    assert assignments_response.status_code == 200
+    assert len(assignments_response.json) == 1
+    assert assignments_response.json[0]["name"] == "Visible Assignment"
+
+
+def test_unenrolled_student_cannot_see_assignments_for_class(test_client, make_admin):
+    """
+    GIVEN a student not enrolled in a class
+    WHEN the student requests assignments for that class
+    THEN the API should return 403
+    """
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    class_response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "US4 Access Control Class"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_response.json["class"]["id"]
+
+    test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps(
+            {
+                "courseID": class_id,
+                "name": "Restricted Assignment",
+                "rubric": "Completion",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+
+    test_client.post(
+        "/auth/register",
+        data=json.dumps(
+            {
+                "name": "Unenrolled Student",
+                "email": "student.two@example.com",
+                "password": "studentpass",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "student.two@example.com", "password": "studentpass"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assignments_response = test_client.get(f"/assignment/{class_id}")
+    assert assignments_response.status_code == 403
+    assert assignments_response.json["msg"] == "Unauthorized: You do not have access to this class"
 
 def test_get_assignments_by_class_id_no_assignments(test_client, make_admin):
     """
@@ -812,6 +1039,104 @@ def test_get_single_assignment(test_client, make_admin):
     assert response.json["id"] == assignment_id
     assert response.json["name"] == "Test Assignment"
     assert response.json["courseID"] == class_id  # Verify courseID is included
+
+
+def test_enrolled_student_can_get_single_assignment_detail(test_client, make_admin):
+    """
+    GIVEN an enrolled student
+    WHEN they request assignment detail
+    THEN the API should return assignment details
+    """
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    class_response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "US4 Detail Access Class"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_response.json["class"]["id"]
+
+    assignment_response = test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps({"courseID": class_id, "name": "Detail Visible Assignment", "rubric": "Clarity"}),
+        headers={"Content-Type": "application/json"},
+    )
+    assignment_id = assignment_response.json["assignment"]["id"]
+
+    test_client.post(
+        "/class/enroll_students",
+        data=json.dumps(
+            {
+                "class_id": class_id,
+                "students": "id,name,email\n1,Detail Student,detail.student@example.com",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "detail.student@example.com", "password": "password123"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    response = test_client.get(f"/assignment/detail/{assignment_id}")
+    assert response.status_code == 200
+    assert response.json["id"] == assignment_id
+    assert response.json["courseID"] == class_id
+
+
+def test_unenrolled_student_cannot_get_single_assignment_detail(test_client, make_admin):
+    """
+    GIVEN a student not enrolled in a class
+    WHEN they request assignment detail for that class
+    THEN the API should return 403
+    """
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    class_response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "US4 Detail Restricted Class"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_response.json["class"]["id"]
+
+    assignment_response = test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps({"courseID": class_id, "name": "Detail Restricted Assignment", "rubric": "Coverage"}),
+        headers={"Content-Type": "application/json"},
+    )
+    assignment_id = assignment_response.json["assignment"]["id"]
+
+    test_client.post(
+        "/auth/register",
+        data=json.dumps(
+            {
+                "name": "Unenrolled Detail Student",
+                "email": "detail.unenrolled@example.com",
+                "password": "studentpass",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "detail.unenrolled@example.com", "password": "studentpass"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    response = test_client.get(f"/assignment/detail/{assignment_id}")
+    assert response.status_code == 403
+    assert response.json["msg"] == "Unauthorized: You do not have access to this class"
 
 
 def test_get_nonexistent_assignment(test_client, make_admin):

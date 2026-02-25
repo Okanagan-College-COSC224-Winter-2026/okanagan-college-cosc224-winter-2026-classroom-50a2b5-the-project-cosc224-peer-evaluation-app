@@ -2,10 +2,20 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from ..models import Course, Assignment, User, AssignmentSchema
+from ..models import Course, Assignment, User, AssignmentSchema, User_Course
 from .auth_controller import jwt_teacher_required
 
 bp = Blueprint("assignment", __name__, url_prefix="/assignment")
+
+
+def _can_access_course_assignments(user, course):
+    if user.is_admin():
+        return True
+    if course.teacherID == user.id:
+        return True
+    if user.is_student() and User_Course.get(user.id, course.id):
+        return True
+    return False
 
 @bp.route("/create_assignment", methods=["POST"])
 @jwt_teacher_required
@@ -145,6 +155,18 @@ def get_assignment(assignment_id):
     if not assignment:
         return jsonify({"msg": "Assignment not found"}), 404
 
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    course = Course.get_by_id(assignment.courseID)
+    if not course:
+        return jsonify({"msg": "Class not found"}), 404
+
+    if not _can_access_course_assignments(user, course):
+        return jsonify({"msg": "Unauthorized: You do not have access to this class"}), 403
+
     return jsonify(AssignmentSchema().dump(assignment)), 200
     
 
@@ -156,6 +178,14 @@ def get_assignments(class_id):
     course = Course.get_by_id(class_id)
     if not course:
         return jsonify({"msg": "Class not found"}), 404
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    if not _can_access_course_assignments(user, course):
+        return jsonify({"msg": "Unauthorized: You do not have access to this class"}), 403
 
     assignments = Assignment.get_by_class_id(class_id)
     assignments_data = AssignmentSchema(many=True).dump(assignments)
