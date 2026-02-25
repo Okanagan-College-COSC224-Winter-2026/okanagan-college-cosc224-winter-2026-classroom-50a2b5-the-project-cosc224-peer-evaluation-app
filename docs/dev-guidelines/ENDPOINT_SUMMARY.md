@@ -81,9 +81,9 @@ All require `role = 'admin'`.
 |--------|------|------|----------|-------|
 | GET | `/assignment/<course_id>` | — | `Array<Assignment>` | ✅ Get assignments for course |
 | GET | `/assignment/detail/<id>` | — | `Assignment` | ✅ Get single assignment |
-| POST | `/assignment/create_assignment` | `{ courseID, name, rubric?, due_date? }` | `{ msg, assignment }` | ✅ Create assignment |
-| PATCH | `/assignment/edit_assignment/<id>` | `{ name?, rubric?, due_date? }` | `{ msg, assignment }` | ✅ Edit assignment |
-| DELETE | `/assignment/delete_assignment/<id>` | — | `{ msg }` | ✅ Delete assignment |
+| POST | `/assignment/create_assignment` | `{ courseID, name, description?, start_date?, rubric?, due_date? }` | `{ msg, assignment }` | ✅ Create assignment (teacher/admin only, must own course) |
+| PATCH | `/assignment/edit_assignment/<id>` | `{ name?, description?, start_date?, rubric?, due_date? }` | `{ msg, assignment }` | ✅ Edit assignment (teacher/admin only, must own course) |
+| DELETE | `/assignment/delete_assignment/<id>` | — | `{ msg }` | ✅ Delete assignment (teacher/admin only, must own course) |
 
 ---
 

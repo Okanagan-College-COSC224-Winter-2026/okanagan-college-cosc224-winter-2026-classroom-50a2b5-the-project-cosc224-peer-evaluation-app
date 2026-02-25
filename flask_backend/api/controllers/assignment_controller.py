@@ -2,10 +2,20 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from ..models import Course, Assignment, User, AssignmentSchema
+from ..models import Course, Assignment, User, AssignmentSchema, User_Course
 from .auth_controller import jwt_teacher_required
 
 bp = Blueprint("assignment", __name__, url_prefix="/assignment")
+
+
+def _can_access_course_assignments(user, course):
+    if user.is_admin():
+        return True
+    if course.teacherID == user.id:
+        return True
+    if user.is_student() and User_Course.get(user.id, course.id):
+        return True
+    return False
 
 @bp.route("/create_assignment", methods=["POST"])
 @jwt_teacher_required
@@ -14,12 +24,23 @@ def create_assignment():
     data = request.get_json()
     course_id = data.get("courseID")
     assignment_name = data.get("name")
+    description = data.get("description")
+    start_date = data.get("start_date")
     rubric_text = data.get("rubric")
     due_date = data.get("due_date")
-    if not due_date:
-        due_date = None
-    else:
-        due_date = datetime.fromisoformat(due_date)
+
+    try:
+        if start_date:
+            start_date = datetime.fromisoformat(start_date)
+        else:
+            start_date = None
+
+        if not due_date:
+            due_date = None
+        else:
+            due_date = datetime.fromisoformat(due_date)
+    except ValueError:
+        return jsonify({"msg": "Invalid date format. Use ISO format for start_date and due_date."}), 400
 
     if not course_id:
         return jsonify({"msg": "Course ID is required"}), 400
@@ -37,7 +58,14 @@ def create_assignment():
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
-    new_assignment = Assignment(courseID=course_id, name=assignment_name, rubric_text=rubric_text, due_date=due_date)
+    new_assignment = Assignment(
+        courseID=course_id,
+        name=assignment_name,
+        description=description,
+        start_date=start_date,
+        rubric_text=rubric_text,
+        due_date=due_date,
+    )
     Assignment.create(new_assignment)
     return (
         jsonify(
@@ -52,7 +80,7 @@ def create_assignment():
 @bp.route("/edit_assignment/<int:assignment_id>", methods=["PATCH"])
 @jwt_teacher_required
 def edit_assignment(assignment_id):
-    """Edit an existing assignment if the authenticated user is the teacher of the class and the due date has not passed"""
+    """Edit an existing assignment if the authenticated user is the teacher of the class"""
     data = request.get_json()
     assignment = Assignment.get_by_id(assignment_id)
     if not assignment:
@@ -70,14 +98,20 @@ def edit_assignment(assignment_id):
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
-    if not assignment.can_modify():
-        return jsonify({"msg": "Assignment cannot be modified after its due date"}), 400
-
     assignment.name = data.get("name", assignment.name)
+    assignment.description = data.get("description", assignment.description)
     assignment.rubric_text = data.get("rubric", assignment.rubric_text)
-    due_date = data.get("due_date")
-    if due_date:
-        assignment.due_date = datetime.fromisoformat(due_date)
+
+    try:
+        start_date = data.get("start_date")
+        if start_date:
+            assignment.start_date = datetime.fromisoformat(start_date)
+
+        due_date = data.get("due_date")
+        if due_date:
+            assignment.due_date = datetime.fromisoformat(due_date)
+    except ValueError:
+        return jsonify({"msg": "Invalid date format. Use ISO format for start_date and due_date."}), 400
 
     assignment.update()
     return (
@@ -92,7 +126,7 @@ def edit_assignment(assignment_id):
 @bp.route("/delete_assignment/<int:assignment_id>", methods=["DELETE"])
 @jwt_teacher_required
 def delete_assignment(assignment_id):
-    """Delete an existing assignment if the authenticated user is the teacher of the class and the due date has not passed"""
+    """Delete an existing assignment if the authenticated user is the teacher of the class"""
     assignment = Assignment.get_by_id(assignment_id)
     if not assignment:
         return jsonify({"msg": "Assignment not found"}), 404
@@ -105,12 +139,9 @@ def delete_assignment(assignment_id):
     course = Course.get_by_id(assignment.courseID)
     if not course:
         return jsonify({"msg": "Course not found"}), 404
-    
+
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
-
-    if not assignment.can_modify():
-        return jsonify({"msg": "Assignment cannot be deleted after its due date"}), 400
 
     assignment.delete()
     return jsonify({"msg": "Assignment deleted"}), 200
@@ -124,6 +155,18 @@ def get_assignment(assignment_id):
     if not assignment:
         return jsonify({"msg": "Assignment not found"}), 404
 
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    course = Course.get_by_id(assignment.courseID)
+    if not course:
+        return jsonify({"msg": "Class not found"}), 404
+
+    if not _can_access_course_assignments(user, course):
+        return jsonify({"msg": "Unauthorized: You do not have access to this class"}), 403
+
     return jsonify(AssignmentSchema().dump(assignment)), 200
     
 
@@ -135,6 +178,14 @@ def get_assignments(class_id):
     course = Course.get_by_id(class_id)
     if not course:
         return jsonify({"msg": "Class not found"}), 404
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    if not _can_access_course_assignments(user, course):
+        return jsonify({"msg": "Unauthorized: You do not have access to this class"}), 403
 
     assignments = Assignment.get_by_class_id(class_id)
     assignments_data = AssignmentSchema(many=True).dump(assignments)
