@@ -95,7 +95,7 @@
 - ✅ Instructor can create a class  
 - ✅ Instructor can create an assignment under that class  
 - ✅ Students in that class can see the assignment  
-- ✅ Instructor can edit or delete the assignment before its start or due date  
+- ✅ Instructor can edit or delete the assignment (students cannot)  
 
 ---
 
