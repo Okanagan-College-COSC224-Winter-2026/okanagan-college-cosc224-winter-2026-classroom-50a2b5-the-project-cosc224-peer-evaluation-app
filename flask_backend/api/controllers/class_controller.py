@@ -2,27 +2,31 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from werkzeug.security import generate_password_hash
 
-from ..models import Course, User, User_Course
+from ..models import Course, User, User_Course, Assignment
+from ..models.db import db
 from .auth_controller import jwt_teacher_required
+
 import re
 import csv
 import io
-from typing import List, Dict, Tuple
+from typing import List, Dict
 
 bp = Blueprint("class", __name__, url_prefix="/class")
+
 
 
 @bp.route("/create_class", methods=["POST"])
 @jwt_teacher_required
 def create_class():
-    """Create a new class where the authenticated user is the teacher"""
-    data = request.get_json()
+    data = request.get_json() or {}
     class_name = data.get("name")
+
     if not class_name:
         return jsonify({"msg": "Class name is required"}), 400
 
     email = get_jwt_identity()
     user = User.get_by_email(email)
+
     if not user:
         return jsonify({"msg": "User not found"}), 404
 
@@ -31,67 +35,152 @@ def create_class():
         return jsonify({"msg": "Class already exists"}), 400
 
     new_class = Course(teacherID=user.id, name=class_name)
-    Course.create_course(new_class)
-    return jsonify({"msg": "Class created", "class": {"id": new_class.id}}), 201
+
+    db.session.add(new_class)
+    db.session.commit()
+
+    return jsonify({
+        "msg": "Class created",
+        "class": {"id": new_class.id}
+    }), 201
+
 
 
 @bp.route("/browse_classes", methods=["GET"])
 @jwt_required()
 def get_classes():
-    """Retrieve all classes"""
     email = get_jwt_identity()
     user = User.get_by_email(email)
+
     if not user:
         return jsonify({"msg": "User not found"}), 404
-    classes = Course.get_all_courses()
-    return jsonify([{"id": c.id, "name": c.name} for c in classes]), 200
+
+    classes = Course.query.all()
+
+    return jsonify([
+        {"id": c.id, "name": c.name}
+        for c in classes
+    ]), 200
+
 
 
 @bp.route("/classes", methods=["GET"])
 @jwt_required()
 def get_user_classes():
-    """Retrieve classes for the authenticated user (if user is a student look up User_Course, if teacher look up Course, else return empty)"""
     email = get_jwt_identity()
     user = User.get_by_email(email)
+
     if not user:
         return jsonify({"msg": "User not found"}), 404
 
     if user.is_teacher():
         courses = Course.get_courses_by_teacher(user.id)
+
     elif user.is_admin():
-        courses = Course.get_all_courses()
+        courses = Course.query.all()
+
     elif user.is_student():
         user_courses = User_Course.get_courses_by_student(user.id)
-        courses = [Course.get_by_id(uc.courseID) for uc in user_courses]
+        courses = [
+            Course.get_by_id(uc.courseID)
+            for uc in user_courses
+        ]
+        courses = [c for c in courses if c is not None]
+
     else:
         courses = []
 
-    return jsonify([{"id": c.id, "name": c.name} for c in courses]), 200
+    return jsonify([
+        {"id": c.id, "name": c.name}
+        for c in courses
+    ]), 200
+
+
+
+@bp.route("/delete_class/<int:class_id>", methods=["DELETE"])
+@jwt_teacher_required
+def delete_class(class_id):
+    try:
+        course = Course.query.get(class_id)
+
+        if not course:
+            return jsonify({"msg": "Class not found"}), 404
+
+        email = get_jwt_identity()
+        user = User.get_by_email(email)
+
+        if not user:
+            return jsonify({"msg": "User not found"}), 404
+
+        if course.teacherID != user.id:
+            return jsonify({
+                "msg": "Unauthorized: You are not the teacher of this class"
+            }), 403
+
+        # Delete enrollments
+        db.session.query(User_Course).filter(
+            User_Course.courseID == class_id
+        ).delete(synchronize_session=False)
+
+        # Delete assignments
+        assignments = Assignment.query.filter(
+            Assignment.courseID == class_id
+        ).all()
+
+        for assignment in assignments:
+            db.session.delete(assignment)
+
+        # Delete the course
+        db.session.delete(course)
+
+        db.session.commit()
+
+        return jsonify({"msg": "Class deleted"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            "msg": "Delete class failed",
+            "error": str(e)
+        }), 500
+
+
 
 REQUIRED_HEADERS = {"id", "name", "email"}
-def csv_to_list(csv_text):
-    """Convert CSV text to a list of emails"""
+
+
+def csv_to_list(csv_text: str):
     rows: List[Dict[str, str]] = []
     errors: List[str] = []
+
     if not csv_text or not csv_text.strip():
         return rows, ["CSV text empty"]
-    
+
     stream = io.StringIO(csv_text.strip())
+
     try:
         reader = csv.DictReader(stream)
     except Exception as e:
         return rows, [f"Failed to read CSV: {e}"]
-    
+
     headers = {h.strip() for h in reader.fieldnames or []}
     missing = REQUIRED_HEADERS - headers
+
     if missing:
-        errors.append(f"Missing required headers: {', '.join(sorted(missing))}")
+        errors.append(
+            f"Missing required headers: {', '.join(sorted(missing))}"
+        )
         return rows, errors
-    
+
     for line_num, row in enumerate(reader, start=2):
         if row is None:
             continue
-        normalized = {k.strip(): (v.strip() if isinstance(v, str) else "") for k, v in row.items()}
+
+        normalized = {
+            k.strip(): (v.strip() if isinstance(v, str) else "")
+            for k, v in row.items()
+        }
+
         if not any(normalized.values()):
             continue
 
@@ -102,65 +191,78 @@ def csv_to_list(csv_text):
         rows.append({
             "id": normalized["id"],
             "name": normalized["name"],
-            "email": normalized["email"]
+            "email": normalized["email"],
         })
+
     return rows, errors
+
+
 
 @bp.route("/enroll_students", methods=["POST"])
 @jwt_teacher_required
 def enroll_students():
-    """
-    Enroll students into a class by class ID and list of student emails from a csv file.
-    -    If a student is already enrolled, skip them.
-    -    If a student email does not exist, create it with a default password and enroll them.
-    -    The list of student emails is passed in the request body as a CSV file.
-    """
-
-    data = request.get_json()
+    data = request.get_json() or {}
     class_id = data.get("class_id")
     student_emails_csv = data.get("students", "")
 
     if not class_id or not student_emails_csv:
-        return jsonify({"msg": "Class ID and student emails are required"}), 400
+        return jsonify({
+            "msg": "Class ID and student emails are required"
+        }), 400
 
-    course = Course.get_by_id(class_id)
+    course = Course.query.get(class_id)
+
     if not course:
         return jsonify({"msg": "Class not found"}), 404
-    
-    # check if the authenticated user is the teacher of the class
+
     email = get_jwt_identity()
     user = User.get_by_email(email)
+
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
     if course.teacherID != user.id:
-        return jsonify({"msg": "You are not authorized to enroll students in this class"}), 403
+        return jsonify({
+            "msg": "You are not authorized to enroll students in this class"
+        }), 403
 
     students, parse_errors = csv_to_list(student_emails_csv)
+
     if parse_errors:
-        return jsonify({"msg": "Errors in CSV", "errors": parse_errors}), 400
+        return jsonify({
+            "msg": "Errors in CSV",
+            "errors": parse_errors
+        }), 400
 
     enrolled_students = []
+
     for student_info in students:
         email = student_info["email"]
-        # validate email format with regex
+
         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-            return jsonify({"msg": f"Invalid email format: {email}"}), 400
-        
+            return jsonify({
+                "msg": f"Invalid email format: {email}"
+            }), 400
+
         name = student_info["name"]
         student = User.get_by_email(email)
-        if not student:
-            # Create new student with default password
-            # TODO: Create random password and email it to the student
-            # Current implementation sets the password to "password123"
-            student = User(name=name, email=email, hash_pass=generate_password_hash("password123"), role="student")
-            try:
-                User.create_user(student)
-            except Exception as e:
-                return jsonify({"msg": f"Error creating user {email}: {str(e)}"}), 500
 
-        # Check if already enrolled
+        if not student:
+            student = User(
+                name=name,
+                email=email,
+                hash_pass=generate_password_hash("password123"),
+                role="student",
+            )
+            db.session.add(student)
+            db.session.commit()
+
         enrollment = User_Course.get(student.id, class_id)
+
         if not enrollment:
-            # Enroll student
             User_Course.add(student.id, class_id)
             enrolled_students.append(email)
 
-    return jsonify({"msg": f"{len(enrolled_students)} students added to course {course.name}"}), 200
+    return jsonify({
+        "msg": f"{len(enrolled_students)} students added to course {course.name}"
+    }), 200
