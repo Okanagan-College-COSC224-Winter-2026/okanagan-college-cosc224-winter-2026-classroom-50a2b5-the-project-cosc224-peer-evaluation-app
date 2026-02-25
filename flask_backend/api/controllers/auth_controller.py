@@ -84,6 +84,37 @@ def logout():
     unset_jwt_cookies(response)
     return response, 200
 
+@bp.route("/change-password", methods=["PUT"])
+@jwt_required()
+def change_password():
+    """Allow any logged-in user to change their password"""
+    if not request.is_json:
+        return jsonify({"msg": "Missing JSON in request"}), 400
+
+    data = request.json
+    current_password = data.get("current_password")
+    new_password = data.get("new_password")
+
+    if not current_password or not new_password:
+        return jsonify({"msg": "current_password and new_password are required"}), 400
+
+    # Get the logged-in user
+    current_email = get_jwt_identity()
+    user = User.get_by_email(current_email)
+
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    # Check that the current password is correct
+    if not check_password_hash(user.hash_pass, current_password):
+        return jsonify({"msg": "Current password is incorrect"}), 401
+
+    # Update to new password
+    user.hash_pass = generate_password_hash(new_password)
+    user.update()
+
+    return jsonify({"msg": "Password updated successfully"}), 200
+
 
 # JWT-based decorators for API protection
 def jwt_role_required(*roles):
