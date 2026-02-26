@@ -29,16 +29,8 @@ def login_user(test_client, email, password):
 
 def seed_feedback_data(db_session):
     """
-    Seed the database with a complete feedback scenario:
-    - 1 course with 1 assignment
-    - 1 rubric with 2 criteria (Communication, Contribution)
-    - 1 reviewee student (receives feedback)
-    - 2 reviewer students (submit reviews)
-    - 1 student with no reviews
-    - 1 student in a different course
-    Returns dict of IDs for use in tests.
+    Seed the database with a complete feedback scenario.
     """
-    # Create users
     reviewee = User(
         name="Reviewee Student",
         email="reviewee@test.com",
@@ -79,13 +71,11 @@ def seed_feedback_data(db_session):
     db_session.add_all([reviewee, reviewer1, reviewer2, no_reviews_student, wrong_course_student, teacher])
     db_session.commit()
 
-    # Create courses
     course1 = Course(name="COSC 224", teacherID=teacher.id)
     course2 = Course(name="COSC 304", teacherID=teacher.id)
     db_session.add_all([course1, course2])
     db_session.commit()
 
-    # Enroll students
     db_session.add(User_Course(userID=reviewee.id, courseID=course1.id))
     db_session.add(User_Course(userID=reviewer1.id, courseID=course1.id))
     db_session.add(User_Course(userID=reviewer2.id, courseID=course1.id))
@@ -93,7 +83,6 @@ def seed_feedback_data(db_session):
     db_session.add(User_Course(userID=wrong_course_student.id, courseID=course2.id))
     db_session.commit()
 
-    # Create assignment with rubric
     assignment1 = Assignment(courseID=course1.id, name="Peer Review Assignment 1", rubric_text=None)
     assignment2 = Assignment(courseID=course2.id, name="Other Course Assignment", rubric_text=None)
     db_session.add_all([assignment1, assignment2])
@@ -103,34 +92,18 @@ def seed_feedback_data(db_session):
     db_session.add(rubric)
     db_session.commit()
 
-    crit_desc1 = CriteriaDescription(
-        rubricID=rubric.id, question="Communication", scoreMax=5, hasScore=True
-    )
-    crit_desc2 = CriteriaDescription(
-        rubricID=rubric.id, question="Contribution", scoreMax=5, hasScore=True
-    )
+    crit_desc1 = CriteriaDescription(rubricID=rubric.id, question="Communication", scoreMax=5, hasScore=True)
+    crit_desc2 = CriteriaDescription(rubricID=rubric.id, question="Contribution", scoreMax=5, hasScore=True)
     db_session.add_all([crit_desc1, crit_desc2])
     db_session.commit()
 
-    # Create reviews: reviewer1 and reviewer2 both review the reviewee
-    review1 = Review(
-        assignmentID=assignment1.id,
-        reviewerID=reviewer1.id,
-        revieweeID=reviewee.id,
-    )
-    review2 = Review(
-        assignmentID=assignment1.id,
-        reviewerID=reviewer2.id,
-        revieweeID=reviewee.id,
-    )
+    review1 = Review(assignmentID=assignment1.id, reviewerID=reviewer1.id, revieweeID=reviewee.id)
+    review2 = Review(assignmentID=assignment1.id, reviewerID=reviewer2.id, revieweeID=reviewee.id)
     db_session.add_all([review1, review2])
     db_session.commit()
 
-    # Create criterion scores
-    # Reviewer 1: Communication=4, Contribution=3
     db_session.add(Criterion(reviewID=review1.id, criterionRowID=crit_desc1.id, grade=4, comments="Good communicator"))
     db_session.add(Criterion(reviewID=review1.id, criterionRowID=crit_desc2.id, grade=3, comments="Could contribute more"))
-    # Reviewer 2: Communication=5, Contribution=4
     db_session.add(Criterion(reviewID=review2.id, criterionRowID=crit_desc1.id, grade=5, comments="Excellent communication"))
     db_session.add(Criterion(reviewID=review2.id, criterionRowID=crit_desc2.id, grade=4, comments=""))
     db_session.commit()
@@ -148,18 +121,12 @@ def seed_feedback_data(db_session):
     }
 
 
-# ── Test: Successful feedback retrieval ──
-
 def test_get_feedback_success(test_client, db):
-    """Student with reviews gets correct aggregated feedback."""
     data = seed_feedback_data(db.session)
-
     login_user(test_client, "reviewee@test.com", "Password123!")
     response = test_client.get(f"/student/assignments/{data['assignment1'].id}/feedback")
-
     assert response.status_code == 200
     json_data = response.get_json()
-
     assert json_data["assignment_name"] == "Peer Review Assignment 1"
     assert json_data["total_reviews"] == 2
     assert len(json_data["criteria_feedback"]) == 2
@@ -167,55 +134,34 @@ def test_get_feedback_success(test_client, db):
     assert json_data["overall_avg"] > 0
 
 
-# ── Test: No reviews returns empty ──
-
 def test_get_feedback_no_reviews(test_client, db):
-    """Student with no reviews gets 200 with total_reviews: 0."""
     data = seed_feedback_data(db.session)
-
     login_user(test_client, "noreviews@test.com", "Password123!")
     response = test_client.get(f"/student/assignments/{data['assignment1'].id}/feedback")
-
     assert response.status_code == 200
     json_data = response.get_json()
-
     assert json_data["total_reviews"] == 0
     assert json_data["criteria_feedback"] == []
 
 
-# ── Test: Unauthenticated request ──
-
 def test_get_feedback_unauthenticated(test_client, db):
-    """Request without JWT returns 401."""
     response = test_client.get("/student/assignments/1/feedback")
     assert response.status_code == 401
 
 
-# ── Test: Assignment not found ──
-
 def test_get_feedback_assignment_not_found(test_client, db):
-    """Request for nonexistent assignment returns 404."""
     data = seed_feedback_data(db.session)
-
     login_user(test_client, "reviewee@test.com", "Password123!")
     response = test_client.get("/student/assignments/99999/feedback")
-
     assert response.status_code == 404
 
 
-# ── Test: Anonymity — no reviewer IDs in response ──
-
 def test_feedback_anonymity(test_client, db):
-    """Verify that no reviewer IDs or names appear in the feedback response."""
     data = seed_feedback_data(db.session)
-
     login_user(test_client, "reviewee@test.com", "Password123!")
     response = test_client.get(f"/student/assignments/{data['assignment1'].id}/feedback")
-
     assert response.status_code == 200
     json_str = response.get_data(as_text=True)
-
-    # Reviewer identities must never appear
     assert "reviewer1@test.com" not in json_str
     assert "reviewer2@test.com" not in json_str
     assert "Reviewer One" not in json_str
@@ -223,34 +169,19 @@ def test_feedback_anonymity(test_client, db):
     assert "reviewerID" not in json_str
 
 
-# ── Test: Score aggregation correctness ──
-
 def test_feedback_score_aggregation(test_client, db):
-    """Verify average scores are calculated correctly across 2 reviews."""
     data = seed_feedback_data(db.session)
-
     login_user(test_client, "reviewee@test.com", "Password123!")
     response = test_client.get(f"/student/assignments/{data['assignment1'].id}/feedback")
-
     assert response.status_code == 200
     json_data = response.get_json()
-
     criteria = {cf["question"]: cf for cf in json_data["criteria_feedback"]}
-
-    # Communication: (4 + 5) / 2 = 4.5
     assert criteria["Communication"]["avg_score"] == 4.5
     assert criteria["Communication"]["max_score"] == 5
-
-    # Contribution: (3 + 4) / 2 = 3.5
     assert criteria["Contribution"]["avg_score"] == 3.5
     assert criteria["Contribution"]["max_score"] == 5
-
-    # Comments — only non-empty comments should appear
     assert "Good communicator" in criteria["Communication"]["comments"]
     assert "Excellent communication" in criteria["Communication"]["comments"]
     assert "Could contribute more" in criteria["Contribution"]["comments"]
-    # Empty comment from reviewer2 on Contribution should NOT appear
     assert "" not in criteria["Contribution"]["comments"]
-
-    # Overall avg: (4.5 + 3.5) / 2 = 4.0
     assert json_data["overall_avg"] == 4.0

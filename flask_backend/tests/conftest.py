@@ -22,13 +22,11 @@ def app():
         }
     )
 
-    # Create the database and tables
     with _app.app_context():
         _db.create_all()
 
     yield _app
 
-    # Cleanup
     with _app.app_context():
         _db.drop_all()
 
@@ -37,14 +35,12 @@ def app():
 def db(app):
     """Create a fresh database session for each test."""
     with app.app_context():
-        # Clear all data from tables
         for table in reversed(_db.metadata.sorted_tables):
             _db.session.execute(table.delete())
         _db.session.commit()
 
         yield _db
 
-        # Cleanup after test
         _db.session.rollback()
 
 
@@ -91,7 +87,7 @@ def enroll_user_in_course():
 
         existing_enrollment = _db.session.get(User_Course, (user_id, course_id))
         if existing_enrollment:
-            return existing_enrollment  # Already enrolled
+            return existing_enrollment
 
         enrollment = User_Course(userID=user_id, courseID=course_id)
         _db.session.add(enrollment)
@@ -99,7 +95,3 @@ def enroll_user_in_course():
         return enrollment
 
     return _enroll_user_in_course
-<<<<<<< Updated upstream
-        
-=======
->>>>>>> Stashed changes

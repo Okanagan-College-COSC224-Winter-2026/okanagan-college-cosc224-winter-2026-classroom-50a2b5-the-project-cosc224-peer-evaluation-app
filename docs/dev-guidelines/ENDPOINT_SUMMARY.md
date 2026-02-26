@@ -67,6 +67,7 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 | GET | `/assignment/:class_id` | `{ class_id: number }` | — | — | `Array<Assignment>` | ✅Implemented |Returns all assignments for a course. |
 | POST | `/class/members` | — | — | `{ id: number }` | `Array<User { id, name, email }>` | ✅Implemented | Uses `User_Course` to look up members. |
 | GET | `/class/classes` | — | — | — | `Array<Course>` | ✅Implemented | Currently returns classes for student / Instructor |
+| GET | `/student/grades` | — | — | — | `{ student_id: number, courses: Array<CourseGrade> }` | ✅Implemented | Returns per-course grade averages for the authenticated student. |
 | GET | `/class/browse_classes` | — | — | — | `Array<Course>` | ✅Implemented | Returns all classes |
 | POST | `/assignment/create_assignment` | — | — | `{ courseID: number, name: string, rubric: string, due_date?: string }` | `{ msg: string, assignment: Assignment }` | ✅Implemented | Creates assignment and returns created id. |
 | PATCH | `/assignment/edit_assignment/:assignment_id` | `{ assignment_id: string }` | — | `{ name: string, rubric: string, due_date: string }` | `{ msg: string, assignment: Assignment }` | ✅Implemented | Edits assignment and returns updated assignment |
@@ -93,17 +94,35 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 
 ---
 
+### CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `flask add_sample_reviews` | Seeds peer review data (reviewers, rubrics, criteria, scores) for testing the student grade display. Requires `flask add_users` and `flask add_sample_courses` first. |
+
+---
+### Peer Review Submission (US1/US11)
+
+| Method | URL | Auth | Description |
+|--------|-----|------|-------------|
+| POST | `/api/reviews/submit` | JWT (student) | Submit a rubric-based peer review. Body: `{ assignment_id: int, reviewee_id: int, criteria: [{ criteria_description_id: int, grade: int, comments: str }] }`. Validates against self-reviews, duplicates, and group membership. Returns `201 { review_id }`. |
+| GET | `/assignment/<assignment_id>/rubric` | JWT | Returns the rubric and its criteria for a given assignment. Response: `{ rubric_id: int, assignment_id: int, criteria: [{ id, question, score_max, has_score, can_comment }] }`. |
+
+### Student Feedback (US12)
+
+| Method | URL | Auth | Description |
+|--------|-----|------|-------------|
+| GET | `/student/assignments/<assignment_id>/feedback` | JWT (student) | Returns aggregated anonymous peer feedback for the logged-in student for a given assignment. Includes per-criterion average scores and anonymous comments. Response: `{ assignment_id, student_id, total_reviews_received, criteria: [{ criterion_id, criterion_name, average_score, score_max, review_count, comments }] }`. |
+
 ### Notes
 
 - Parameter types in curly braces are the expected types; some routes accept strings for numeric IDs and cast internally.
 - For stability, prefer sending numeric IDs as numbers where indicated.
 - If any discrepancy arises between this document and `endpoints.json`, treat `endpoints.json` as canonical.
-<<<<<<< Updated upstream
-=======
 - `CourseGrade` response shape used by `/student/grades`:
   `{ course_id, course_name, grade, max_score, graded_assignments, total_assignments, has_grades }`
 
-  ## Peer Review Submission (US1/US11)
+## Peer Review Submission (US1/US11)
 
 ### POST /api/reviews/submit
 
@@ -123,7 +142,6 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
       "comments": "Good work"
     }
   ]
-}
 ```
 
 **Responses:**
@@ -205,6 +223,3 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 - `404` — Assignment not found
 
 **Privacy:** Reviewer identities are never included in the response.
-
-
->>>>>>> Stashed changes
