@@ -14,6 +14,7 @@ import Group from "./pages/Group";
 import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
+import ReviewSubmission from "./pages/ReviewSubmission";
 import FeedbackView from "./pages/FeedbackView";
 
 function AppContent() {
@@ -68,6 +69,12 @@ function AppContent() {
           <Route path="/assignments/:id" element={
             <ProtectedRoute>
               <Assignment />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/assignments/:id/review/:revieweeId" element={
+            <ProtectedRoute>
+              <ReviewSubmission />
             </ProtectedRoute>
           } />
 

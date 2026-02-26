@@ -520,6 +520,44 @@ export const changePassword = async (currentPassword: string, newPassword: strin
 
   return await response.json();
 }
+
+// Peer Review Submission (US1/US11)
+
+export const getRubricByAssignment = async (assignmentId: number): Promise<RubricResponse> => {
+  const resp = await fetch(`${BASE_URL}/api/assignments/${assignmentId}/rubric`, {
+    method: 'GET',
+    credentials: 'include'
+  })
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json()
+}
+
+export const submitReview = async (data: ReviewSubmission): Promise<{ review_id: number }> => {
+  const response = await fetch(`${BASE_URL}/api/reviews/submit`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include'
+  })
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.msg || `Response status: ${response.status}`);
+  }
+
+  return await response.json()
+}
+
 export const getStudentGrades = async (): Promise<StudentGradesResponse> => {
   const resp = await fetch(`${BASE_URL}/student/grades`, {
     method: 'GET',

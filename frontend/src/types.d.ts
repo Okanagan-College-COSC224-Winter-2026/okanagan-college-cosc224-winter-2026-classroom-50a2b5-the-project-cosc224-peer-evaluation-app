@@ -73,6 +73,36 @@ interface StudentGradesResponse {
 }
 
 // ============================================================
+// PEER REVIEW SUBMISSION (US1/US11)
+// ============================================================
+
+interface RubricCriteria {
+  id: number;
+  question: string;
+  score_max: number;
+  has_score: boolean;
+  can_comment: boolean;
+}
+
+interface RubricResponse {
+  rubric_id: number;
+  assignment_id: number;
+  criteria: RubricCriteria[];
+}
+
+interface CriterionSubmission {
+  criteria_description_id: number;
+  grade: number;
+  comments?: string;
+}
+
+interface ReviewSubmission {
+  assignment_id: number;
+  reviewee_id: number;
+  criteria: CriterionSubmission[];
+}
+
+// ============================================================
 // STUDENT FEEDBACK (US12)
 // ============================================================
 

@@ -86,6 +86,7 @@ def grades():
     courses = get_student_grades(user.id)
 
     return jsonify({"student_id": user.id, "courses": courses}), 200
+
 def get_assignment_feedback(assignment_id, student_id):
     """
     For a given assignment, aggregate all peer review feedback
