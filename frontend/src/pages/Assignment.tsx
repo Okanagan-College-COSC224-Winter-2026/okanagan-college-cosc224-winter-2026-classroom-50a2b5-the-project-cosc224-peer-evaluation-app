@@ -4,7 +4,7 @@ import "./Assignment.css";
 import RubricCreator from "../components/RubricCreator";
 import RubricDisplay from "../components/RubricDisplay";
 import TabNavigation from "../components/TabNavigation";
-import { isTeacher } from "../util/login";
+import { isTeacher, isStudent } from "../util/login";
 
 import { 
   listStuGroup,
@@ -45,22 +45,17 @@ export default function Assignment() {
   }, [revieweeID, id, stuID]);
 
   const handleCriterionSelect = (row: number, column: number) => {
-    // Check if this criterion is already selected
     const existingIndex = selectedCriteria.findIndex(
       criterion => criterion.row === row && criterion.column === column
     );
     
     if (existingIndex >= 0) {
-      // If already selected, remove it (toggle off)
       setSelectedCriteria(prev => 
         prev.filter((_, index) => index !== existingIndex)
       );
     } else {
-      // Add the new criterion, removing any other selection in the same row
       setSelectedCriteria(prev => {
-        // Remove any existing selection for this row
         const filteredCriteria = prev.filter(criterion => criterion.row !== row);
-        // Add the new selection
         return [...filteredCriteria, { row, column }];
       });
     }
@@ -72,24 +67,23 @@ export default function Assignment() {
     console.log(`Selected group member ID: ${selectedID}`);
   }
 
+  // Build tabs — students get a Feedback tab, teachers don't
+  const tabs = [
+    { label: "Home", path: `/assignments/${id}` },
+    { label: "Group", path: `/assignments/${id}/group` },
+  ];
+
+  if (isStudent()) {
+    tabs.push({ label: "Feedback", path: `/assignments/${id}/feedback` });
+  }
+
   return (
     <>
       <div className="AssignmentHeader">
         <h2>Assignment {id}</h2>
       </div>
 
-      <TabNavigation
-        tabs={[
-          {
-            label: "Home",
-            path: `/assignments/${id}`,
-          },
-          {
-            label: "Group",
-            path: `/assignments/${id}/group`,
-          }
-        ]}
-      />
+      <TabNavigation tabs={tabs} />
 
       <div className='assignmentRubricDisplay'>
         <RubricDisplay rubricId={Number(id)} onCriterionSelect={handleCriterionSelect} grades={review} />
@@ -107,31 +101,23 @@ export default function Assignment() {
         <h3>Select a group member to review</h3>
           {stuGroup.map((stus) => {
                 return (
-                  <>
+                  <div key={stus.userID}>
                   <input type='radio' id={stus.userID.toString()} value={stus.userID} name='groupMembers' onChange={handleRadioChange}></input>
                   <label htmlFor={stus.userID.toString()}>{stus.userID}</label>
-                  <br></br>
-                  </>
+                  </div>
                 )
               }
             )
           }
           <button className='submitReview' onClick={async () => {
-            console.log("Submitting review with selected criteria:", selectedCriteria);
-            try {
-              const reviewResponse = await createReview(Number(id), stuID, revieweeID);
-              const reviewData = await reviewResponse.json();
-              console.log("Review response:", reviewData);
-              for (const criterion of selectedCriteria) {
-                await createCriterion(reviewData.id, criterion.row, criterion.column, "");
-              }
-              console.log('Review submitted successfully');
-            } catch (error) {
-              console.error('Error submitting review:', error);
+            if (revieweeID === 0) {
+              alert("Please select a group member to review.");
+              return;
             }
-          }}>Submit Review</button>
+            // Navigate to the new rubric-based review page
+            window.location.href = `/assignments/${id}/review/${revieweeID}`;
+          }}>Review This Member</button>
       </div>}
     </>
   );
 }
-
