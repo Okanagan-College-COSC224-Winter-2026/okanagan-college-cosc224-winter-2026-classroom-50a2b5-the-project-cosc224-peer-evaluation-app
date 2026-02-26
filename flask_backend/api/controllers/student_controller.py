@@ -86,3 +86,93 @@ def grades():
     courses = get_student_grades(user.id)
 
     return jsonify({"student_id": user.id, "courses": courses}), 200
+def get_assignment_feedback(assignment_id, student_id):
+    """
+    For a given assignment, aggregate all peer review feedback
+    received by the student (revieweeID = student_id).
+    Returns per-criterion averages and anonymous comments.
+    Reviewer identities are never exposed.
+    """
+    reviews = Review.query.filter_by(
+        assignmentID=assignment_id, revieweeID=student_id
+    ).all()
+
+    if not reviews:
+        return None
+
+    criteria_map = {}
+
+    for review in reviews:
+        criteria = Criterion.query.filter_by(reviewID=review.id).all()
+        for c in criteria:
+            desc = c.criterion_row
+            if desc is None:
+                continue
+            crit_id = desc.id
+            if crit_id not in criteria_map:
+                criteria_map[crit_id] = {
+                    "criterion_id": crit_id,
+                    "criterion_name": desc.name if hasattr(desc, "name") else f"Criterion {crit_id}",
+                    "score_max": desc.scoreMax,
+                    "scores": [],
+                    "comments": [],
+                }
+            if c.grade is not None:
+                criteria_map[crit_id]["scores"].append(c.grade)
+            if c.comments:
+                criteria_map[crit_id]["comments"].append(c.comments)
+
+    aggregated = []
+    for crit_id, data in criteria_map.items():
+        scores = data["scores"]
+        avg_score = round(sum(scores) / len(scores), 2) if scores else None
+        aggregated.append(
+            {
+                "criterion_id": crit_id,
+                "criterion_name": data["criterion_name"],
+                "average_score": avg_score,
+                "score_max": data["score_max"],
+                "review_count": len(scores),
+                "comments": data["comments"],
+            }
+        )
+
+    return {
+        "assignment_id": assignment_id,
+        "student_id": student_id,
+        "total_reviews_received": len(reviews),
+        "criteria": aggregated,
+    }
+
+
+@student_bp.route("/assignments/<int:assignment_id>/feedback", methods=["GET"])
+@jwt_required()
+def assignment_feedback(assignment_id):
+    """
+    GET /student/assignments/<assignment_id>/feedback
+    Returns aggregated anonymous feedback for the logged-in student
+    for the given assignment.
+    """
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+
+    if user is None:
+        return jsonify({"msg": "User not found"}), 404
+
+    assignment = Assignment.get_by_id(assignment_id)
+    if assignment is None:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    feedback = get_assignment_feedback(assignment_id, user.id)
+
+    if feedback is None:
+        return jsonify(
+            {
+                "assignment_id": assignment_id,
+                "student_id": user.id,
+                "total_reviews_received": 0,
+                "criteria": [],
+            }
+        ), 200
+
+    return jsonify(feedback), 200

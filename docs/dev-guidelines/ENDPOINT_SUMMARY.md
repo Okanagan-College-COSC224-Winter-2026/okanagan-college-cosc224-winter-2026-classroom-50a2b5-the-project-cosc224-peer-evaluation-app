@@ -101,6 +101,11 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 | `flask add_sample_reviews` | Seeds peer review data (reviewers, rubrics, criteria, scores) for testing the student grade display. Requires `flask add_users` and `flask add_sample_courses` first. |
 
 ---
+### Student Feedback
+
+| Method | URL | Auth | Description |
+|--------|-----|------|-------------|
+| GET | `/student/assignments/<assignment_id>/feedback` | JWT (student) | Returns aggregated anonymous peer feedback for the logged-in student for a given assignment. Includes per-criterion average scores and anonymous comments. |
 
 ### Notes
 
