@@ -347,7 +347,7 @@
 
 ---
 
-## US20 – Student Course Grade on Course Card — **Backlog**
+## US20 – Student Course Grade on Course Card — **Complete**
 
 **As a student, I want to see my total grade on each course card so that I know how I am performing.**
 

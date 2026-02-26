@@ -52,3 +52,22 @@ interface CourseWithAssignments extends Course {
   assignments?: Assignment[];
   assignmentCount?: number;
 }
+
+// ============================================================
+// STUDENT GRADES (US20)
+// ============================================================
+
+interface CourseGrade {
+  course_id: number;
+  course_name: string;
+  grade: number | null;
+  max_score: number | null;
+  graded_assignments: number;
+  total_assignments: number;
+  has_grades: boolean;
+}
+
+interface StudentGradesResponse {
+  student_id: number;
+  courses: CourseGrade[];
+}
