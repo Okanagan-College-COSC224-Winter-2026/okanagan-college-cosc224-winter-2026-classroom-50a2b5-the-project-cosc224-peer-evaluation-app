@@ -108,8 +108,8 @@ interface ReviewSubmission {
 
 interface CriteriaFeedback {
   question: string;
-  avg_score: number;
-  max_score: number;
+  average_score: number;
+  score_max: number;
   comments: string[];
 }
 

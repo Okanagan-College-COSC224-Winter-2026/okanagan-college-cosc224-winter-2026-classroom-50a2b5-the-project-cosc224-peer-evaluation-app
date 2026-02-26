@@ -59,7 +59,7 @@ export default function FeedbackView() {
 
   // Calculate overall percentage for the summary
   const overallMaxPossible = feedback.criteria.length > 0
-    ? feedback.criteria.reduce((sum, c) => sum + c.max_score, 0) / feedback.criteria.length
+    ? feedback.criteria.reduce((sum, c) => sum + c.score_max, 0) / feedback.criteria.length
     : 0
   const overallPercentage = overallMaxPossible > 0
     ? (feedback.overall_avg / overallMaxPossible) * 100
@@ -93,8 +93,8 @@ export default function FeedbackView() {
           <FeedbackCard
             key={index}
             question={criterion.question}
-            avgScore={criterion.avg_score}
-            maxScore={criterion.max_score}
+            avgScore={criterion.average_score}
+            maxScore={criterion.score_max}
             comments={criterion.comments}
           />
         ))}

@@ -101,7 +101,7 @@ def get_assignment_feedback(assignment_id, student_id):
         "criteria_feedback": [
             {
                 "question": str,
-                "avg_score": float,
+                "average_score": float,
                 "max_score": int,
                 "comments": [str]
             }
@@ -142,7 +142,7 @@ def get_assignment_feedback(assignment_id, student_id):
             if crit_id not in criteria_map:
                 criteria_map[crit_id] = {
                     "question": desc.question or f"Criterion {crit_id}",
-                    "max_score": desc.scoreMax or 0,
+                    "score_max": desc.scoreMax or 0,
                     "scores": [],
                     "comments": [],
                 }
@@ -158,17 +158,17 @@ def get_assignment_feedback(assignment_id, student_id):
 
     for crit_id, data in criteria_map.items():
         scores = data["scores"]
-        avg_score = round(sum(scores) / len(scores), 2) if scores else 0.0
+        average_score = round(sum(scores) / len(scores), 2) if scores else 0.0
 
         criteria_feedback.append({
             "question": data["question"],
-            "avg_score": avg_score,
-            "max_score": data["max_score"],
+            "average_score": average_score,
+            "score_max": data["score_max"],
             "comments": data["comments"],
         })
 
         if scores:
-            all_avgs.append(avg_score)
+            all_avgs.append(average_score)
 
     # Calculate overall average across all criteria
     overall_avg = round(sum(all_avgs) / len(all_avgs), 2) if all_avgs else 0.0
