@@ -1,85 +1,94 @@
 """
-review_model.py
-Handles database operations for Review records.
+Review model for the peer evaluation app.
 """
 
-from flask import current_app
-from .. import db
+from sqlalchemy.orm import joinedload
+
+from .db import db
 
 
 class Review(db.Model):
-    """ORM model representing a peer review submission."""
+    """Review model representing peer evaluations"""
 
-    __tablename__ = "reviews"
+    __tablename__ = "Review"
 
     id = db.Column(db.Integer, primary_key=True)
-    reviewer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    reviewee_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    assignment_id = db.Column(db.Integer, db.ForeignKey("assignments.id"), nullable=False)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    assignmentID = db.Column(db.Integer, db.ForeignKey("Assignment.id"), nullable=False, index=True)
+    reviewerID = db.Column(db.Integer, db.ForeignKey("User.id"), nullable=False, index=True)
+    revieweeID = db.Column(db.Integer, db.ForeignKey("User.id"), nullable=False, index=True)
 
-    # Relationships
-    criteria = db.relationship("Criterion", backref="review", lazy=True, cascade="all, delete-orphan")
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "reviewer_id": self.reviewer_id,
-            "reviewee_id": self.reviewee_id,
-            "assignment_id": self.assignment_id,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-        }
-
-
-def create_review(reviewer_id: int, reviewee_id: int, assignment_id: int) -> Review:
-    """
-    Create and persist a new Review record.
-
-    Args:
-        reviewer_id: ID of the student submitting the review.
-        reviewee_id: ID of the student being reviewed.
-        assignment_id: ID of the assignment this review belongs to.
-
-    Returns:
-        The newly created Review instance.
-    """
-    review = Review(
-        reviewer_id=reviewer_id,
-        reviewee_id=reviewee_id,
-        assignment_id=assignment_id,
+    # relationships - using lazy='joined' for commonly accessed foreign entities
+    assignment = db.relationship("Assignment", back_populates="reviews", lazy="joined")
+    reviewer = db.relationship(
+        "User", foreign_keys=[reviewerID], back_populates="reviews_made", lazy="joined"
     )
-    db.session.add(review)
-    db.session.flush()  # Flush to get the auto-generated review.id before commit
-    return review
+    reviewee = db.relationship(
+        "User", foreign_keys=[revieweeID], back_populates="reviews_received", lazy="joined"
+    )
+    criteria = db.relationship(
+        "Criterion", back_populates="review", cascade="all, delete-orphan", lazy="dynamic"
+    )
 
+    def __init__(self, assignmentID, reviewerID, revieweeID):
+        self.assignmentID = assignmentID
+        self.reviewerID = reviewerID
+        self.revieweeID = revieweeID
 
-def get_reviews_by_assignment(assignment_id: int) -> list[Review]:
-    """
-    Retrieve all reviews for a given assignment.
+    def __repr__(self):
+        return f"<Review id={self.id} assignmentID={self.assignmentID}>"
 
-    Args:
-        assignment_id: The assignment whose reviews are requested.
+    @classmethod
+    def get_by_id(cls, review_id):
+        """Get review by ID (relationships are eagerly loaded via lazy='joined')"""
+        return db.session.get(cls, int(review_id))
 
-    Returns:
-        List of Review instances for the assignment.
-    """
-    return Review.query.filter_by(assignment_id=assignment_id).all()
+    @classmethod
+    def get_by_id_with_relations(cls, review_id):
+        """Get review by ID with all relationships explicitly loaded.
+        Use this when you need to ensure assignment's course is also loaded."""
+        return (
+            cls.query.options(joinedload(cls.assignment).joinedload("course"))
+            .filter_by(id=int(review_id))
+            .first()
+        )
 
+    @classmethod
+    def get_all_with_relations(cls):
+        """Get all reviews with relationships loaded.
+        Assignment relationships (reviewer, reviewee, assignment) are
+        automatically loaded via lazy='joined'."""
+        return cls.query.options(joinedload(cls.assignment).joinedload("course")).all()
 
-def review_exists(reviewer_id: int, reviewee_id: int, assignment_id: int) -> bool:
-    """
-    Check whether a review already exists (duplicate detection).
+    @classmethod
+    def create_review(cls, review):
+        """Add a new review to the database"""
+        db.session.add(review)
+        db.session.commit()
+        return review
 
-    Args:
-        reviewer_id: The reviewer's user ID.
-        reviewee_id: The reviewee's user ID.
-        assignment_id: The assignment ID.
+    @classmethod
+    def get_reviews_by_assignment(cls, assignment_id):
+        """Get all reviews for a given assignment"""
+        return cls.query.filter_by(assignmentID=assignment_id).all()
 
-    Returns:
-        True if a duplicate review exists, False otherwise.
-    """
-    return Review.query.filter_by(
-        reviewer_id=reviewer_id,
-        reviewee_id=reviewee_id,
-        assignment_id=assignment_id,
-    ).first() is not None
+    @classmethod
+    def review_exists(cls, reviewer_id, reviewee_id, assignment_id):
+        """Check if a review already exists for this reviewer/reviewee/assignment combination.
+        Used to prevent duplicate submissions."""
+        return (
+            cls.query.filter_by(
+                reviewerID=reviewer_id,
+                revieweeID=reviewee_id,
+                assignmentID=assignment_id,
+            ).first()
+            is not None
+        )
+
+    def update(self):
+        """Update review in the database"""
+        db.session.commit()
+
+    def delete(self):
+        """Delete review from the database"""
+        db.session.delete(self)
+        db.session.commit()

@@ -1,70 +1,58 @@
 """
-criterion_model.py
-Handles database operations for Criterion records (individual rubric scores per review).
+Criterion model for the peer evaluation app.
 """
 
-from .. import db
+from .db import db
 
 
 class Criterion(db.Model):
-    """ORM model representing a single scored criterion within a peer review."""
+    """Criterion model representing evaluation criteria"""
 
-    __tablename__ = "criteria"
+    __tablename__ = "Criterion"
 
     id = db.Column(db.Integer, primary_key=True)
-    review_id = db.Column(db.Integer, db.ForeignKey("reviews.id"), nullable=False)
-    criteria_description_id = db.Column(
-        db.Integer, db.ForeignKey("criteria_descriptions.id"), nullable=False
+    reviewID = db.Column(db.Integer, db.ForeignKey("Review.id"), nullable=False, index=True)
+    criterionRowID = db.Column(
+        db.Integer, db.ForeignKey("Criteria_Description.id"), nullable=False, index=True
     )
-    grade = db.Column(db.Integer, nullable=False)
-    comments = db.Column(db.Text, nullable=True)
+    grade = db.Column(db.Integer, nullable=True)
+    comments = db.Column(db.String(255), nullable=True)
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "review_id": self.review_id,
-            "criteria_description_id": self.criteria_description_id,
-            "grade": self.grade,
-            "comments": self.comments,
-        }
+    # relationships
+    review = db.relationship("Review", back_populates="criteria")
+    criterion_row = db.relationship("CriteriaDescription", back_populates="criteria")
 
+    def __init__(self, reviewID, criterionRowID, grade=None, comments=None):
+        self.reviewID = reviewID
+        self.criterionRowID = criterionRowID
+        self.grade = grade
+        self.comments = comments
 
-def create_criterion(
-    review_id: int,
-    criteria_description_id: int,
-    grade: int,
-    comments: str = None,
-) -> Criterion:
-    """
-    Create and persist a Criterion record for a single rubric score.
+    def __repr__(self):
+        return f"<Criterion id={self.id} review={self.reviewID}>"
 
-    Args:
-        review_id: The review this criterion score belongs to.
-        criteria_description_id: The rubric criterion being scored.
-        grade: The numeric score awarded.
-        comments: Optional free-text comment for this criterion.
+    @classmethod
+    def get_by_id(cls, criterion_id):
+        """Get criterion by ID"""
+        return db.session.get(cls, int(criterion_id))
 
-    Returns:
-        The newly created Criterion instance.
-    """
-    criterion = Criterion(
-        review_id=review_id,
-        criteria_description_id=criteria_description_id,
-        grade=grade,
-        comments=comments,
-    )
-    db.session.add(criterion)
-    return criterion
+    @classmethod
+    def create_criterion(cls, criterion):
+        """Add a new criterion to the database"""
+        db.session.add(criterion)
+        db.session.commit()
+        return criterion
 
+    @classmethod
+    def get_criteria_by_review(cls, review_id):
+        """Get all criterion scores belonging to a given review"""
+        return cls.query.filter_by(reviewID=review_id).all()
 
-def get_criteria_by_review(review_id: int) -> list[Criterion]:
-    """
-    Retrieve all criterion scores for a given review.
+    def update(self):
+        """Update criterion in the database"""
+        db.session.commit()
 
-    Args:
-        review_id: The review whose criteria are requested.
-
-    Returns:
-        List of Criterion instances belonging to the review.
-    """
-    return Criterion.query.filter_by(review_id=review_id).all()
+    def delete(self):
+        """Delete criterion from the database"""
+        db.session.delete(self)
+        db.session.commit()
