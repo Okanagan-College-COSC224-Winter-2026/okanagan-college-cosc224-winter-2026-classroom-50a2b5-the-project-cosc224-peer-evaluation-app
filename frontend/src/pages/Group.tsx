@@ -142,7 +142,8 @@ export default function Group() {
       }
       setMemberTable(memLocal);
     })();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   return (
     <>

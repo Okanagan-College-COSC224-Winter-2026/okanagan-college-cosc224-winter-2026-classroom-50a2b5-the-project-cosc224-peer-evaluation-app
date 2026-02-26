@@ -10,8 +10,6 @@ import {
   listStuGroup,
   getUserId,
   listCourseMembers,
-  createReview,
-  createCriterion,
   getReview
 } from "../util/api";
 
@@ -39,13 +37,13 @@ export default function Assignment() {
           const reviewResponse = await getReview(Number(id), stuID, revieweeID);
           const reviewData = await reviewResponse.json();
           setReview(reviewData.grades);
-        } catch (error) {
+        } catch {
           // No review yet — expected
         }
         try {
           const members = await listCourseMembers(String(id));
           setClassMembers(members);
-        } catch (error) {
+        } catch {
           // Members list unavailable
         }
       })();
