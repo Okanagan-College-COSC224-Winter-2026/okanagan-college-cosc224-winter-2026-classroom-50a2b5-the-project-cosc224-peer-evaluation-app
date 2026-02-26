@@ -14,6 +14,8 @@ import {
   getReview,
   editAssignment,
   deleteAssignment,
+  getRubricForAssignment,
+  deleteRubric,
 } from "../util/api";
 import StatusMessage from "../components/StatusMessage";
 
@@ -43,6 +45,17 @@ export default function Assignment() {
   const [editDueDate, setEditDueDate] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
+  const [rubricId, setRubricId] = useState<number | null>(null);
+
+  const loadRubric = async () => {
+    try {
+      const rubric = await getRubricForAssignment(Number(id));
+      setRubricId(rubric ? rubric.id : null);
+    } catch (error) {
+      console.error('Error fetching rubric:', error);
+      setRubricId(null);
+    }
+  };
 
   const toDatetimeLocal = (value?: string) => {
     if (!value) {
@@ -83,6 +96,8 @@ export default function Assignment() {
             // Filter out self from group members (can't review yourself)
             setGroupMembers(myGroup.members.filter((m: GroupMember) => m.id !== currentUserId));
           }
+        } catch (err) {
+          console.error("Failed to load assignment or group members:", err);
         }
 
         // Only fetch review if a reviewee has been selected
