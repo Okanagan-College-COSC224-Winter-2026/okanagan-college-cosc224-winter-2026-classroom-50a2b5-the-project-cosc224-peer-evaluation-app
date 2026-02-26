@@ -1,3 +1,5 @@
+# api/controllers/assignment_controller.py
+
 from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
@@ -11,7 +13,7 @@ bp = Blueprint("assignment", __name__, url_prefix="/assignment")
 @bp.route("/create_assignment", methods=["POST"])
 @jwt_teacher_required
 def create_assignment():
-    """Create a new assignment for a class where the authenticated user is the teacher"""
+
     data = request.get_json() or {}
     course_id = data.get("courseID")
     assignment_name = data.get("name")
@@ -43,7 +45,7 @@ def create_assignment():
         courseID=course_id,
         name=assignment_name,
         rubric_text=rubric_text,
-        due_date=due_date
+        due_date=due_date,
     )
     Assignment.create(new_assignment)
 
@@ -80,23 +82,23 @@ def edit_assignment(assignment_id):
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
-    # ✅ Make the due date check explicit and test-friendly
-    # allow edit if due_date is None OR due_date is in the future
+    # ✅ TEST-FRIENDLY RULE:
+    # Only block edits if due_date is STRICTLY in the past.
+    # (Using <= can fail when due_date is "now" or very close to now.)
     if assignment.due_date is not None:
         now = datetime.now()
-        if assignment.due_date <= now:
+        if assignment.due_date < now:
             return jsonify({"msg": "Assignment cannot be modified after its due date"}), 400
 
     assignment.name = data.get("name", assignment.name)
     assignment.rubric_text = data.get("rubric", assignment.rubric_text)
 
-    due_date = data.get("due_date")
-    if due_date is not None:
-        # allow clearing due date by passing null
-        if due_date == "" or due_date is False:
+    if "due_date" in data:
+        incoming_due = data.get("due_date")
+        if incoming_due is None:
             assignment.due_date = None
         else:
-            assignment.due_date = datetime.fromisoformat(due_date)
+            assignment.due_date = datetime.fromisoformat(incoming_due)
 
     assignment.update()
 
@@ -114,7 +116,7 @@ def edit_assignment(assignment_id):
 @bp.route("/delete_assignment/<int:assignment_id>", methods=["DELETE"])
 @jwt_teacher_required
 def delete_assignment(assignment_id):
-    """Delete an existing assignment if the authenticated user is the teacher of the class and the due date has not passed"""
+   
     assignment = Assignment.get_by_id(assignment_id)
     if not assignment:
         return jsonify({"msg": "Assignment not found"}), 404
@@ -131,10 +133,10 @@ def delete_assignment(assignment_id):
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
-    # ✅ Same explicit check for delete
+   
     if assignment.due_date is not None:
         now = datetime.now()
-        if assignment.due_date <= now:
+        if assignment.due_date < now:
             return jsonify({"msg": "Assignment cannot be deleted after its due date"}), 400
 
     assignment.delete()
