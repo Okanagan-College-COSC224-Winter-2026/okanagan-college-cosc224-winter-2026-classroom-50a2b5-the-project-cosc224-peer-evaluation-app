@@ -43,6 +43,11 @@ class Criterion(db.Model):
         db.session.commit()
         return criterion
 
+    @classmethod
+    def get_criteria_by_review(cls, review_id):
+        """Get all criterion scores belonging to a given review"""
+        return cls.query.filter_by(reviewID=review_id).all()
+
     def update(self):
         """Update criterion in the database"""
         db.session.commit()
