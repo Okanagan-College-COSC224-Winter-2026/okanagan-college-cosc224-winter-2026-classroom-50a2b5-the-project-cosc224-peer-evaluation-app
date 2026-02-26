@@ -71,12 +71,7 @@ def submit_review():
     # If no group memberships exist, allow the review (groups may not be set up)
 
     # 4. No duplicate reviews
-    existing = Review.query.filter_by(
-        assignmentID=assignment_id,
-        reviewerID=reviewer.id,
-        revieweeID=reviewee_id,
-    ).first()
-    if existing is not None:
+    if Review.review_exists(reviewer.id, reviewee_id, assignment_id):
         return jsonify({"msg": "You have already submitted a review for this student on this assignment"}), 409
 
     # Create the review record

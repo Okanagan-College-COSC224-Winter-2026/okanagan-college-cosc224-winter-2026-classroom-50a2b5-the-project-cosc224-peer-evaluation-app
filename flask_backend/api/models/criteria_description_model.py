@@ -37,9 +37,12 @@ class CriteriaDescription(db.Model):
         return db.session.get(cls, int(criteria_id))
 
     @classmethod
-    def get_criteria_by_rubric(cls, rubric_id):
-        """Get all criteria descriptions for a given rubric."""
-        return cls.query.filter_by(rubricID=rubric_id).all()
+    def get_criteria_by_rubric(cls, rubric_id: int):
+        """
+        Get all criteria descriptions for a given rubric.
+        Returns an empty list if none exist.
+        """
+        return cls.query.filter_by(rubricID=int(rubric_id)).all()
 
     @classmethod
     def create_criteria_description(cls, criteria_description):

@@ -98,4 +98,28 @@ def enroll_user_in_course():
         return enrollment
 
     return _enroll_user_in_course
+    
+@pytest.fixture()
+def seeded_feedback_world(app):
+    """
+    Seed data for feedback endpoint tests:
+    - student_with_reviews
+    - student_no_reviews
+    - student_wrong_course
+    - assignment ids for each case
+    - expected averages for aggregation checks
+    """
+    return {
+        "student_with_reviews": {"email": "reviewee@test.com", "password": "Password123!"},
+        "student_no_reviews": {"email": "noreviews@test.com", "password": "Password123!"},
+        "student_wrong_course": {"email": "wrongcourse@test.com", "password": "Password123!"},
+        "assignment_id_with_reviews": 1,
+        "assignment_id_no_reviews": 2,
+        "assignment_id_in_other_course": 3,
+        "expected_avgs_by_question": {
+            "Communication": 4.0,
+            "Contribution": 3.33,
+        },
+    }
+
         

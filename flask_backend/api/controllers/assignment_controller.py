@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
@@ -8,6 +9,7 @@ from ..models.criteria_description_model import CriteriaDescription
 from .auth_controller import jwt_teacher_required
 
 bp = Blueprint("assignment", __name__, url_prefix="/assignment")
+
 
 @bp.route("/create_assignment", methods=["POST"])
 @jwt_teacher_required
@@ -39,7 +41,9 @@ def create_assignment():
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
-    new_assignment = Assignment(courseID=course_id, name=assignment_name, rubric_text=rubric_text, due_date=due_date)
+    new_assignment = Assignment(
+        courseID=course_id, name=assignment_name, rubric_text=rubric_text, due_date=due_date
+    )
     Assignment.create(new_assignment)
     return (
         jsonify(
@@ -50,6 +54,7 @@ def create_assignment():
         ),
         201,
     )
+
 
 @bp.route("/edit_assignment/<int:assignment_id>", methods=["PATCH"])
 @jwt_teacher_required
@@ -68,7 +73,7 @@ def edit_assignment(assignment_id):
     course = Course.get_by_id(assignment.courseID)
     if course is None:
         return jsonify({"msg": "Course not found"}), 404
-    
+
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
@@ -91,6 +96,8 @@ def edit_assignment(assignment_id):
         ),
         200,
     )
+
+
 @bp.route("/delete_assignment/<int:assignment_id>", methods=["DELETE"])
 @jwt_teacher_required
 def delete_assignment(assignment_id):
@@ -107,7 +114,7 @@ def delete_assignment(assignment_id):
     course = Course.get_by_id(assignment.courseID)
     if not course:
         return jsonify({"msg": "Course not found"}), 404
-    
+
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
@@ -116,7 +123,46 @@ def delete_assignment(assignment_id):
 
     assignment.delete()
     return jsonify({"msg": "Assignment deleted"}), 200
-    
+
+
+# ============================================================
+# US1/US11 — RUBRIC DATA ENDPOINT
+# GET /assignment/<assignment_id>/rubric
+# ============================================================
+
+@bp.route("/<int:assignment_id>/rubric", methods=["GET"])
+@jwt_required()
+def get_assignment_rubric(assignment_id: int):
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    rubric = Rubric.get_rubric_by_assignment(assignment_id)
+    if not rubric:
+        return jsonify({"msg": "Rubric not found"}), 404
+
+    criteria_rows = CriteriaDescription.get_criteria_by_rubric(rubric.id)
+
+    return (
+        jsonify(
+            {
+                "rubric_id": rubric.id,
+                "assignment_id": assignment_id,
+                "criteria": [
+                    {
+                        "id": row.id,
+                        "question": row.question,
+                        "score_max": row.scoreMax,
+                        "has_score": row.hasScore,
+                        "can_comment": rubric.canComment,
+                    }
+                    for row in criteria_rows
+                ],
+            }
+        ),
+        200,
+    )
+
 
 # the following routes are for getting the assignments for a given course
 @bp.route("/<int:class_id>", methods=["GET"])
