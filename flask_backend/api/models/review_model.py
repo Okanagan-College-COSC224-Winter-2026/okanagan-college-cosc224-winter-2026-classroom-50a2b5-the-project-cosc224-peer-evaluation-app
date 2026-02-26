@@ -68,16 +68,16 @@ class Review(db.Model):
         ).all()
 
     @classmethod
+    def get_reviews_by_assignment(cls, assignment_id):
+        """Get all reviews for a given assignment."""
+        return cls.query.filter_by(assignmentID=assignment_id).all()
+
+    @classmethod
     def create_review(cls, review):
         """Add a new review to the database"""
         db.session.add(review)
         db.session.commit()
         return review
-
-    @classmethod
-    def get_reviews_by_assignment(cls, assignment_id):
-        """Get all reviews for a given assignment"""
-        return cls.query.filter_by(assignmentID=assignment_id).all()
 
     @classmethod
     def review_exists(cls, reviewer_id, reviewee_id, assignment_id):

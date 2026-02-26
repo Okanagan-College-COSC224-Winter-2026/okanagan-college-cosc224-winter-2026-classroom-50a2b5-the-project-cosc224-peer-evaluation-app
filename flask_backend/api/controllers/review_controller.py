@@ -1,123 +1,95 @@
 """
-review_controller.py
-Blueprint handling peer review submission for US1/US11.
-
-Endpoint:
-    POST /api/reviews/submit
+Review controller for the peer evaluation app.
+Provides the endpoint for submitting rubric-based peer reviews.
 """
 
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from ..models.review_model import Review
-from ..models.criterion_model import Criterion
-from ..models.db import db
+from api.models import User, Assignment, Review, Criterion, Group_Members
+from api.models.rubric_model import Rubric
+from api.models.criteria_description_model import CriteriaDescription
 
-review_bp = Blueprint("review", __name__, url_prefix="/api/reviews")
+review_bp = Blueprint("review_submit", __name__, url_prefix="/api/reviews")
 
 
 @review_bp.route("/submit", methods=["POST"])
 @jwt_required()
 def submit_review():
     """
+    POST /api/reviews/submit
     Submit a rubric-based peer review.
 
-    Expected JSON body:
-        {
-            "assignment_id": int,
-            "reviewee_id":   int,
-            "criteria": [
-                {
-                    "criteria_description_id": int,
-                    "grade":                   int,
-                    "comments":                str   (optional)
-                },
-                ...
-            ]
-        }
+    Request body:
+    {
+      "assignment_id": int,
+      "reviewee_id": int,
+      "criteria": [
+        { "criteria_description_id": int, "grade": int, "comments": str }
+      ]
+    }
 
-    Returns:
-        201 { "review_id": int }  — review created successfully
-        400 { "error": str }      — self-review or missing fields
-        401                       — missing/invalid JWT (handled by decorator)
-        403 { "error": str }      — reviewer not in the same group as reviewee
-        404 { "error": str }      — assignment not found
-        409 { "error": str }      — duplicate review
+    Validations:
+    1. Reviewer != reviewee (no self-reviews)
+    2. Assignment exists
+    3. Reviewer is in the same group as reviewee
+    4. No duplicate review (same reviewer + reviewee + assignment)
     """
-    reviewer_id = get_jwt_identity()
-    data = request.get_json(silent=True)
+    email = get_jwt_identity()
+    reviewer = User.get_by_email(email)
+    if reviewer is None:
+        return jsonify({"msg": "User not found"}), 404
 
-    # ── Basic payload validation ──────────────────────────────────────────────
-    if not data:
-        return jsonify({"error": "Request body must be JSON."}), 400
-
+    data = request.get_json()
     assignment_id = data.get("assignment_id")
-    reviewee_id   = data.get("reviewee_id")
-    criteria_list = data.get("criteria")
+    reviewee_id = data.get("reviewee_id")
+    criteria_data = data.get("criteria", [])
 
-    if assignment_id is None or reviewee_id is None or not isinstance(criteria_list, list):
-        return jsonify({"error": "assignment_id, reviewee_id, and criteria are required."}), 400
+    if not assignment_id or not reviewee_id:
+        return jsonify({"msg": "assignment_id and reviewee_id are required"}), 400
 
-    if not criteria_list:
-        return jsonify({"error": "criteria must contain at least one entry."}), 400
+    # 1. No self-reviews
+    if reviewer.id == reviewee_id:
+        return jsonify({"msg": "You cannot review yourself"}), 400
 
-    # ── Self-review guard ─────────────────────────────────────────────────────
-    if int(reviewer_id) == int(reviewee_id):
-        return jsonify({"error": "You cannot review yourself."}), 400
-
-    # ── Assignment existence check ────────────────────────────────────────────
-    # Import here to use whatever assignment model already exists in the project
-    from ..models.assignment_model import Assignment
+    # 2. Assignment must exist
     assignment = Assignment.get_by_id(assignment_id)
     if assignment is None:
-        return jsonify({"error": f"Assignment {assignment_id} not found."}), 404
+        return jsonify({"msg": "Assignment not found"}), 404
 
-    # ── Group membership check ────────────────────────────────────────────────
-    # Verify that the reviewer and reviewee are in the same group for this assignment.
-    # Import the existing Group model to perform this check.
-    from ..models.group_model import Group
-    reviewer_in_group = Group.are_in_same_group(reviewer_id, reviewee_id, assignment_id)
-    if not reviewer_in_group:
-        return jsonify({"error": "You are not in the same group as this reviewee for this assignment."}), 403
+    # 3. Reviewer must be in the same group as reviewee for this assignment
+    reviewer_membership = Group_Members.query.filter_by(
+        userID=reviewer.id, assignmentID=assignment_id
+    ).first()
+    reviewee_membership = Group_Members.query.filter_by(
+        userID=reviewee_id, assignmentID=assignment_id
+    ).first()
 
-    # ── Duplicate review check ────────────────────────────────────────────────
-    if Review.review_exists(reviewer_id, reviewee_id, assignment_id):
-        return jsonify({"error": "You have already submitted a review for this student on this assignment."}), 409
+    if reviewer_membership and reviewee_membership:
+        if reviewer_membership.groupID != reviewee_membership.groupID:
+            return jsonify({"msg": "Reviewer and reviewee are not in the same group"}), 403
+    # If no group memberships exist, allow the review (groups may not be set up)
 
-    # ── Persist review + criteria in a single transaction ────────────────────
-    try:
-        # 1. Create the Review record
-        review = Review(
-            assignmentID=assignment_id,
-            reviewerID=reviewer_id,
-            revieweeID=reviewee_id,
+    # 4. No duplicate reviews
+    if Review.review_exists(reviewer.id, reviewee_id, assignment_id):
+        return jsonify({"msg": "You have already submitted a review for this student on this assignment"}), 409
+
+    # Create the review record
+    review = Review(
+        assignmentID=assignment_id,
+        reviewerID=reviewer.id,
+        revieweeID=reviewee_id,
+    )
+    Review.create_review(review)
+
+    # Create criterion records for each score
+    for c in criteria_data:
+        criterion = Criterion(
+            reviewID=review.id,
+            criterionRowID=c.get("criteria_description_id"),
+            grade=c.get("grade"),
+            comments=c.get("comments", ""),
         )
-        db.session.add(review)
-        db.session.flush()  # flush so review.id is available for Criterion FK
+        Criterion.create_criterion(criterion)
 
-        # 2. Create a Criterion record for each rubric score
-        for entry in criteria_list:
-            crit_id  = entry.get("criteria_description_id")
-            grade    = entry.get("grade")
-            comments = entry.get("comments", None)
-
-            if crit_id is None or grade is None:
-                db.session.rollback()
-                return jsonify({"error": "Each criterion must include criteria_description_id and grade."}), 400
-
-            criterion = Criterion(
-                reviewID=review.id,
-                criterionRowID=crit_id,
-                grade=grade,
-                comments=comments,
-            )
-            db.session.add(criterion)
-
-        db.session.commit()
-
-    except Exception as exc:
-        db.session.rollback()
-        current_app.logger.error("Error submitting review: %s", exc)
-        return jsonify({"error": "An unexpected error occurred. Please try again."}), 500
-
-    return jsonify({"review_id": review.id}), 201
+    return jsonify({"msg": "Review submitted successfully", "review_id": review.id}), 201

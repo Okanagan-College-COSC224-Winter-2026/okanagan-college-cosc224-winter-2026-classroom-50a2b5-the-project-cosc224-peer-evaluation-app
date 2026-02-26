@@ -228,3 +228,46 @@ def test_feedback_assignment_not_found(test_client, db, setup_student):
 
     resp = test_client.get("/student/assignments/999999/feedback")
     assert resp.status_code == 404
+
+
+# Alias tests matching the sprint plan naming convention
+test_get_feedback_success = test_feedback_with_reviews
+test_get_feedback_no_reviews = test_feedback_no_reviews
+test_get_feedback_unauthenticated = test_feedback_unauthenticated
+test_feedback_anonymity = test_feedback_reviewer_identity_hidden
+
+
+def test_feedback_score_aggregation(test_client, db, setup_teacher, setup_student):
+    """
+    GIVEN a student with 3 reviews from different reviewers
+    WHEN GET /student/assignments/<id>/feedback is called
+    THEN the average score is correctly calculated across all 3 reviews
+    """
+    teacher = setup_teacher
+    student = setup_student
+
+    reviewer1 = create_student("Reviewer A", "reviewerA@example.com")
+    reviewer2 = create_student("Reviewer B", "reviewerB@example.com")
+    reviewer3 = create_student("Reviewer C", "reviewerC@example.com")
+
+    course = create_course(teacher.id)
+    User_Course.add(student.id, course.id)
+    assignment, _, crit_desc = create_assignment_with_rubric(course.id, score_max=10)
+
+    create_review(assignment.id, reviewer1.id, student.id, crit_desc.id, 8, "Great")
+    create_review(assignment.id, reviewer2.id, student.id, crit_desc.id, 6, "Good")
+    create_review(assignment.id, reviewer3.id, student.id, crit_desc.id, 7, "Nice")
+
+    login_as(test_client, "student@example.com")
+
+    resp = test_client.get(f"/student/assignments/{assignment.id}/feedback")
+
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["total_reviews_received"] == 3
+    assert len(data["criteria"]) == 1
+
+    crit = data["criteria"][0]
+    assert crit["average_score"] == 7.0  # (8 + 6 + 7) / 3
+    assert crit["score_max"] == 10
+    assert len(crit["comments"]) == 3
