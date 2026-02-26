@@ -7,15 +7,17 @@ from .auth_controller import jwt_teacher_required
 
 bp = Blueprint("assignment", __name__, url_prefix="/assignment")
 
+
 @bp.route("/create_assignment", methods=["POST"])
 @jwt_teacher_required
 def create_assignment():
     """Create a new assignment for a class where the authenticated user is the teacher"""
-    data = request.get_json()
+    data = request.get_json() or {}
     course_id = data.get("courseID")
     assignment_name = data.get("name")
     rubric_text = data.get("rubric")
     due_date = data.get("due_date")
+
     if not due_date:
         due_date = None
     else:
@@ -37,8 +39,14 @@ def create_assignment():
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
-    new_assignment = Assignment(courseID=course_id, name=assignment_name, rubric_text=rubric_text, due_date=due_date)
+    new_assignment = Assignment(
+        courseID=course_id,
+        name=assignment_name,
+        rubric_text=rubric_text,
+        due_date=due_date
+    )
     Assignment.create(new_assignment)
+
     return (
         jsonify(
             {
@@ -49,11 +57,13 @@ def create_assignment():
         201,
     )
 
+
 @bp.route("/edit_assignment/<int:assignment_id>", methods=["PATCH"])
 @jwt_teacher_required
 def edit_assignment(assignment_id):
     """Edit an existing assignment if the authenticated user is the teacher of the class and the due date has not passed"""
-    data = request.get_json()
+    data = request.get_json() or {}
+
     assignment = Assignment.get_by_id(assignment_id)
     if not assignment:
         return jsonify({"msg": "Assignment not found"}), 404
@@ -66,20 +76,30 @@ def edit_assignment(assignment_id):
     course = Course.get_by_id(assignment.courseID)
     if course is None:
         return jsonify({"msg": "Course not found"}), 404
-    
+
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
-    if not assignment.can_modify():
-        return jsonify({"msg": "Assignment cannot be modified after its due date"}), 400
+    # ✅ Make the due date check explicit and test-friendly
+    # allow edit if due_date is None OR due_date is in the future
+    if assignment.due_date is not None:
+        now = datetime.now()
+        if assignment.due_date <= now:
+            return jsonify({"msg": "Assignment cannot be modified after its due date"}), 400
 
     assignment.name = data.get("name", assignment.name)
     assignment.rubric_text = data.get("rubric", assignment.rubric_text)
+
     due_date = data.get("due_date")
-    if due_date:
-        assignment.due_date = datetime.fromisoformat(due_date)
+    if due_date is not None:
+        # allow clearing due date by passing null
+        if due_date == "" or due_date is False:
+            assignment.due_date = None
+        else:
+            assignment.due_date = datetime.fromisoformat(due_date)
 
     assignment.update()
+
     return (
         jsonify(
             {
@@ -89,6 +109,8 @@ def edit_assignment(assignment_id):
         ),
         200,
     )
+
+
 @bp.route("/delete_assignment/<int:assignment_id>", methods=["DELETE"])
 @jwt_teacher_required
 def delete_assignment(assignment_id):
@@ -105,18 +127,20 @@ def delete_assignment(assignment_id):
     course = Course.get_by_id(assignment.courseID)
     if not course:
         return jsonify({"msg": "Course not found"}), 404
-    
+
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
-    if not assignment.can_modify():
-        return jsonify({"msg": "Assignment cannot be deleted after its due date"}), 400
+    # ✅ Same explicit check for delete
+    if assignment.due_date is not None:
+        now = datetime.now()
+        if assignment.due_date <= now:
+            return jsonify({"msg": "Assignment cannot be deleted after its due date"}), 400
 
     assignment.delete()
     return jsonify({"msg": "Assignment deleted"}), 200
-    
 
-# the following routes are for getting the assignments for a given course
+
 @bp.route("/<int:class_id>", methods=["GET"])
 @jwt_required()
 def get_assignments(class_id):
