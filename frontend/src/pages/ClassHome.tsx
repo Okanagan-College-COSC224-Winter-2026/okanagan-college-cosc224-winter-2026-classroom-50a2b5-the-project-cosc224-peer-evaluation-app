@@ -1,3 +1,5 @@
+// src/pages/ClassHome.tsx
+
 import AssignmentCard from "../components/AssignmentCard";
 import Button from "../components/Button";
 import "./ClassHome.css";
@@ -12,50 +14,69 @@ import { isTeacher } from "../util/login";
 
 export default function ClassHome() {
   const { id } = useParams();
-  const idNew = Number(id)
+  const idNew = Number(id);
+
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [newAssignmentName, setNewAssignmentName] = useState("");
   const [className, setClassName] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState('');
-  const [statusType, setStatusType] = useState<'error' | 'success'>('error');
+  const [statusMessage, setStatusMessage] = useState("");
+  const [statusType, setStatusType] = useState<"error" | "success">("error");
 
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
+      if (!id) return;
+
       const resp = await listAssignments(String(id));
       const classes = await listClasses();
-      const currentClass = classes.find((c: { id: number }) => c.id === Number(id));
+      const currentClass = classes.find(
+        (c: { id: number }) => c.id === Number(id)
+      );
+
+      if (cancelled) return;
+
       setAssignments(resp);
       setClassName(currentClass?.name || null);
     })();
-  }, []);
-    
-    const tryCreateAssingment = async () => {
-      try {
-        setStatusMessage('');
-        const response = await createAssignment(idNew, newAssignmentName);
-        const createdAssignment = response?.assignment;
 
-        if (!createdAssignment?.id) {
-          throw new Error('Failed to create assignment');
-        }
-
-        setAssignments((prev) => [...prev, createdAssignment]);
-        setNewAssignmentName("");
-        setStatusType('success');
-        setStatusMessage('Assignment created successfully!');
-      } catch (error) {
-        console.error('Error creating assignment:', error);
-        setStatusType('error');
-        setStatusMessage('Error creating assignment.');
-      }
+    return () => {
+      cancelled = true;
     };
-    
-    return (
-      <>
-        <div className="ClassHeader">
-          <div className="ClassHeaderLeft">
-            <h2>{className}</h2>
-          </div>
+  }, [id]); // ✅ FIX: include id dependency
+
+  const tryCreateAssingment = async () => {
+    try {
+      setStatusMessage("");
+
+      if (!id || Number.isNaN(idNew)) {
+        throw new Error("Invalid class id");
+      }
+
+      const response = await createAssignment(idNew, newAssignmentName);
+      const createdAssignment = response?.assignment;
+
+      if (!createdAssignment?.id) {
+        throw new Error("Failed to create assignment");
+      }
+
+      setAssignments((prev) => [...prev, createdAssignment]);
+      setNewAssignmentName("");
+      setStatusType("success");
+      setStatusMessage("Assignment created successfully!");
+    } catch (error) {
+      console.error("Error creating assignment:", error);
+      setStatusType("error");
+      setStatusMessage("Error creating assignment.");
+    }
+  };
+
+  return (
+    <>
+      <div className="ClassHeader">
+        <div className="ClassHeaderLeft">
+          <h2>{className}</h2>
+        </div>
 
         <div className="ClassHeaderRight">
           {isTeacher() ? (
@@ -84,15 +105,13 @@ export default function ClassHome() {
       <div className="Class">
         <div className="Assignments">
           <ul className="Assignment">
-            {assignments.map((assignment) => {
-              return (
-                <li key={assignment.id}>
-                  <AssignmentCard id={assignment.id}>
-                    {assignment.name}
-                  </AssignmentCard>
-                </li>
-              );
-            })}
+            {assignments.map((assignment) => (
+              <li key={assignment.id}>
+                <AssignmentCard id={assignment.id}>
+                  {assignment.name}
+                </AssignmentCard>
+              </li>
+            ))}
           </ul>
         </div>
 
@@ -104,13 +123,7 @@ export default function ClassHome() {
               onInput={setNewAssignmentName}
               className="AssignmentInput"
             />
-            <Button
-              onClick={() =>
-                tryCreateAssingment()
-              }
-            >
-              Add
-            </Button>
+            <Button onClick={() => tryCreateAssingment()}>Add</Button>
           </div>
         ) : null}
       </div>

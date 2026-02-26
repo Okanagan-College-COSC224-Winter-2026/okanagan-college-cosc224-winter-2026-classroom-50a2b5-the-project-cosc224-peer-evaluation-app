@@ -1,5 +1,4 @@
 // src/pages/Dashboard.tsx
-
 import { useEffect, useState } from "react";
 import { maybeHandleExpire } from "../util/api";
 import ClassCard from "../components/ClassCard";
@@ -19,6 +18,24 @@ interface ClassData {
   assignments: AssignmentData[];
   students_count: number;
 }
+
+type DashboardAssignment = {
+  assignment_id?: number;
+  id?: number;
+  name: string;
+  due_date?: string | null;
+};
+
+type DashboardClass = {
+  class_id: number;
+  class_name: string;
+  students_count?: number;
+  assignments?: DashboardAssignment[];
+};
+
+type DashboardResponse = {
+  dashboard?: DashboardClass[];
+};
 
 export default function Dashboard() {
   const [classes, setClasses] = useState<ClassData[]>([]);
@@ -41,19 +58,15 @@ export default function Dashboard() {
         maybeHandleExpire(resp);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-        const json = await resp.json();
+        const json: DashboardResponse = await resp.json();
 
-        const classData: ClassData[] = (json.dashboard ?? []).map((c: any) => ({
+        const classData: ClassData[] = (json.dashboard ?? []).map((c) => ({
           id: c.class_id,
           name: c.class_name,
           image_url: "/oc_logo.png",
-
-          // ✅ FIX: use the new backend field students_count
-          // (fallback to 0 if missing)
           students_count: Number(c.students_count ?? 0),
-
-          assignments: (c.assignments || []).map((a: any) => ({
-            id: a.id ?? a.assignment_id,
+          assignments: (c.assignments ?? []).map((a) => ({
+            id: a.id ?? a.assignment_id ?? 0,
             name: a.name,
             due_date: a.due_date ?? null,
           })),
@@ -87,9 +100,14 @@ export default function Dashboard() {
 
       maybeHandleExpire(resp);
 
-      const data = await resp.json().catch(() => null);
+      const data: unknown = await resp.json().catch(() => null);
+      const msg =
+        typeof data === "object" && data && "msg" in data
+          ? String((data as { msg: unknown }).msg)
+          : null;
+
       if (!resp.ok) {
-        alert(data?.msg ?? `Delete class failed (HTTP ${resp.status})`);
+        alert(msg ?? `Delete class failed (HTTP ${resp.status})`);
         return;
       }
 
@@ -119,9 +137,14 @@ export default function Dashboard() {
 
       maybeHandleExpire(resp);
 
-      const data = await resp.json().catch(() => null);
+      const data: unknown = await resp.json().catch(() => null);
+      const msg =
+        typeof data === "object" && data && "msg" in data
+          ? String((data as { msg: unknown }).msg)
+          : null;
+
       if (!resp.ok) {
-        alert(data?.msg ?? `Delete assignment failed (HTTP ${resp.status})`);
+        alert(msg ?? `Delete assignment failed (HTTP ${resp.status})`);
         return;
       }
 
@@ -147,7 +170,6 @@ export default function Dashboard() {
 
   return (
     <div className="Dashboard">
-      {/* Header */}
       <div
         style={{
           display: "flex",
@@ -177,7 +199,6 @@ export default function Dashboard() {
       <div className="DashboardGrid">
         {classes.map((c) => (
           <div key={c.id}>
-            {/* Class Card */}
             <div
               onClick={() => {
                 if (editMode) return;
@@ -196,7 +217,6 @@ export default function Dashboard() {
               />
             </div>
 
-            {/* Delete Class Button (moved BELOW card) */}
             {editMode && (
               <div
                 style={{
@@ -225,7 +245,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Assignment List */}
             {editMode && (
               <div
                 style={{
