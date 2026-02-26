@@ -22,13 +22,11 @@ def app():
         }
     )
 
-    # Create the database and tables
     with _app.app_context():
         _db.create_all()
 
     yield _app
 
-    # Cleanup
     with _app.app_context():
         _db.drop_all()
 
@@ -37,14 +35,12 @@ def app():
 def db(app):
     """Create a fresh database session for each test."""
     with app.app_context():
-        # Clear all data from tables
         for table in reversed(_db.metadata.sorted_tables):
             _db.session.execute(table.delete())
         _db.session.commit()
 
         yield _db
 
-        # Cleanup after test
         _db.session.rollback()
 
 
@@ -76,6 +72,7 @@ def make_admin():
 
     return _make_admin
 
+
 @pytest.fixture
 def enroll_user_in_course():
     """Fixture to enroll a user in a course."""
@@ -87,39 +84,14 @@ def enroll_user_in_course():
         course = _db.session.get(Course, course_id)
         if course is None:
             raise ValueError(f"Course with id {course_id} does not exist")
-        
+
         existing_enrollment = _db.session.get(User_Course, (user_id, course_id))
         if existing_enrollment:
-            return existing_enrollment  # Already enrolled
-        
+            return existing_enrollment
+
         enrollment = User_Course(userID=user_id, courseID=course_id)
         _db.session.add(enrollment)
         _db.session.commit()
         return enrollment
 
     return _enroll_user_in_course
-    
-@pytest.fixture()
-def seeded_feedback_world(app):
-    """
-    Seed data for feedback endpoint tests:
-    - student_with_reviews
-    - student_no_reviews
-    - student_wrong_course
-    - assignment ids for each case
-    - expected averages for aggregation checks
-    """
-    return {
-        "student_with_reviews": {"email": "reviewee@test.com", "password": "Password123!"},
-        "student_no_reviews": {"email": "noreviews@test.com", "password": "Password123!"},
-        "student_wrong_course": {"email": "wrongcourse@test.com", "password": "Password123!"},
-        "assignment_id_with_reviews": 1,
-        "assignment_id_no_reviews": 2,
-        "assignment_id_in_other_course": 3,
-        "expected_avgs_by_question": {
-            "Communication": 4.0,
-            "Contribution": 3.33,
-        },
-    }
-
-        

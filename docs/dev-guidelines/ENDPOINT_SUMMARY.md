@@ -122,3 +122,104 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 - `CourseGrade` response shape used by `/student/grades`:
   `{ course_id, course_name, grade, max_score, graded_assignments, total_assignments, has_grades }`
 
+## Peer Review Submission (US1/US11)
+
+### POST /api/reviews/submit
+
+**Description:** Submit a peer review with rubric scores and optional comments.
+
+**Auth:** `@jwt_required()` — reviewer identified via `get_jwt_identity()`
+
+**Request Body:**
+```json
+{
+  "assignment_id": 1,
+  "reviewee_id": 2,
+  "criteria": [
+    {
+      "criteria_description_id": 1,
+      "grade": 4,
+      "comments": "Good work"
+    }
+  ]
+```
+
+**Responses:**
+- `201` — Review created successfully, returns `{ "review_id": int }`
+- `400` — Reviewer == reviewee (self-review blocked)
+- `401` — Not authenticated
+- `409` — Duplicate review (same reviewer + reviewee + assignment)
+
+---
+
+### GET /api/assignments/<assignment_id>/rubric
+
+**Description:** Get the rubric and criteria for an assignment.
+
+**Auth:** `@jwt_required()`
+
+**Response (200):**
+```json
+{
+  "rubric_id": 1,
+  "assignment_id": 1,
+  "criteria": [
+    {
+      "id": 1,
+      "question": "Communication",
+      "score_max": 5,
+      "has_score": true,
+      "can_comment": true
+    }
+  ]
+}
+```
+
+**Responses:**
+- `200` — Rubric found
+- `401` — Not authenticated
+- `404` — Assignment or rubric not found
+
+---
+
+## Student Feedback Viewing (US12)
+
+### GET /student/assignments/<assignment_id>/feedback
+
+**Description:** Get aggregated anonymous peer review feedback for the logged-in student on a specific assignment.
+
+**Auth:** `@jwt_required()` — student identified via `get_jwt_identity()`
+
+**Response (200 — with reviews):**
+```json
+{
+  "assignment_name": "Peer Review Assignment 1",
+  "total_reviews": 2,
+  "criteria_feedback": [
+    {
+      "question": "Communication",
+      "avg_score": 4.5,
+      "max_score": 5,
+      "comments": ["Good communicator", "Excellent communication"]
+    }
+  ],
+  "overall_avg": 4.0
+}
+```
+
+**Response (200 — no reviews yet):**
+```json
+{
+  "assignment_name": "Peer Review Assignment 1",
+  "total_reviews": 0,
+  "criteria_feedback": [],
+  "overall_avg": 0.0
+}
+```
+
+**Responses:**
+- `200` — Feedback returned (may be empty)
+- `401` — Not authenticated
+- `404` — Assignment not found
+
+**Privacy:** Reviewer identities are never included in the response.

@@ -1,6 +1,6 @@
 """
 Student controller for the peer evaluation app.
-Provides endpoints for student-specific data like grades.
+Provides endpoints for student-specific data like grades and feedback.
 """
 
 from flask import Blueprint, jsonify
@@ -77,6 +77,7 @@ def get_student_grades(student_id):
 @student_bp.route("/grades", methods=["GET"])
 @jwt_required()
 def grades():
+    """GET /student/grades — Returns per-course grade summaries for the student."""
     email = get_jwt_identity()
     user = User.get_by_email(email)
 
@@ -87,20 +88,46 @@ def grades():
 
     return jsonify({"student_id": user.id, "courses": courses}), 200
 
+
 def get_assignment_feedback(assignment_id, student_id):
     """
     For a given assignment, aggregate all peer review feedback
     received by the student (revieweeID = student_id).
-    Returns per-criterion averages and anonymous comments.
+
+    Returns the response in the sprint plan format:
+    {
+        "assignment_name": str,
+        "total_reviews": int,
+        "criteria_feedback": [
+            {
+                "question": str,
+                "avg_score": float,
+                "max_score": int,
+                "comments": [str]
+            }
+        ],
+        "overall_avg": float
+    }
+
     Reviewer identities are never exposed.
     """
+    assignment = Assignment.get_by_id(assignment_id)
+    if assignment is None:
+        return None
+
     reviews = Review.query.filter_by(
         assignmentID=assignment_id, revieweeID=student_id
     ).all()
 
     if not reviews:
-        return None
+        return {
+            "assignment_name": assignment.name or f"Assignment {assignment_id}",
+            "total_reviews": 0,
+            "criteria_feedback": [],
+            "overall_avg": 0.0,
+        }
 
+    # Aggregate scores and comments per criteria_description
     criteria_map = {}
 
     for review in reviews:
@@ -109,40 +136,47 @@ def get_assignment_feedback(assignment_id, student_id):
             desc = c.criterion_row
             if desc is None:
                 continue
+
             crit_id = desc.id
             if crit_id not in criteria_map:
                 criteria_map[crit_id] = {
-                    "criterion_id": crit_id,
-                    "criterion_name": desc.name if hasattr(desc, "name") else f"Criterion {crit_id}",
-                    "score_max": desc.scoreMax,
+                    "question": desc.question or f"Criterion {crit_id}",
+                    "max_score": desc.scoreMax or 0,
                     "scores": [],
                     "comments": [],
                 }
+
             if c.grade is not None:
                 criteria_map[crit_id]["scores"].append(c.grade)
-            if c.comments:
+            if c.comments and c.comments.strip():
                 criteria_map[crit_id]["comments"].append(c.comments)
 
-    aggregated = []
+    # Build criteria_feedback list
+    criteria_feedback = []
+    all_avgs = []
+
     for crit_id, data in criteria_map.items():
         scores = data["scores"]
-        avg_score = round(sum(scores) / len(scores), 2) if scores else None
-        aggregated.append(
-            {
-                "criterion_id": crit_id,
-                "criterion_name": data["criterion_name"],
-                "average_score": avg_score,
-                "score_max": data["score_max"],
-                "review_count": len(scores),
-                "comments": data["comments"],
-            }
-        )
+        avg_score = round(sum(scores) / len(scores), 2) if scores else 0.0
+
+        criteria_feedback.append({
+            "question": data["question"],
+            "avg_score": avg_score,
+            "max_score": data["max_score"],
+            "comments": data["comments"],
+        })
+
+        if scores:
+            all_avgs.append(avg_score)
+
+    # Calculate overall average across all criteria
+    overall_avg = round(sum(all_avgs) / len(all_avgs), 2) if all_avgs else 0.0
 
     return {
-        "assignment_id": assignment_id,
-        "student_id": student_id,
-        "total_reviews_received": len(reviews),
-        "criteria": aggregated,
+        "assignment_name": assignment.name or f"Assignment {assignment_id}",
+        "total_reviews": len(reviews),
+        "criteria_feedback": criteria_feedback,
+        "overall_avg": overall_avg,
     }
 
 
@@ -167,13 +201,6 @@ def assignment_feedback(assignment_id):
     feedback = get_assignment_feedback(assignment_id, user.id)
 
     if feedback is None:
-        return jsonify(
-            {
-                "assignment_id": assignment_id,
-                "student_id": user.id,
-                "total_reviews_received": 0,
-                "criteria": [],
-            }
-        ), 200
+        return jsonify({"msg": "Assignment not found"}), 404
 
     return jsonify(feedback), 200
