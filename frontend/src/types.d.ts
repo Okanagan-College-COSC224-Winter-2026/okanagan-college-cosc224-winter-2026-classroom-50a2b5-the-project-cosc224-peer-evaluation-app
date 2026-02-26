@@ -51,4 +51,41 @@ interface Assignment {
 interface CourseWithAssignments extends Course {
   assignments?: Assignment[];
   assignmentCount?: number;
+<<<<<<< Updated upstream
 }
+=======
+}
+
+// ============================================================
+// STUDENT GRADES (US20)
+// ============================================================
+
+interface CourseGrade {
+  course_id: number;
+  course_name: string;
+  grade: number | null;
+  max_score: number | null;
+  graded_assignments: number;
+  total_assignments: number;
+  has_grades: boolean;
+}
+
+interface StudentGradesResponse {
+  student_id: number;
+  courses: CourseGrade[];
+}
+
+interface CriteriaFeedback {
+  question: string;
+  avg_score: number;
+  max_score: number;
+  comments: string[];
+}
+
+interface FeedbackResponse {
+  assignment_name: string;
+  total_reviews: number;
+  criteria_feedback: CriteriaFeedback[];
+  overall_avg: number;
+}
+>>>>>>> Stashed changes
