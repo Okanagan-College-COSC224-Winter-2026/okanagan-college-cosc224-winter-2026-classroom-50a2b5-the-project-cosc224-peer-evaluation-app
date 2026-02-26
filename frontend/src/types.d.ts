@@ -71,3 +71,21 @@ interface StudentGradesResponse {
   student_id: number;
   courses: CourseGrade[];
 }
+
+// ============================================================
+// STUDENT FEEDBACK (US12)
+// ============================================================
+
+interface CriteriaFeedback {
+  question: string;
+  avg_score: number;
+  max_score: number;
+  comments: string[];
+}
+
+interface FeedbackResponse {
+  assignment_name: string;
+  total_reviews: number;
+  criteria_feedback: CriteriaFeedback[];
+  overall_avg: number;
+}

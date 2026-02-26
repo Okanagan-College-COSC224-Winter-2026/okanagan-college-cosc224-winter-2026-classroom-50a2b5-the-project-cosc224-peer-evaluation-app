@@ -14,6 +14,7 @@ import Group from "./pages/Group";
 import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
+import FeedbackView from "./pages/FeedbackView";
 
 function AppContent() {
   const location = useLocation();
@@ -75,6 +76,14 @@ function AppContent() {
               <Group />
             </ProtectedRoute>
           } />
+
+          <Route path="/assignments/:id/feedback" element={
+            <ProtectedRoute>
+              <FeedbackView />
+            </ProtectedRoute>
+          } />
+
+          
         </Routes>
       </div>
     </div>
