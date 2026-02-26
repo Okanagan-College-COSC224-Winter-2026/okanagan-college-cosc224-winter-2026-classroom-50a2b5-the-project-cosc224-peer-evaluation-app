@@ -327,10 +327,4 @@ def init_app(app):
     app.cli.add_command(add_sample_courses_command)
     app.cli.add_command(add_sample_reviews_command)
 
-@click.command("add_sample_reviews")
-@with_appcontext
-def add_sample_reviews():
-    """
-    Seed sample reviews for testing feedback endpoint.
-    """
-    print("Sample reviews seeded successfully.")
+
