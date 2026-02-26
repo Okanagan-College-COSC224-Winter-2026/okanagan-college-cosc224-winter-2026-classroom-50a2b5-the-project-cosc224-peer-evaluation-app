@@ -520,9 +520,6 @@ export const changePassword = async (currentPassword: string, newPassword: strin
 
   return await response.json();
 }
-<<<<<<< Updated upstream
-=======
-
 export const getStudentGrades = async (): Promise<StudentGradesResponse> => {
   const resp = await fetch(`${BASE_URL}/student/grades`, {
     method: 'GET',
@@ -538,6 +535,10 @@ export const getStudentGrades = async (): Promise<StudentGradesResponse> => {
   return await resp.json()
 }
 
+// ============================================================
+// STUDENT FEEDBACK (US12) — Dev 5
+// ============================================================
+
 export const getStudentFeedback = async (assignmentId: number): Promise<FeedbackResponse> => {
   const resp = await fetch(`${BASE_URL}/student/assignments/${assignmentId}/feedback`, {
     method: 'GET',
@@ -552,4 +553,3 @@ export const getStudentFeedback = async (assignmentId: number): Promise<Feedback
 
   return await resp.json()
 }
->>>>>>> Stashed changes

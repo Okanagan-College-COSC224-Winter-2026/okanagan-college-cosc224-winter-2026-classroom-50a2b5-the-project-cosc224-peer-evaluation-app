@@ -51,9 +51,6 @@ interface Assignment {
 interface CourseWithAssignments extends Course {
   assignments?: Assignment[];
   assignmentCount?: number;
-<<<<<<< Updated upstream
-}
-=======
 }
 
 // ============================================================
@@ -75,6 +72,10 @@ interface StudentGradesResponse {
   courses: CourseGrade[];
 }
 
+// ============================================================
+// STUDENT FEEDBACK (US12)
+// ============================================================
+
 interface CriteriaFeedback {
   question: string;
   avg_score: number;
@@ -88,4 +89,3 @@ interface FeedbackResponse {
   criteria_feedback: CriteriaFeedback[];
   overall_avg: number;
 }
->>>>>>> Stashed changes
