@@ -76,6 +76,7 @@ def make_admin():
 
     return _make_admin
 
+
 @pytest.fixture
 def enroll_user_in_course():
     """Fixture to enroll a user in a course."""
@@ -87,15 +88,18 @@ def enroll_user_in_course():
         course = _db.session.get(Course, course_id)
         if course is None:
             raise ValueError(f"Course with id {course_id} does not exist")
-        
+
         existing_enrollment = _db.session.get(User_Course, (user_id, course_id))
         if existing_enrollment:
             return existing_enrollment  # Already enrolled
-        
+
         enrollment = User_Course(userID=user_id, courseID=course_id)
         _db.session.add(enrollment)
         _db.session.commit()
         return enrollment
 
     return _enroll_user_in_course
+<<<<<<< Updated upstream
         
+=======
+>>>>>>> Stashed changes
