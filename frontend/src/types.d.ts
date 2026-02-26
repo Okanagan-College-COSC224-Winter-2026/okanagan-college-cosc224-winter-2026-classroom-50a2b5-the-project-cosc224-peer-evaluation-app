@@ -101,3 +101,21 @@ interface ReviewSubmission {
   reviewee_id: number;
   criteria: CriterionSubmission[];
 }
+
+// ============================================================
+// STUDENT FEEDBACK (US12)
+// ============================================================
+
+interface CriteriaFeedback {
+  question: string;
+  avg_score: number;
+  max_score: number;
+  comments: string[];
+}
+
+interface FeedbackResponse {
+  assignment_name: string;
+  total_reviews: number;
+  criteria_feedback: CriteriaFeedback[];
+  overall_avg: number;
+}

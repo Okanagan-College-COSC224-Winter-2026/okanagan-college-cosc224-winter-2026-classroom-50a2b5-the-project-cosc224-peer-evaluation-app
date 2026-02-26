@@ -572,3 +572,22 @@ export const getStudentGrades = async (): Promise<StudentGradesResponse> => {
 
   return await resp.json()
 }
+
+// ============================================================
+// STUDENT FEEDBACK (US12) — Dev 5
+// ============================================================
+
+export const getStudentFeedback = async (assignmentId: number): Promise<FeedbackResponse> => {
+  const resp = await fetch(`${BASE_URL}/student/assignments/${assignmentId}/feedback`, {
+    method: 'GET',
+    credentials: 'include'
+  })
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json()
+}
