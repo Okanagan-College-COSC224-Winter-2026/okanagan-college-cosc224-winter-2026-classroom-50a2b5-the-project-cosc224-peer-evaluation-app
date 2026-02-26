@@ -124,7 +124,7 @@ def get_assignment_feedback(assignment_id, student_id):
             "assignment_id": assignment.id,
             "assignment_name": assignment.name or f"Assignment {assignment_id}",
             "total_reviews_received": 0,
-            "criteria_feedback": [],
+            "criteria": [],
             "overall_avg": 0.0,
         }
 
@@ -177,7 +177,7 @@ def get_assignment_feedback(assignment_id, student_id):
         "assignment_id": assignment.id,
         "assignment_name": assignment.name or f"Assignment {assignment_id}",
         "total_reviews_received": len(reviews),
-        "criteria_feedback": criteria_feedback,
+        "criteria": criteria_feedback,
         "overall_avg": overall_avg,
     }
 
