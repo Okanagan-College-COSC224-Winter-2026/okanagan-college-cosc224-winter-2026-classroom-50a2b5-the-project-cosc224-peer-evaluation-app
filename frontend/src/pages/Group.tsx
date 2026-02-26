@@ -10,6 +10,7 @@ import {
   listUnassignedGroups,
   saveGroups,
   deleteGroup,
+  getAssignment,
 } from "../util/api";
 import { useParams } from "react-router-dom";
 import "./Group.css";
@@ -95,7 +96,18 @@ export default function Group() {
 
   useEffect(() => {
     (async () => {
-      const classMembers = await listCourseMembers(String(id));
+      // Resolve the courseID from the assignment so we can fetch class members by class
+      let courseId: string = String(id); // fallback
+      try {
+        const assignment = await getAssignment(Number(id));
+        if (assignment && assignment.courseID) {
+          courseId = String(assignment.courseID);
+        }
+      } catch {
+        // If we can't resolve, members may be empty
+      }
+
+      const classMembers = await listCourseMembers(courseId);
       setclassMembers(classMembers);
       const groups = await listGroups(Number(id));
       setGroups(groups);

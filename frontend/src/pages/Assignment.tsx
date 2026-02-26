@@ -9,6 +9,7 @@ import { isTeacher, isStudent } from "../util/login";
 import { 
   listStuGroup,
   getUserId,
+  listCourseMembers,
   createReview,
   createCriterion,
   getReview
@@ -22,6 +23,7 @@ interface SelectedCriterion {
 export default function Assignment() {
   const { id } = useParams();
   const [stuGroup, setStuGroup] = useState<StudentGroups[]>([]);
+  const [classMembers, setClassMembers] = useState<User[]>([]);
   const [revieweeID, setRevieweeID] = useState<number>(0);
   const [stuID, setStuID] = useState<number>(0);
   const [selectedCriteria, setSelectedCriteria] = useState<SelectedCriterion[]>([]);
@@ -37,12 +39,21 @@ export default function Assignment() {
           const reviewResponse = await getReview(Number(id), stuID, revieweeID);
           const reviewData = await reviewResponse.json();
           setReview(reviewData.grades);
-          console.log("Review data:", reviewData);
         } catch (error) {
-          console.error('Error fetching review:', error);
+          // No review yet — expected
+        }
+        try {
+          const members = await listCourseMembers(String(id));
+          setClassMembers(members);
+        } catch (error) {
+          // Members list unavailable
         }
       })();
   }, [revieweeID, id, stuID]);
+
+  const nameFromId = (userId: number) => {
+    return classMembers.find((m) => m.id === userId)?.name || `Student #${userId}`;
+  };
 
   const handleCriterionSelect = (row: number, column: number) => {
     const existingIndex = selectedCriteria.findIndex(
@@ -103,7 +114,7 @@ export default function Assignment() {
                 return (
                   <div key={stus.userID}>
                   <input type='radio' id={stus.userID.toString()} value={stus.userID} name='groupMembers' onChange={handleRadioChange}></input>
-                  <label htmlFor={stus.userID.toString()}>{stus.userID}</label>
+                  <label htmlFor={stus.userID.toString()}>{nameFromId(stus.userID)}</label>
                   </div>
                 )
               }
