@@ -60,6 +60,14 @@ class Review(db.Model):
         return cls.query.options(joinedload(cls.assignment).joinedload("course")).all()
 
     @classmethod
+    def get_reviews_for_student(cls, assignment_id, student_id):
+        """Get all reviews where a student is the reviewee for a given assignment.
+        Used for anonymous feedback aggregation — does not expose reviewer identity."""
+        return cls.query.filter_by(
+            assignmentID=assignment_id, revieweeID=student_id
+        ).all()
+
+    @classmethod
     def create_review(cls, review):
         """Add a new review to the database"""
         db.session.add(review)

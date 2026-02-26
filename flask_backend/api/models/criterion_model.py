@@ -37,6 +37,12 @@ class Criterion(db.Model):
         return db.session.get(cls, int(criterion_id))
 
     @classmethod
+    def get_criteria_by_review(cls, review_id):
+        """Get all criterion records for a given review.
+        Each record contains the grade and comments for one criteria description."""
+        return cls.query.filter_by(reviewID=review_id).all()
+
+    @classmethod
     def create_criterion(cls, criterion):
         """Add a new criterion to the database"""
         db.session.add(criterion)
