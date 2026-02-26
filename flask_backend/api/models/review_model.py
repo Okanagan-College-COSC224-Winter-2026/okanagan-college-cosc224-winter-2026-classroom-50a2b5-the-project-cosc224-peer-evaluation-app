@@ -66,6 +66,24 @@ class Review(db.Model):
         db.session.commit()
         return review
 
+    @classmethod
+    def get_reviews_by_assignment(cls, assignment_id):
+        """Get all reviews for a given assignment"""
+        return cls.query.filter_by(assignmentID=assignment_id).all()
+
+    @classmethod
+    def review_exists(cls, reviewer_id, reviewee_id, assignment_id):
+        """Check if a review already exists for this reviewer/reviewee/assignment combination.
+        Used to prevent duplicate submissions."""
+        return (
+            cls.query.filter_by(
+                reviewerID=reviewer_id,
+                revieweeID=reviewee_id,
+                assignmentID=assignment_id,
+            ).first()
+            is not None
+        )
+
     def update(self):
         """Update review in the database"""
         db.session.commit()
