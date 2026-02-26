@@ -3,6 +3,8 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from ..models import Course, Assignment, User, AssignmentSchema
+from ..models.rubric_model import Rubric
+from ..models.criteria_description_model import CriteriaDescription
 from .auth_controller import jwt_teacher_required
 
 bp = Blueprint("assignment", __name__, url_prefix="/assignment")
@@ -128,3 +130,37 @@ def get_assignments(class_id):
     assignments = Assignment.get_by_class_id(class_id)
     assignments_data = AssignmentSchema(many=True).dump(assignments)
     return jsonify(assignments_data), 200
+
+
+@bp.route("/<int:assignment_id>/rubric", methods=["GET"])
+@jwt_required()
+def get_rubric(assignment_id):
+    """
+    GET /api/assignments/<assignment_id>/rubric
+    Returns the rubric and its criteria for a given assignment.
+    """
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    rubric = Rubric.get_rubric_by_assignment(assignment_id)
+    if not rubric:
+        return jsonify({"msg": "Rubric not found for this assignment"}), 404
+
+    criteria = CriteriaDescription.get_criteria_by_rubric(rubric.id)
+    criteria_list = [
+        {
+            "id": c.id,
+            "question": c.question,
+            "score_max": c.scoreMax,
+            "has_score": c.hasScore,
+            "can_comment": rubric.canComment,
+        }
+        for c in criteria
+    ]
+
+    return jsonify({
+        "rubric_id": rubric.id,
+        "assignment_id": assignment_id,
+        "criteria": criteria_list,
+    }), 200

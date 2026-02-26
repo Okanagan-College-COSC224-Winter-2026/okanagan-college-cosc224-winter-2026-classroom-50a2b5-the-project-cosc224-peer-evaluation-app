@@ -2,7 +2,7 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## US1 – Student Peer Review Access — **Backlog**
+## US1 – Student Peer Review Access — **Complete**
 
 **As a student, I want to be able to access a set number of assignments assigned by my instructor, so that I can provide feedback on my classmates’ work.**
 
@@ -193,7 +193,7 @@
 
 ---
 
-## US11 – Rubric Creation — **In-Progress**
+## US11 – Rubric Creation — **Complete**
 
 **As an instructor, I want to be able to create a rubric, so that students have a set of criteria to mark against.**
 
@@ -212,7 +212,7 @@
 
 ---
 
-## US12 – Student Feedback Viewing — **Backlog**
+## US12 – Student Feedback Viewing — **Complete**
 
 **As a student, I want to be able to view the feedback I receive from my peers, so that I can understand how to improve my work.**
 

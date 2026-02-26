@@ -101,11 +101,18 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 | `flask add_sample_reviews` | Seeds peer review data (reviewers, rubrics, criteria, scores) for testing the student grade display. Requires `flask add_users` and `flask add_sample_courses` first. |
 
 ---
-### Student Feedback
+### Peer Review Submission (US1/US11)
 
 | Method | URL | Auth | Description |
 |--------|-----|------|-------------|
-| GET | `/student/assignments/<assignment_id>/feedback` | JWT (student) | Returns aggregated anonymous peer feedback for the logged-in student for a given assignment. Includes per-criterion average scores and anonymous comments. |
+| POST | `/api/reviews/submit` | JWT (student) | Submit a rubric-based peer review. Body: `{ assignment_id: int, reviewee_id: int, criteria: [{ criteria_description_id: int, grade: int, comments: str }] }`. Validates against self-reviews, duplicates, and group membership. Returns `201 { review_id }`. |
+| GET | `/assignment/<assignment_id>/rubric` | JWT | Returns the rubric and its criteria for a given assignment. Response: `{ rubric_id: int, assignment_id: int, criteria: [{ id, question, score_max, has_score, can_comment }] }`. |
+
+### Student Feedback (US12)
+
+| Method | URL | Auth | Description |
+|--------|-----|------|-------------|
+| GET | `/student/assignments/<assignment_id>/feedback` | JWT (student) | Returns aggregated anonymous peer feedback for the logged-in student for a given assignment. Includes per-criterion average scores and anonymous comments. Response: `{ assignment_id, student_id, total_reviews_received, criteria: [{ criterion_id, criterion_name, average_score, score_max, review_count, comments }] }`. |
 
 ### Notes
 

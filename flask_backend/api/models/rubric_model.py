@@ -33,6 +33,11 @@ class Rubric(db.Model):
         return db.session.get(cls, int(rubric_id))
 
     @classmethod
+    def get_rubric_by_assignment(cls, assignment_id):
+        """Get the rubric for a given assignment."""
+        return cls.query.filter_by(assignmentID=assignment_id).first()
+
+    @classmethod
     def create_rubric(cls, rubric):
         """Add a new rubric to the database"""
         db.session.add(rubric)
