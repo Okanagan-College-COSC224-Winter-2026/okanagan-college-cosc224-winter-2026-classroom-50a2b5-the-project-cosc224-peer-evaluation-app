@@ -1,3 +1,5 @@
+// src/pages/Dashboard.tsx
+
 import { useEffect, useState } from "react";
 import { maybeHandleExpire } from "../util/api";
 import ClassCard from "../components/ClassCard";
@@ -45,7 +47,11 @@ export default function Dashboard() {
           id: c.class_id,
           name: c.class_name,
           image_url: "/oc_logo.png",
-          students_count: c.students?.length || 0,
+
+          // ✅ FIX: use the new backend field students_count
+          // (fallback to 0 if missing)
+          students_count: Number(c.students_count ?? 0),
+
           assignments: (c.assignments || []).map((a: any) => ({
             id: a.id ?? a.assignment_id,
             name: a.name,
@@ -96,13 +102,8 @@ export default function Dashboard() {
     }
   };
 
-  const deleteAssignment = async (
-    courseId: number,
-    assignmentId: number
-  ) => {
-    const ok = window.confirm(
-      "Delete this assignment? This cannot be undone."
-    );
+  const deleteAssignment = async (courseId: number, assignmentId: number) => {
+    const ok = window.confirm("Delete this assignment? This cannot be undone.");
     if (!ok) return;
 
     setBusy({ type: "assignment", id: assignmentId });
@@ -129,9 +130,7 @@ export default function Dashboard() {
           c.id === courseId
             ? {
                 ...c,
-                assignments: c.assignments.filter(
-                  (a) => a.id !== assignmentId
-                ),
+                assignments: c.assignments.filter((a) => a.id !== assignmentId),
               }
             : c
         )
@@ -209,9 +208,7 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => deleteCourse(c.id)}
-                  disabled={
-                    busy?.type === "class" && busy.id === c.id
-                  }
+                  disabled={busy?.type === "class" && busy.id === c.id}
                   style={{
                     padding: "8px 14px",
                     borderRadius: 8,
@@ -221,8 +218,7 @@ export default function Dashboard() {
                     cursor: "pointer",
                   }}
                 >
-                  {busy?.type === "class" &&
-                  busy.id === c.id
+                  {busy?.type === "class" && busy.id === c.id
                     ? "Deleting..."
                     : "Delete Class"}
                 </button>
@@ -239,27 +235,14 @@ export default function Dashboard() {
                   border: "1px solid #333",
                 }}
               >
-                <div
-                  style={{
-                    fontWeight: 600,
-                    marginBottom: 8,
-                  }}
-                >
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>
                   Assignments
                 </div>
 
                 {c.assignments.length === 0 ? (
-                  <div style={{ opacity: 0.7 }}>
-                    No assignments
-                  </div>
+                  <div style={{ opacity: 0.7 }}>No assignments</div>
                 ) : (
-                  <ul
-                    style={{
-                      listStyle: "none",
-                      padding: 0,
-                      margin: 0,
-                    }}
-                  >
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                     {c.assignments.map((a) => (
                       <li
                         key={a.id}
@@ -268,62 +251,34 @@ export default function Dashboard() {
                           alignItems: "center",
                           justifyContent: "space-between",
                           padding: "8px 0",
-                          borderTop:
-                            "1px solid #2a2a2a",
+                          borderTop: "1px solid #2a2a2a",
                         }}
                       >
                         <div>
-                          <div
-                            style={{
-                              fontWeight: 500,
-                            }}
-                          >
-                            {a.name}
-                          </div>
+                          <div style={{ fontWeight: 500 }}>{a.name}</div>
                           {a.due_date && (
-                            <div
-                              style={{
-                                fontSize: 12,
-                                opacity: 0.75,
-                              }}
-                            >
-                              Due:{" "}
-                              {new Date(
-                                a.due_date
-                              ).toLocaleString()}
+                            <div style={{ fontSize: 12, opacity: 0.75 }}>
+                              Due: {new Date(a.due_date).toLocaleString()}
                             </div>
                           )}
                         </div>
 
                         <button
                           type="button"
-                          onClick={() =>
-                            deleteAssignment(
-                              c.id,
-                              a.id
-                            )
-                          }
+                          onClick={() => deleteAssignment(c.id, a.id)}
                           disabled={
-                            busy?.type ===
-                              "assignment" &&
-                            busy.id === a.id
+                            busy?.type === "assignment" && busy.id === a.id
                           }
                           style={{
-                            padding:
-                              "6px 12px",
+                            padding: "6px 12px",
                             borderRadius: 8,
-                            border:
-                              "1px solid #a33",
-                            background:
-                              "#400000",
+                            border: "1px solid #a33",
+                            background: "#400000",
                             color: "white",
-                            cursor:
-                              "pointer",
+                            cursor: "pointer",
                           }}
                         >
-                          {busy?.type ===
-                            "assignment" &&
-                          busy.id === a.id
+                          {busy?.type === "assignment" && busy.id === a.id
                             ? "Deleting..."
                             : "Delete"}
                         </button>

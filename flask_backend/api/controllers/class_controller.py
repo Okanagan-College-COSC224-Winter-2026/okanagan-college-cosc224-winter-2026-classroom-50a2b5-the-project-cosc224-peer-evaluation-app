@@ -72,6 +72,7 @@ def csv_to_list(csv_text: str) -> Tuple[List[Dict[str, str]], List[str]]:
     return rows, errors
 
 
+
 @bp.route("/create_class", methods=["POST"])
 @jwt_teacher_required
 def create_class():
@@ -153,10 +154,51 @@ def get_user_classes():
     ), 200
 
 
+
+@bp.route("/<int:class_id>/members", methods=["GET"])
+@jwt_required()
+def get_class_members(class_id: int):
+ 
+    course = Course.query.get(class_id)
+    if not course:
+        return jsonify({"msg": "Class not found"}), 404
+
+    email = get_jwt_identity()
+    requester = User.get_by_email(email)
+    if not requester:
+        return jsonify({"msg": "User not found"}), 404
+
+    is_owner_teacher = requester.is_teacher() and course.teacherID == requester.id
+    is_admin = requester.is_admin()
+
+    if not (is_owner_teacher or is_admin):
+        return jsonify({"msg": "Unauthorized"}), 403
+
+    # Join users through the enrollment table
+    members = (
+        db.session.query(User)
+        .join(User_Course, User_Course.userID == User.id)
+        .filter(User_Course.courseID == class_id)
+        .all()
+    )
+
+    return jsonify(
+        [
+            {
+                "id": u.id,
+                "name": u.name,
+                "email": u.email,
+                "role": getattr(u, "role", None),
+            }
+            for u in members
+        ]
+    ), 200
+
+
 @bp.route("/delete_class/<int:class_id>", methods=["DELETE"])
 @jwt_teacher_required
 def delete_class(class_id: int):
- 
+  
     course = Course.query.get(class_id)
     if not course:
         return jsonify({"msg": "Class not found"}), 404
@@ -172,17 +214,17 @@ def delete_class(class_id: int):
         ), 403
 
     try:
-        # 1) delete enrollments
+        # enrollments
         db.session.query(User_Course).filter(
             User_Course.courseID == class_id
         ).delete(synchronize_session=False)
 
-        # 2) delete assignments
+        # assignments
         db.session.query(Assignment).filter(
             Assignment.courseID == class_id
         ).delete(synchronize_session=False)
 
-        # 3) delete the course row 
+        # course
         deleted = db.session.query(Course).filter(
             Course.id == class_id
         ).delete(synchronize_session=False)

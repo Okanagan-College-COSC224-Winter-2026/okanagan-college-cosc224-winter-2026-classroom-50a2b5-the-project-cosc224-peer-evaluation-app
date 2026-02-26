@@ -1,63 +1,29 @@
+# controllers/dashboard_controller.py
+
 from flask import Blueprint, jsonify
-from flask_jwt_extended import get_jwt_identity, jwt_required
-from ..models import User, Course, Assignment
+from flask_jwt_extended import get_jwt_identity
+
+from ..models import User, Course, Assignment, User_Course
+from .auth_controller import jwt_teacher_required
 
 bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 
 
 @bp.route("/", methods=["GET"])
-@jwt_required()
+@jwt_teacher_required
 def get_dashboard():
+ 
     email = get_jwt_identity()
-    user = User.get_by_email(email)
-    if not user:
+    teacher = User.get_by_email(email)
+    if not teacher:
         return jsonify({"msg": "User not found"}), 404
 
+    classes = Course.get_courses_by_teacher(teacher.id)
     dashboard_data = []
-
-    if user.role == "teacher":
-        classes = Course.get_courses_by_teacher(user.id)
-
-        for c in classes:
-            assignments = Assignment.get_by_class_id(c.id)
-            assignment_list = [
-                {
-                    "assignment_id": a.id,
-                    "name": a.name,
-                    "due_date": a.due_date.isoformat() if a.due_date else None,
-                }
-                for a in assignments
-            ]
-
-            dashboard_data.append(
-                {
-                    "class_id": c.id,
-                    "class_name": c.name,
-                    "assignments": assignment_list,
-                    # optional: if you want frontend to rely on it
-                    "role": "teacher",
-                }
-            )
-
-        return jsonify(
-            {
-                "role": "teacher",
-                "teacher_id": user.id,
-                "teacher_name": user.name,
-                "dashboard": dashboard_data,
-            }
-        ), 200
-
-    # ---- student dashboard ----
-    # You need ONE of these model functions:
-    # 1) Course.get_courses_by_student(user.id)
-    # OR
-    # 2) Course.get_courses_by_user(user.id)
-    # OR query User_Courses join.
-    classes = Course.get_courses_by_student(user.id)  # implement if missing
 
     for c in classes:
         assignments = Assignment.get_by_class_id(c.id)
+
         assignment_list = [
             {
                 "assignment_id": a.id,
@@ -67,20 +33,24 @@ def get_dashboard():
             for a in assignments
         ]
 
+        # Count enrollments in the User_Courses join table
+        students_count = User_Course.query.filter(
+            User_Course.courseID == c.id
+        ).count()
+
         dashboard_data.append(
             {
                 "class_id": c.id,
                 "class_name": c.name,
+                "students_count": students_count,
                 "assignments": assignment_list,
-                "role": "student",
             }
         )
 
     return jsonify(
         {
-            "role": "student",
-            "student_id": user.id,
-            "student_name": user.name,
+            "teacher_id": teacher.id,
+            "teacher_name": teacher.name,
             "dashboard": dashboard_data,
         }
     ), 200
