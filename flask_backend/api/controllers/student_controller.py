@@ -121,8 +121,9 @@ def get_assignment_feedback(assignment_id, student_id):
 
     if not reviews:
         return {
+            "assignment_id": assignment.id,
             "assignment_name": assignment.name or f"Assignment {assignment_id}",
-            "total_reviews": 0,
+            "total_reviews_received": 0,
             "criteria_feedback": [],
             "overall_avg": 0.0,
         }
@@ -173,8 +174,9 @@ def get_assignment_feedback(assignment_id, student_id):
     overall_avg = round(sum(all_avgs) / len(all_avgs), 2) if all_avgs else 0.0
 
     return {
+        "assignment_id": assignment.id,
         "assignment_name": assignment.name or f"Assignment {assignment_id}",
-        "total_reviews": len(reviews),
+        "total_reviews_received": len(reviews),
         "criteria_feedback": criteria_feedback,
         "overall_avg": overall_avg,
     }

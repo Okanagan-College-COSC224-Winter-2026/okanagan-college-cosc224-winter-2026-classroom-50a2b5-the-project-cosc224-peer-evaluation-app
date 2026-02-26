@@ -114,8 +114,9 @@ interface CriteriaFeedback {
 }
 
 interface FeedbackResponse {
+  assignment_id: number;
   assignment_name: string;
-  total_reviews: number;
+  total_reviews_received: number;
   criteria_feedback: CriteriaFeedback[];
   overall_avg: number;
 }

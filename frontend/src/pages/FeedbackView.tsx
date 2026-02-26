@@ -45,7 +45,7 @@ export default function FeedbackView() {
   }
 
   // Empty state — no reviews submitted yet
-  if (!feedback || feedback.total_reviews === 0) {
+  if (!feedback || feedback.total_reviews_received === 0) {
     return (
       <div className="FeedbackView">
         <h1>Your Feedback</h1>
@@ -82,7 +82,7 @@ export default function FeedbackView() {
         <div className="FeedbackView__summaryItem">
           <span className="FeedbackView__summaryLabel">Reviewers</span>
           <span className="FeedbackView__summaryValue">
-            {feedback.total_reviews}
+            {feedback.total_reviews_received}
           </span>
         </div>
       </div>
