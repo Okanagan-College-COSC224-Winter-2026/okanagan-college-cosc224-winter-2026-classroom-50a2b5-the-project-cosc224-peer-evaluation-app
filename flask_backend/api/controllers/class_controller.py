@@ -2,7 +2,19 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from werkzeug.security import generate_password_hash
 
-from ..models import Course, User, User_Course, Assignment
+from ..models import (
+    Assignment,
+    Course,
+    CourseGroup,
+    CriteriaDescription,
+    Criterion,
+    Group_Members,
+    Review,
+    Rubric,
+    Submission,
+    User,
+    User_Course,
+)
 from ..models.db import db
 from .auth_controller import jwt_teacher_required
 
@@ -34,9 +46,7 @@ def csv_to_list(csv_text: str):
     missing = REQUIRED_HEADERS - headers
 
     if missing:
-        errors.append(
-            f"Missing required headers: {', '.join(sorted(missing))}"
-        )
+        errors.append(f"Missing required headers: {', '.join(sorted(missing))}")
         return rows, errors
 
     for line_num, row in enumerate(reader, start=2):
@@ -55,11 +65,13 @@ def csv_to_list(csv_text: str):
             errors.append(f"Line {line_num}: Missing required fields")
             continue
 
-        rows.append({
-            "id": normalized["id"],
-            "name": normalized["name"],
-            "email": normalized["email"],
-        })
+        rows.append(
+            {
+                "id": normalized["id"],
+                "name": normalized["name"],
+                "email": normalized["email"],
+            }
+        )
 
     return rows, errors
 
@@ -88,10 +100,7 @@ def create_class():
     db.session.add(new_class)
     db.session.commit()
 
-    return jsonify({
-        "msg": "Class created",
-        "class": {"id": new_class.id}
-    }), 201
+    return jsonify({"msg": "Class created", "class": {"id": new_class.id}}), 201
 
 
 @bp.route("/browse_classes", methods=["GET"])
@@ -105,10 +114,7 @@ def get_classes():
 
     classes = Course.query.all()
 
-    return jsonify([
-        {"id": c.id, "name": c.name}
-        for c in classes
-    ]), 200
+    return jsonify([{"id": c.id, "name": c.name} for c in classes]), 200
 
 
 @bp.route("/classes", methods=["GET"])
@@ -122,25 +128,16 @@ def get_user_classes():
 
     if user.is_teacher():
         courses = Course.get_courses_by_teacher(user.id)
-
     elif user.is_admin():
         courses = Course.query.all()
-
     elif user.is_student():
         user_courses = User_Course.get_courses_by_student(user.id)
-        courses = [
-            Course.get_by_id(uc.courseID)
-            for uc in user_courses
-        ]
+        courses = [Course.get_by_id(uc.courseID) for uc in user_courses]
         courses = [c for c in courses if c is not None]
-
     else:
         courses = []
 
-    return jsonify([
-        {"id": c.id, "name": c.name}
-        for c in courses
-    ]), 200
+    return jsonify([{"id": c.id, "name": c.name} for c in courses]), 200
 
 
 @bp.route("/<int:class_id>/members", methods=["GET"])
@@ -168,15 +165,20 @@ def get_class_members(class_id: int):
         .all()
     )
 
-    return jsonify([
-        {
-            "id": u.id,
-            "name": u.name,
-            "email": u.email,
-            "role": getattr(u, "role", None),
-        }
-        for u in members
-    ]), 200
+    return (
+        jsonify(
+            [
+                {
+                    "id": u.id,
+                    "name": u.name,
+                    "email": u.email,
+                    "role": getattr(u, "role", None),
+                }
+                for u in members
+            ]
+        ),
+        200,
+    )
 
 
 @bp.route("/delete_class/<int:class_id>", methods=["DELETE"])
@@ -184,13 +186,11 @@ def get_class_members(class_id: int):
 def delete_class(class_id):
     try:
         course = Course.query.get(class_id)
-
         if not course:
             return jsonify({"msg": "Class not found"}), 404
 
         email = get_jwt_identity()
         user = User.get_by_email(email)
-
         if not user:
             return jsonify({"msg": "User not found"}), 404
 
@@ -199,29 +199,93 @@ def delete_class(class_id):
                 "msg": "Unauthorized: You are not the teacher of this class"
             }), 403
 
-        db.session.query(User_Course).filter(
-            User_Course.courseID == class_id
+        # 1) Remove enrollments first (Core/bulk delete)
+        db.session.execute(
+            User_Course.__table__.delete().where(User_Course.courseID == class_id)
+        )
+        db.session.flush()
+
+        # 2) Collect assignment IDs
+        assignment_ids = [
+            a_id
+            for (a_id,) in db.session.query(Assignment.id)
+            .filter(Assignment.courseID == class_id)
+            .all()
+        ]
+
+        if assignment_ids:
+            # Groups and members (assignmentID can be NULL, so delete by groupID)
+            group_ids = [
+                g_id
+                for (g_id,) in db.session.query(CourseGroup.id)
+                .filter(CourseGroup.assignmentID.in_(assignment_ids))
+                .all()
+            ]
+
+            if group_ids:
+                db.session.query(Group_Members).filter(
+                    Group_Members.groupID.in_(group_ids)
+                ).delete(synchronize_session=False)
+
+                db.session.query(CourseGroup).filter(
+                    CourseGroup.id.in_(group_ids)
+                ).delete(synchronize_session=False)
+
+            # Reviews -> Criteria -> Reviews
+            review_ids = [
+                r_id
+                for (r_id,) in db.session.query(Review.id)
+                .filter(Review.assignmentID.in_(assignment_ids))
+                .all()
+            ]
+
+            if review_ids:
+                db.session.query(Criterion).filter(
+                    Criterion.reviewID.in_(review_ids)
+                ).delete(synchronize_session=False)
+
+                db.session.query(Review).filter(
+                    Review.id.in_(review_ids)
+                ).delete(synchronize_session=False)
+
+            # Rubrics -> CriteriaDescription -> Rubrics
+            rubric_ids = [
+                rb_id
+                for (rb_id,) in db.session.query(Rubric.id)
+                .filter(Rubric.assignmentID.in_(assignment_ids))
+                .all()
+            ]
+
+            if rubric_ids:
+                db.session.query(CriteriaDescription).filter(
+                    CriteriaDescription.rubricID.in_(rubric_ids)
+                ).delete(synchronize_session=False)
+
+                db.session.query(Rubric).filter(
+                    Rubric.id.in_(rubric_ids)
+                ).delete(synchronize_session=False)
+
+            # Submissions
+            db.session.query(Submission).filter(
+                Submission.assignmentID.in_(assignment_ids)
+            ).delete(synchronize_session=False)
+
+            # Assignments
+            db.session.query(Assignment).filter(
+                Assignment.id.in_(assignment_ids)
+            ).delete(synchronize_session=False)
+
+        # 3)  bulk delete course (DON'T db.session.delete(course))
+        db.session.query(Course).filter(
+            Course.id == class_id
         ).delete(synchronize_session=False)
 
-        assignments = Assignment.query.filter(
-            Assignment.courseID == class_id
-        ).all()
-
-        for assignment in assignments:
-            db.session.delete(assignment)
-
-        db.session.delete(course)
         db.session.commit()
-
         return jsonify({"msg": "Class deleted"}), 200
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({
-            "msg": "Delete class failed",
-            "error": str(e)
-        }), 500
-
+        return jsonify({"msg": "Delete class failed", "error": str(e)}), 500
 
 @bp.route("/enroll_students", methods=["POST"])
 @jwt_teacher_required
@@ -231,44 +295,31 @@ def enroll_students():
     student_emails_csv = data.get("students", "")
 
     if not class_id or not student_emails_csv:
-        return jsonify({
-            "msg": "Class ID and student emails are required"
-        }), 400
+        return jsonify({"msg": "Class ID and student emails are required"}), 400
 
     course = Course.query.get(class_id)
-
     if not course:
         return jsonify({"msg": "Class not found"}), 404
 
     email = get_jwt_identity()
     user = User.get_by_email(email)
-
     if not user:
         return jsonify({"msg": "User not found"}), 404
 
     if course.teacherID != user.id:
-        return jsonify({
-            "msg": "You are not authorized to enroll students in this class"
-        }), 403
+        return jsonify({"msg": "You are not authorized to enroll students in this class"}), 403
 
     students, parse_errors = csv_to_list(student_emails_csv)
-
     if parse_errors:
-        return jsonify({
-            "msg": "Errors in CSV",
-            "errors": parse_errors
-        }), 400
+        return jsonify({"msg": "Errors in CSV", "errors": parse_errors}), 400
 
     enrolled_students = []
 
     for student_info in students:
         student_email = student_info["email"]
 
-        # ✅ TEST EXPECTS THIS EXACT ERROR FORMAT
         if not re.match(r"[^@]+@[^@]+\.[^@]+", student_email):
-            return jsonify({
-                "msg": f"Invalid email format: {student_email}"
-            }), 400
+            return jsonify({"msg": f"Invalid email format: {student_email}"}), 400
 
         name = student_info["name"]
         student = User.get_by_email(student_email)
@@ -284,11 +335,8 @@ def enroll_students():
             db.session.commit()
 
         enrollment = User_Course.get(student.id, class_id)
-
         if not enrollment:
             User_Course.add(student.id, class_id)
             enrolled_students.append(student_email)
 
-    return jsonify({
-        "msg": f"{len(enrolled_students)} students added to course {course.name}"
-    }), 200
+    return jsonify({"msg": f"{len(enrolled_students)} students added to course {course.name}"}), 200
