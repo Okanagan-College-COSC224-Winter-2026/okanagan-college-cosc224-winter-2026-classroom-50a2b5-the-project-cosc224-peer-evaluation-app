@@ -82,26 +82,14 @@ def edit_assignment(assignment_id):
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
-    # ✅ TEST-FRIENDLY RULE:
-    # Only block edits if due_date is STRICTLY in the past.
-    # (Using <= can fail when due_date is "now" or very close to now.)
-    if assignment.due_date is not None:
-        now = datetime.now()
-        if assignment.due_date < now:
-            return jsonify({"msg": "Assignment cannot be modified after its due date"}), 400
 
     assignment.name = data.get("name", assignment.name)
     assignment.rubric_text = data.get("rubric", assignment.rubric_text)
-
-    if "due_date" in data:
-        incoming_due = data.get("due_date")
-        if incoming_due is None:
-            assignment.due_date = None
-        else:
-            assignment.due_date = datetime.fromisoformat(incoming_due)
+    due_date = data.get("due_date")
+    if due_date:
+        assignment.due_date = datetime.fromisoformat(due_date)
 
     assignment.update()
-
     return (
         jsonify(
             {
