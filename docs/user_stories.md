@@ -41,9 +41,7 @@
 - ✅ Student can view a list of peer assignments to review  
 - ✅ Number of visible assignments matches what was assigned  
 - [ ] Student cannot open unassigned submissions
-- [ ] Opening an assigned submission shows the content and review interface (⚠️ review interface is not define anywhere...)
-- [ ] Submitted feedback marks that review as complete  
-- [ ] If the review period has ended, the student cannot submit feedback and is notified  
+- [ ] Opening an assigned submission shows the content and review interface (⚠️ review interface is not define anywhere...) 
 
 ---
 
@@ -60,9 +58,10 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Student can see a list of group members  ⚠️ (seems partially implemented...)
+- ✅ Student can see a list of group members
 - [ ] Student can submit ratings and comments for each group member  
-- [ ] Submitted feedback is stored and visible to the instructor  
+- [ ] Submitted feedback is stored and visible to the instructor
+- [ ] Submitted feedback marks that review as complete  
 - [ ] Once submitted, an evaluation cannot be edited  
 - [ ] If the review period is closed, submission is blocked  
 
@@ -445,24 +444,6 @@
 - [ ] Given a group submission exists, the student has access to it on the assignment page 
 - [ ] Access is limited to the student’s own team  
 - [ ] Each submission shows status, timestamp, and attachments  
-
-(⚠️ This story is redundant after US1... request deletion)
----
-
-## US23 – Peer Review Team Members — **Backlog**
-
-**As a student, I want to peer review my team members privately so that I can evaluate their contributions.**
-
-### Assumptions and Details
-
-- Student has team members  
-- Peer reviews are allowed  
-
-### Capabilities and Acceptance Criteria
-
-- [ ] Given the student has team members, they can submit a private review for each member  
-- [ ] Submitted reviews remain hidden from other students  
-- [ ] Instructor can monitor completion of the peer reviews  
 
 ---
 
