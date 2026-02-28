@@ -51,27 +51,26 @@ export const tryLogin = async (email: string, password: string) => {
   return false;
 };
 
-export const tryRegister = async (name: string, email: string, password: string) => {
-  try {
-    const response = await fetch(`${BASE_URL}/auth/register`, {
-      method: "POST",
-      body: JSON.stringify({
-        name,
-        email,
-        password,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    if (!response.ok) {
-      throw new Error(`Response status: ${response.status}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error(error);
+export async function tryRegister(
+  name: string,
+  email: string,
+  password: string
+): Promise<{ ok: boolean; msg?: string }> {
+  const res = await fetch("http://127.0.0.1:5000/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ name, email, password }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    return { ok: false, msg: data.msg || "Registration failed" };
   }
-};
+
+  return { ok: true };
+}
 
 export const createClass = async (name: string) => {
   const response = await fetch(`${BASE_URL}/class/create_class`, {
@@ -199,11 +198,6 @@ export const listUnassignedGroups = async (assignmentId: number) => {
   return await resp.json();
 };
 
-/**
- * ✅ FIXED: listCourseMembers
- * Your backend route is: GET /class/<class_id>/members
- * Your old code was POSTing to /classes/members (wrong path + wrong method).
- */
 export const listCourseMembers = async (classId: string) => {
   const resp = await fetch(`${BASE_URL}/class/${classId}/members`, {
     method: "GET",
