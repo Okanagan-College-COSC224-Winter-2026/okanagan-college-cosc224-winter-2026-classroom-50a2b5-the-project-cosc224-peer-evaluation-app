@@ -103,7 +103,7 @@ export default function ClassMembers() {
 
         {members.map((member) => (
           <div key={member.id} className="Member">
-            {member.name} ({member.id})
+            {member.name} 
           </div>
         ))}
       </div>
