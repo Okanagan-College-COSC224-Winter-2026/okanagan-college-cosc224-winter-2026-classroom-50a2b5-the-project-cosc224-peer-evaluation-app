@@ -154,7 +154,7 @@ export default function Group() {
           },
           {
             label: "Group",
-            path: `/assignment/${id}/group`,
+            path: `/assignments/${id}/group`,
           }
         ]}
       />
