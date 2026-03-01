@@ -150,7 +150,7 @@ export default function Group() {
         tabs={[
           {
             label: "Home",
-            path: `/assignment/${id}`,
+            path: `/assignments/${id}`,
           },
           {
             label: "Group",
