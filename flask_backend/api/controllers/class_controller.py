@@ -195,17 +195,13 @@ def delete_class(class_id):
             return jsonify({"msg": "User not found"}), 404
 
         if course.teacherID != user.id:
-            return jsonify({
-                "msg": "Unauthorized: You are not the teacher of this class"
-            }), 403
+            return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
-        # 1) Remove enrollments first (Core/bulk delete)
         db.session.execute(
             User_Course.__table__.delete().where(User_Course.courseID == class_id)
         )
         db.session.flush()
 
-        # 2) Collect assignment IDs
         assignment_ids = [
             a_id
             for (a_id,) in db.session.query(Assignment.id)
@@ -214,7 +210,6 @@ def delete_class(class_id):
         ]
 
         if assignment_ids:
-            # Groups and members (assignmentID can be NULL, so delete by groupID)
             group_ids = [
                 g_id
                 for (g_id,) in db.session.query(CourseGroup.id)
@@ -231,7 +226,6 @@ def delete_class(class_id):
                     CourseGroup.id.in_(group_ids)
                 ).delete(synchronize_session=False)
 
-            # Reviews -> Criteria -> Reviews
             review_ids = [
                 r_id
                 for (r_id,) in db.session.query(Review.id)
@@ -248,7 +242,6 @@ def delete_class(class_id):
                     Review.id.in_(review_ids)
                 ).delete(synchronize_session=False)
 
-            # Rubrics -> CriteriaDescription -> Rubrics
             rubric_ids = [
                 rb_id
                 for (rb_id,) in db.session.query(Rubric.id)
@@ -265,17 +258,14 @@ def delete_class(class_id):
                     Rubric.id.in_(rubric_ids)
                 ).delete(synchronize_session=False)
 
-            # Submissions
             db.session.query(Submission).filter(
                 Submission.assignmentID.in_(assignment_ids)
             ).delete(synchronize_session=False)
 
-            # Assignments
             db.session.query(Assignment).filter(
                 Assignment.id.in_(assignment_ids)
             ).delete(synchronize_session=False)
 
-        # 3)  bulk delete course (DON'T db.session.delete(course))
         db.session.query(Course).filter(
             Course.id == class_id
         ).delete(synchronize_session=False)
@@ -286,6 +276,7 @@ def delete_class(class_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"msg": "Delete class failed", "error": str(e)}), 500
+
 
 @bp.route("/enroll_students", methods=["POST"])
 @jwt_teacher_required
@@ -316,7 +307,7 @@ def enroll_students():
     enrolled_students = []
 
     for student_info in students:
-        student_email = student_info["email"]
+        student_email = (student_info["email"] or "").strip().lower()
 
         if not re.match(r"[^@]+@[^@]+\.[^@]+", student_email):
             return jsonify({"msg": f"Invalid email format: {student_email}"}), 400
@@ -324,12 +315,15 @@ def enroll_students():
         name = student_info["name"]
         student = User.get_by_email(student_email)
 
+        # If student already has an account, DO NOT overwrite password.
+        # If they don't exist, create a placeholder roster account.
         if not student:
             student = User(
                 name=name,
                 email=student_email,
                 hash_pass=generate_password_hash("password123"),
                 role="student",
+                must_change_password=True,
             )
             db.session.add(student)
             db.session.commit()
