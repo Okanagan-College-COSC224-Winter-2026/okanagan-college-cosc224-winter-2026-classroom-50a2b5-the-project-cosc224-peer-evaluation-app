@@ -68,7 +68,7 @@ def register():
         return jsonify({"msg": "User registered successfully"}), 201
 
     # Case 3: already a real account -> prevent duplicate
-    return jsonify({"msg": "An account with this email already exists"}), 400
+    return jsonify({"msg": f"User with email {email} is already registered"}), 400
 
 
 @bp.route("/login", methods=["POST"])
