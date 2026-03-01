@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Criteria from './Criteria';
-import { getCriteria, getRubric } from '../util/api';
+import { getCriteria, getRubric, deleteRubric } from '../util/api';
+import { isTeacher } from '../util/login';
 import './RubricDisplay.css';
 
 interface RubricDisplayProps {
@@ -54,6 +55,27 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
     return (
         <div className="RubricDisplay">
             <h2>Rubric</h2>
+            {isTeacher() && (
+                <div style={{ textAlign: 'right', marginBottom: 8 }}>
+                    <button className="delete-button"
+                        onClick={async () => {
+                            if (!rubricId) return;
+                            if (!confirm('Delete this rubric? This cannot be undone.')) return;
+                            try {
+                                await deleteRubric(rubricId);
+                                // clear local state
+                                setCriteria([]);
+                                setRubricInfo(null);
+                            } catch (err) {
+                                console.error('Failed to delete rubric', err);
+                                alert('Failed to delete rubric');
+                            }
+                        }}
+                    >
+                        Delete Rubric
+                    </button>
+                </div>
+            )}
             <Criteria
                 questions={questions}
                 scoreMaxes={scoreMaxes}

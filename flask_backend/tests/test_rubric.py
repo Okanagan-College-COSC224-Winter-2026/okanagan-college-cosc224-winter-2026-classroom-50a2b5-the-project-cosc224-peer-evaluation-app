@@ -336,7 +336,7 @@ def test_create_criteria_missing_question(test_client, make_admin):
     )
 
     assert response.status_code == 400
-    assert response.json["msg"] == "question is required"
+    assert response.json["msg"] == "question is required and cannot be empty"
 
 
 def test_create_criteria_nonexistent_rubric(test_client, make_admin):
@@ -653,3 +653,139 @@ def test_criteria_with_has_score_false(test_client, make_admin):
     assert len(criteria_list) == 1
     assert criteria_list[0]["hasScore"] is False
     assert criteria_list[0]["question"] == "Please provide feedback"
+
+
+def test_teacher_can_delete_rubric(test_client, make_admin):
+    # create teacher and log in
+    make_admin(email="teacher@example.com", password="teacher", name="Teacher")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    # create class
+    class_resp = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "History 101"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_resp.json["class"]["id"]
+
+    # create assignment
+    assignment_resp = test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps({"courseID": class_id, "name": "Essay 1", "rubric": "text"}),
+        headers={"Content-Type": "application/json"},
+    )
+    assignment_id = assignment_resp.json["assignment"]["id"]
+
+    # create rubric
+    rubric_resp = test_client.post(
+        "/create_rubric",
+        data=json.dumps({"assignmentID": assignment_id, "canComment": True}),
+        headers={"Content-Type": "application/json"},
+    )
+    rubric_id = rubric_resp.json["id"]
+
+    # delete rubric
+    del_resp = test_client.post(
+        "/delete_rubric",
+        data=json.dumps({"rubricID": rubric_id}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert del_resp.status_code == 200
+    assert del_resp.json["msg"] == "Rubric deleted"
+
+    # confirm it's gone
+    get_resp = test_client.get(f"/rubric?rubricID={rubric_id}")
+    assert get_resp.status_code == 404
+
+
+def test_non_teacher_cannot_delete_rubric(test_client, make_admin):
+    # create teacher and class
+    make_admin(email="teacher1@example.com", password="t1", name="T1")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher1@example.com", "password": "t1"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_resp = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "Math 101"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_resp.json["class"]["id"]
+    assignment_resp = test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps({"courseID": class_id, "name": "A1", "rubric": "text"}),
+        headers={"Content-Type": "application/json"},
+    )
+    assignment_id = assignment_resp.json["assignment"]["id"]
+    rubric_resp = test_client.post(
+        "/create_rubric",
+        data=json.dumps({"assignmentID": assignment_id, "canComment": True}),
+        headers={"Content-Type": "application/json"},
+    )
+    rubric_id = rubric_resp.json["id"]
+
+    # create another teacher and login
+    make_admin(email="teacher2@example.com", password="t2", name="T2")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher2@example.com", "password": "t2"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    del_resp = test_client.post(
+        "/delete_rubric",
+        data=json.dumps({"rubricID": rubric_id}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert del_resp.status_code == 403
+
+
+def test_delete_nonexistent_rubric_returns_404(test_client, make_admin):
+    make_admin(email="teacher@example.com", password="teacher", name="Teacher")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    del_resp = test_client.post(
+        "/delete_rubric",
+        data=json.dumps({"rubricID": 9999}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert del_resp.status_code == 404
+
+
+def test_delete_missing_rubric_id_returns_400(test_client, make_admin):
+    make_admin(email="teacher@example.com", password="teacher", name="Teacher")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    del_resp = test_client.post(
+        "/delete_rubric",
+        data=json.dumps({}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert del_resp.status_code == 400
+
+
+def test_unauthenticated_cannot_delete_rubric(test_client):
+    del_resp = test_client.post(
+        "/delete_rubric",
+        data=json.dumps({"rubricID": 1}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert del_resp.status_code == 401

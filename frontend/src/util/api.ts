@@ -338,6 +338,25 @@ export const getRubric = async (rubricID: number) => {
   return await resp.json();
 }
 
+export const deleteRubric = async (rubricID: number) => {
+  const response = await fetch(`${BASE_URL}/delete_rubric`, {
+    method: 'POST',
+    body: JSON.stringify({ rubricID }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include'
+  });
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    throw new Error(`Response status: ${response.status}`);
+  }
+
+  return await response.json();
+}
+
 
 export const createAssignment = async (courseID: number, name: string)=> {
   const response = await fetch(`${BASE_URL}/assignment/create_assignment`, {

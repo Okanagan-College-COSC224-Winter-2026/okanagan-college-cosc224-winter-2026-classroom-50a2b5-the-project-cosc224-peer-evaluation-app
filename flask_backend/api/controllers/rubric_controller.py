@@ -69,8 +69,8 @@ def create_criteria():
 
     if not rubric_id:
         return jsonify({"msg": "rubricID is required"}), 400
-    if not question:
-        return jsonify({"msg": "question is required"}), 400
+    if not question or not str(question).strip():
+        return jsonify({"msg": "question is required and cannot be empty"}), 400
 
     rubric = Rubric.get_by_id(rubric_id)
     if not rubric:
@@ -141,4 +141,42 @@ def get_criteria():
     criteria_list = CriteriaDescription.query.filter_by(rubricID=rubric_id).all()
     schema = CriteriaDescriptionSchema(many=True)
     return jsonify(schema.dump(criteria_list)), 200
+
+
+@bp.route("/delete_rubric", methods=["POST"])
+@jwt_teacher_required
+def delete_rubric():
+    """Delete a rubric by ID"""
+    data = request.get_json()
+    rubric_id = data.get("rubricID")
+
+    if not rubric_id:
+        return jsonify({"msg": "rubricID is required"}), 400
+
+    try:
+        rubric_id = int(rubric_id)
+    except (ValueError, TypeError):
+        return jsonify({"msg": "rubricID must be an integer"}), 400
+
+    rubric = Rubric.get_by_id(rubric_id)
+    if not rubric:
+        return jsonify({"msg": "Rubric not found"}), 404
+
+    assignment = Assignment.get_by_id(rubric.assignmentID)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    course = Course.get_by_id(assignment.courseID)
+    if course.teacherID != user.id:
+        return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
+
+    # delete the rubric (cascade will remove criteria)
+    rubric.delete()
+
+    return jsonify({"msg": "Rubric deleted", "id": rubric_id}), 200
     
