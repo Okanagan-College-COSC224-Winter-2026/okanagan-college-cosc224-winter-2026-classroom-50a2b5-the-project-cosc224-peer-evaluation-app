@@ -457,6 +457,25 @@ export default function Assignment() {
         </div>
       )}
 
+      {teacherMode && !isManageTab && (
+        <div className='assignmentResources'>
+          <h3>Supporting Documents (Student Preview)</h3>
+          {resources.length === 0 ? (
+            <p>No supporting documents available.</p>
+          ) : (
+            <ul>
+              {resources.map((resource) => (
+                <li key={resource.id} className='resourceItem'>
+                  <a href={resource.download_url} target='_blank' rel='noreferrer'>
+                    {resource.original_name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
 {
       //List group members as radio buttons to select for given review
       !teacherMode && <div className='groupMembers'>
