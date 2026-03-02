@@ -125,6 +125,84 @@ def test_teacher_can_create_assignment_with_description_start_and_due_dates(test
     assert response.json["assignment"]["start_date"].startswith(start_date[:10])
     assert response.json["assignment"]["due_date"].startswith(due_date[:10])
 
+
+def test_create_assignment_defaults_to_anonymous(test_client, make_admin):
+    """
+    GIVEN a teacher creating an assignment without anonymity field
+    WHEN assignment creation succeeds
+    THEN the assignment defaults to anonymous submissions/reviews
+    """
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    class_response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "US9 Anonymous Default Class"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_response.json["class"]["id"]
+
+    response = test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps(
+            {
+                "courseID": class_id,
+                "name": "Anonymous by Default",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 201
+    assert response.json["assignment"]["is_anonymous"] is True
+
+
+def test_teacher_can_deanonymize_assignment_via_edit(test_client, make_admin):
+    """
+    GIVEN a teacher managing an assignment
+    WHEN they set is_anonymous to false
+    THEN the assignment becomes de-anonymized
+    """
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    class_response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "US9 De-anonymize Class"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_response.json["class"]["id"]
+
+    create_response = test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps(
+            {
+                "courseID": class_id,
+                "name": "Toggle Anonymity",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+    assignment_id = create_response.json["assignment"]["id"]
+    assert create_response.json["assignment"]["is_anonymous"] is True
+
+    edit_response = test_client.patch(
+        f"/assignment/edit_assignment/{assignment_id}",
+        data=json.dumps({"is_anonymous": False}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert edit_response.status_code == 200
+    assert edit_response.json["assignment"]["is_anonymous"] is False
+
 def test_non_assigned_teacher_cannot_create_assignment(test_client, make_admin):
     """
     GIVEN a teacher user who is not assigned to the class

@@ -43,6 +43,7 @@ export default function Assignment() {
   const [editDescription, setEditDescription] = useState("");
   const [editStartDate, setEditStartDate] = useState("");
   const [editDueDate, setEditDueDate] = useState("");
+  const [editIsAnonymous, setEditIsAnonymous] = useState(true);
   const [statusMessage, setStatusMessage] = useState("");
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
   const [rubricId, setRubricId] = useState<number | null>(null);
@@ -90,6 +91,7 @@ export default function Assignment() {
           setEditDescription(assignmentResponse.description || "");
           setEditStartDate(toDatetimeLocal(assignmentResponse.start_date));
           setEditDueDate(toDatetimeLocal(assignmentResponse.due_date));
+          setEditIsAnonymous(assignmentResponse.is_anonymous ?? true);
 
           const myGroup = await listStuGroup(assignmentResponse.courseID);
           if (myGroup?.members) {
@@ -225,6 +227,14 @@ export default function Assignment() {
                   onChange={(e) => setEditDueDate(e.target.value)}
                 />
               </label>
+              <label className='checkboxLabel'>
+                <input
+                  type='checkbox'
+                  checked={editIsAnonymous}
+                  onChange={(e) => setEditIsAnonymous(e.target.checked)}
+                />
+                Anonymous submissions/reviews
+              </label>
               <div className='assignmentManagementButtons'>
                 <button
                   onClick={async () => {
@@ -235,9 +245,11 @@ export default function Assignment() {
                         description?: string;
                         start_date?: string;
                         due_date?: string;
+                        is_anonymous?: boolean;
                       } = {
                         name: editName,
                         description: editDescription,
+                        is_anonymous: editIsAnonymous,
                       };
 
                       if (editStartDate) {
