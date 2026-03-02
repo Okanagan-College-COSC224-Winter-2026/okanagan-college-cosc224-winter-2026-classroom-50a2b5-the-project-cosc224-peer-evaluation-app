@@ -284,11 +284,11 @@ export const getCriteria = async (rubricID: number) => {
   return await resp.json()
 }
 
-export const createCriteria = async (rubricID: number, question: string, scoreMax: number, hasScore: boolean = true) => {
+export const createCriteria = async (rubricID: number, question: string, scoreMax: number, canComment: boolean, hasScore: boolean = true) => {
   const response = await fetch(`${BASE_URL}/create_criteria`, {
     method: 'POST',
     body: JSON.stringify({
-      rubricID, question, scoreMax, hasScore
+      rubricID, question, scoreMax, canComment, hasScore
     }),
     headers: {
       'Content-Type': 'application/json',
@@ -303,11 +303,11 @@ export const createCriteria = async (rubricID: number, question: string, scoreMa
   }
 }
 
-export const createRubric = async (assignmentID: number, canComment: boolean): Promise<{ id: number }> => {
+export const createRubric = async (id: number, assignmentID: number, canComment: boolean): Promise<{ id: number }> => {
   const response = await fetch(`${BASE_URL}/create_rubric`, {
     method: 'POST',
     body: JSON.stringify({
-      assignmentID, canComment
+      id, assignmentID, canComment
     }),
     headers: {
       'Content-Type': 'application/json',
@@ -535,6 +535,49 @@ export const changePassword = async (currentPassword: string, newPassword: strin
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.msg || `Response status: ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+
+// US9 - edit assignment
+export const editAssignment = async (
+  assignmentId: number,
+  updates: { name?: string; due_date?: string | null; rubric?: string | null }
+) => {
+  const response = await fetch(`${BASE_URL}/assignment/edit_assignment/${assignmentId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include'
+  })
+  
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    throw new Error(`Response status: ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+// US9 - delete assignment
+export const deleteAssignment = async (assignmentId: number) => {
+  const response = await fetch(`${BASE_URL}/assignment/delete_assignment/${assignmentId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include'
+  })
+  
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    throw new Error(`Response status: ${response.status}`);
   }
 
   return await response.json();
