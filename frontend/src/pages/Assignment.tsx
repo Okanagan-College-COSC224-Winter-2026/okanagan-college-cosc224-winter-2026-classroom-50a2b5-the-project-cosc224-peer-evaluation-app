@@ -1,5 +1,5 @@
 import { useEffect, useState, ChangeEvent } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import "./Assignment.css";
 import RubricCreator from "../components/RubricCreator";
 import RubricDisplay from "../components/RubricDisplay";
@@ -16,6 +16,9 @@ import {
   deleteAssignment,
   getRubricForAssignment,
   deleteRubric,
+  getMySubmission,
+  uploadMySubmission,
+  deleteMySubmission,
 } from "../util/api";
 import StatusMessage from "../components/StatusMessage";
 
@@ -31,8 +34,17 @@ interface SelectedCriterion {
   column: number;
 }
 
+interface SubmissionAttachment {
+  id: number;
+  filename: string;
+  download_url: string;
+  studentID: number;
+  assignmentID: number;
+}
+
 export default function Assignment() {
   const { id } = useParams();
+  const location = useLocation();
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [revieweeID, setRevieweeID] = useState<number>(0);
   const [stuID, setStuID] = useState<number>(0);
@@ -47,6 +59,11 @@ export default function Assignment() {
   const [statusMessage, setStatusMessage] = useState("");
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
   const [rubricId, setRubricId] = useState<number | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [mySubmission, setMySubmission] = useState<SubmissionAttachment | null>(null);
+
+  const teacherMode = isTeacher();
+  const isManageTab = teacherMode && location.pathname.endsWith('/manage');
 
   const loadRubric = async () => {
     try {
@@ -55,6 +72,20 @@ export default function Assignment() {
     } catch (error) {
       console.error('Error fetching rubric:', error);
       setRubricId(null);
+    }
+  };
+
+  const loadMySubmission = async () => {
+    if (teacherMode || !id) {
+      setMySubmission(null);
+      return;
+    }
+
+    try {
+      const submission = await getMySubmission(Number(id));
+      setMySubmission(submission || null);
+    } catch {
+      setMySubmission(null);
     }
   };
 
@@ -82,6 +113,7 @@ export default function Assignment() {
 
         // Load rubric for this assignment
         await loadRubric();
+        await loadMySubmission();
         
         // Get assignment to find its courseID, then fetch group members
         try {
@@ -153,45 +185,31 @@ export default function Assignment() {
         <h2>{assignment?.name ? assignment.name : `Assignment ${id}`}</h2>
       </div>
 
+      {assignment?.description && (
+        <p className="assignmentDescription">{assignment.description}</p>
+      )}
+
       <TabNavigation
         tabs={[
           {
-            label: "Home",
+            label: teacherMode ? "Review" : "Home",
             path: `/assignments/${id}`,
           },
+          ...(teacherMode
+            ? [
+                {
+                  label: "Management",
+                  path: `/assignments/${id}/manage`,
+                },
+              ]
+            : []),
           // Groups are now at course level - access via ClassHome > Groups tab
         ]}
       />
 
-      <div className='assignmentRubricDisplay'>
-        <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
-      </div>
       <StatusMessage message={statusMessage} type={statusType} />
-      {
-        isTeacher() && rubricId && (
-          <div className='assignmentRubric'>
-            <button className='deleteRubricBtn' onClick={async () => {
-              if (window.confirm('Are you sure you want to delete this rubric? All criteria will be removed.')) {
-                try {
-                  await deleteRubric(rubricId);
-                  setRubricId(null);
-                } catch (error) {
-                  console.error('Error deleting rubric:', error);
-                }
-              }
-            }}>Delete Rubric</button>
-          </div>
-        )
-      }
-      {
-        isTeacher() && !rubricId && (
-          <div className='assignmentRubric'>
-            <RubricCreator id={Number(id)} onRubricCreated={(newId) => setRubricId(newId)} />
-          </div>
-        )
-      }
 
-      {isTeacher() && assignment && (
+      {teacherMode && assignment && isManageTab && (
         <div className='assignmentManagement'>
           <h3>Manage Assignment</h3>
           <>
@@ -205,8 +223,7 @@ export default function Assignment() {
               </label>
               <label>
                 Description
-                <input
-                  type='text'
+                <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                 />
@@ -276,6 +293,14 @@ export default function Assignment() {
                   onClick={async () => {
                     try {
                       setStatusMessage("");
+                      const confirmed = window.prompt(
+                        `Admin confirmation required: type DELETE to remove \"${assignment.name}\"`
+                      );
+                      if (confirmed !== 'DELETE') {
+                        setStatusType('error');
+                        setStatusMessage('Delete cancelled. Type DELETE to confirm assignment removal.');
+                        return;
+                      }
                       await deleteAssignment(Number(id));
                       window.location.href = `/classes/${assignment.courseID}/home`;
                     } catch (error) {
@@ -291,9 +316,113 @@ export default function Assignment() {
         </div>
       )}
 
+      {teacherMode && isManageTab && (
+        <>
+          {
+            rubricId && (
+              <div className='assignmentRubric'>
+                <button className='deleteRubricBtn' onClick={async () => {
+                  if (window.confirm('Are you sure you want to delete this rubric? All criteria will be removed.')) {
+                    try {
+                      await deleteRubric(rubricId);
+                      setRubricId(null);
+                      setStatusType('success');
+                      setStatusMessage('Rubric deleted successfully.');
+                    } catch (error) {
+                      console.error('Error deleting rubric:', error);
+                      setStatusType('error');
+                      setStatusMessage(error instanceof Error ? error.message : 'Failed to delete rubric.');
+                    }
+                  }
+                }}>Delete Rubric</button>
+              </div>
+            )
+          }
+          {
+            !rubricId && (
+              <div className='assignmentRubric'>
+                <RubricCreator
+                  id={Number(id)}
+                  onRubricCreated={(newId) => {
+                    setRubricId(newId);
+                    setStatusType('success');
+                    setStatusMessage('Rubric created successfully.');
+                  }}
+                />
+              </div>
+            )
+          }
+        </>
+      )}
+
+      {(!teacherMode || !isManageTab) && (
+        <div className='assignmentRubricDisplay'>
+          <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
+        </div>
+      )}
+
 {
       //List group members as radio buttons to select for given review
-      !isTeacher() && <div className='groupMembers'>
+      !teacherMode && <div className='groupMembers'>
+        <h3>My Attachment</h3>
+        {mySubmission ? (
+          <div className='attachmentSection'>
+            <a href={mySubmission.download_url} target='_blank' rel='noreferrer'>
+              {mySubmission.filename}
+            </a>
+            <button
+              className='removeAttachmentButton'
+              onClick={async () => {
+                try {
+                  setStatusMessage('');
+                  await deleteMySubmission(Number(id));
+                  setMySubmission(null);
+                  setSelectedFile(null);
+                  setStatusType('success');
+                  setStatusMessage('Attachment removed successfully.');
+                } catch (error) {
+                  setStatusType('error');
+                  setStatusMessage(error instanceof Error ? error.message : 'Failed to remove attachment.');
+                }
+              }}
+            >
+              Remove Attachment
+            </button>
+          </div>
+        ) : (
+          <p>No attachment uploaded yet.</p>
+        )}
+        <input
+          type='file'
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            setSelectedFile(file || null);
+          }}
+        />
+        <button
+          onClick={async () => {
+            if (!selectedFile) {
+              setStatusType('error');
+              setStatusMessage('Please choose a file first.');
+              return;
+            }
+
+            try {
+              setStatusMessage('');
+              const response = await uploadMySubmission(Number(id), selectedFile);
+              setMySubmission(response.submission);
+              setSelectedFile(null);
+              setStatusType('success');
+              setStatusMessage(mySubmission ? 'Attachment updated successfully.' : 'Attachment uploaded successfully.');
+            } catch (error) {
+              setStatusType('error');
+              setStatusMessage(error instanceof Error ? error.message : 'Failed to upload attachment.');
+            }
+          }}
+        >
+          {mySubmission ? 'Replace Attachment' : 'Upload Attachment'}
+        </button>
+
         <h3>Select a group member to review</h3>
           {groupMembers.length === 0 ? (
             <p>No group members found. You may not be assigned to a group yet.</p>
@@ -321,8 +450,12 @@ export default function Assignment() {
                 await createCriterion(reviewData.id, criterion.row, criterion.column, "");
               }
               console.log('Review submitted successfully');
+              setStatusType('success');
+              setStatusMessage('Review submitted successfully.');
             } catch (error) {
               console.error('Error submitting review:', error);
+              setStatusType('error');
+              setStatusMessage(error instanceof Error ? error.message : 'Failed to submit review.');
             }
           }}>Submit Review</button>
       </div>}

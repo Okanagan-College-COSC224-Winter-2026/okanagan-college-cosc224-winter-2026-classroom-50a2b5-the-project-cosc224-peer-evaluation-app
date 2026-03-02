@@ -102,6 +102,16 @@
   padding: 12px;
 }
 
+.assignmentDescription {
+  margin: 0 12px 12px;
+  color: var(--text-primary);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-secondary);
+  border-radius: 8px;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+}
+
 .groupNameInput{
   width: 15%;
 }
@@ -129,6 +139,14 @@
   border-radius: 4px;
 }
 
+.assignmentManagement textarea {
+  padding: 8px;
+  border: 1px solid var(--background-secondary);
+  border-radius: 4px;
+  min-height: 120px;
+  resize: vertical;
+}
+
 .assignmentManagement .checkboxLabel {
   flex-direction: row;
   align-items: center;
@@ -147,5 +165,17 @@
 }
 
 .deleteAssignmentButton {
+  background-color: var(--button-secondary) !important;
+}
+
+.attachmentSection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.removeAttachmentButton {
   background-color: var(--button-secondary) !important;
 }
