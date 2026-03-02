@@ -1,4 +1,4 @@
-import { useEffect, useState, ChangeEvent } from "react";
+import { useCallback, useEffect, useState, ChangeEvent } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import "./Assignment.css";
 import RubricCreator from "../components/RubricCreator";
@@ -79,7 +79,7 @@ export default function Assignment() {
   const teacherMode = isTeacher();
   const isManageTab = teacherMode && location.pathname.endsWith('/manage');
 
-  const loadRubric = async () => {
+  const loadRubric = useCallback(async () => {
     try {
       const rubric = await getRubricForAssignment(Number(id));
       setRubricId(rubric ? rubric.id : null);
@@ -87,9 +87,9 @@ export default function Assignment() {
       console.error('Error fetching rubric:', error);
       setRubricId(null);
     }
-  };
+  }, [id]);
 
-  const loadMySubmission = async () => {
+  const loadMySubmission = useCallback(async () => {
     if (teacherMode || !id) {
       setMySubmission(null);
       return;
@@ -101,9 +101,9 @@ export default function Assignment() {
     } catch {
       setMySubmission(null);
     }
-  };
+  }, [teacherMode, id]);
 
-  const loadResources = async () => {
+  const loadResources = useCallback(async () => {
     if (!id) {
       setResources([]);
       return;
@@ -115,7 +115,7 @@ export default function Assignment() {
     } catch {
       setResources([]);
     }
-  };
+  }, [id]);
 
   const toDatetimeLocal = (value?: string) => {
     if (!value) {
@@ -178,7 +178,7 @@ export default function Assignment() {
           }
         }
       })();
-  }, [revieweeID, id]);
+  }, [revieweeID, id, loadRubric, loadMySubmission, loadResources]);
 
   const handleCriterionSelect = (row: number, column: number) => {
     // Check if this criterion is already selected
@@ -323,7 +323,7 @@ export default function Assignment() {
                     try {
                       setStatusMessage("");
                       const confirmed = window.prompt(
-                        `Admin confirmation required: type DELETE to remove \"${assignment.name}\"`
+                        `Admin confirmation required: type DELETE to remove "${assignment.name}"`
                       );
                       if (confirmed !== 'DELETE') {
                         setStatusType('error');

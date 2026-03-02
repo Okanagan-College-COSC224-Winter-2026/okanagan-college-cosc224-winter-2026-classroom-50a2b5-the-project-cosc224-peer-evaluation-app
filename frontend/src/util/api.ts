@@ -609,7 +609,14 @@ export const listAssignmentResources = async (assignmentID: number) => {
 
   const data = await resp.json();
   const resources = data?.resources || [];
-  return resources.map((resource: any) => ({
+  return resources.map((resource: {
+    id: number;
+    assignmentID: number;
+    uploaderID: number;
+    original_name: string;
+    download_url?: string;
+    created_at?: string;
+  }) => ({
     ...resource,
     download_url: resource.download_url?.startsWith('/')
       ? `${BASE_URL}${resource.download_url}`
