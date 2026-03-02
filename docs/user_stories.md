@@ -352,7 +352,7 @@
 
 ## US18 – Student Registration (Roster-Matched) — **Backlog**
 
-**As a student, I want to register if my email is already part of the course roster so that I can join my course.**
+**As a student, I want to be automatically registered for the course if my email is part of its roster so that I can access my course.**
 
 ### Assumptions and Details
 
@@ -361,9 +361,9 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Given the student’s email is on the roster, when they register, the system links them to the course automatically  
+- ✅ Given the student’s email is on the roster, when they register, the system links them to the course automatically  
 - [ ] Student receives confirmation of successful registration  
-- [ ] Duplicate registrations are prevented  
+- ✅ Duplicate registrations are prevented  
 
 ---
 
