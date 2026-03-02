@@ -150,3 +150,16 @@
     border-color: var(--button-primary);
     box-shadow: 0 0 0 2px rgba(var(--button-primary-rgb), 0.1);
 }
+
+.NewAssignmentForm .CheckboxLabel {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.NewAssignmentForm .CheckboxLabel input {
+    width: auto;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}

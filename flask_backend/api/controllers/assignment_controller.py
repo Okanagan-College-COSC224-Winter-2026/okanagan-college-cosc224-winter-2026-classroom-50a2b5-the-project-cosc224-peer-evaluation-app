@@ -8,6 +8,22 @@ from .auth_controller import jwt_teacher_required
 bp = Blueprint("assignment", __name__, url_prefix="/assignment")
 
 
+def _coerce_optional_bool(value, field_name):
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes", "y", "on"}:
+            return True
+        if normalized in {"false", "0", "no", "n", "off"}:
+            return False
+    if isinstance(value, int) and value in {0, 1}:
+        return bool(value)
+    raise ValueError(f"Invalid boolean format for {field_name}.")
+
+
 def _can_access_course_assignments(user, course):
     if user.is_admin():
         return True
@@ -28,6 +44,7 @@ def create_assignment():
     start_date = data.get("start_date")
     rubric_text = data.get("rubric")
     due_date = data.get("due_date")
+    is_anonymous = data.get("is_anonymous", True)
 
     try:
         if start_date:
@@ -39,8 +56,11 @@ def create_assignment():
             due_date = None
         else:
             due_date = datetime.fromisoformat(due_date)
+        is_anonymous = _coerce_optional_bool(is_anonymous, "is_anonymous")
+        if is_anonymous is None:
+            is_anonymous = True
     except ValueError:
-        return jsonify({"msg": "Invalid date format. Use ISO format for start_date and due_date."}), 400
+        return jsonify({"msg": "Invalid format. Use ISO format for start_date/due_date and boolean for is_anonymous."}), 400
 
     if not course_id:
         return jsonify({"msg": "Course ID is required"}), 400
@@ -65,6 +85,7 @@ def create_assignment():
         start_date=start_date,
         rubric_text=rubric_text,
         due_date=due_date,
+        is_anonymous=is_anonymous,
     )
     Assignment.create(new_assignment)
     return (
@@ -110,8 +131,11 @@ def edit_assignment(assignment_id):
         due_date = data.get("due_date")
         if due_date:
             assignment.due_date = datetime.fromisoformat(due_date)
+
+        if "is_anonymous" in data:
+            assignment.is_anonymous = _coerce_optional_bool(data.get("is_anonymous"), "is_anonymous")
     except ValueError:
-        return jsonify({"msg": "Invalid date format. Use ISO format for start_date and due_date."}), 400
+        return jsonify({"msg": "Invalid format. Use ISO format for start_date/due_date and boolean for is_anonymous."}), 400
 
     assignment.update()
     return (

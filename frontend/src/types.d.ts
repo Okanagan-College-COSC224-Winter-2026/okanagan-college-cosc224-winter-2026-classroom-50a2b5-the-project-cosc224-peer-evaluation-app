@@ -48,6 +48,7 @@ interface Assignment {
   start_date?: string;
   rubric?: string;
   due_date?: string;
+  is_anonymous?: boolean;
 }
 
 interface CourseWithAssignments extends Course {

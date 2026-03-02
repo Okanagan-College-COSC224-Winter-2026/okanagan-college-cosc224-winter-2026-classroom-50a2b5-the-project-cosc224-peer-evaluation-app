@@ -20,6 +20,7 @@ export default function ClassHome() {
   const [newAssignmentDescription, setNewAssignmentDescription] = useState("");
   const [newAssignmentStartDate, setNewAssignmentStartDate] = useState("");
   const [newAssignmentDueDate, setNewAssignmentDueDate] = useState("");
+  const [newAssignmentAnonymous, setNewAssignmentAnonymous] = useState(true);
   const [className, setClassName] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
@@ -44,6 +45,7 @@ export default function ClassHome() {
           newAssignmentDescription || undefined,
           newAssignmentStartDate || undefined,
           newAssignmentDueDate || undefined,
+          newAssignmentAnonymous,
         );
         const createdAssignment = response?.assignment;
 
@@ -56,6 +58,7 @@ export default function ClassHome() {
         setNewAssignmentDescription("");
         setNewAssignmentStartDate("");
         setNewAssignmentDueDate("");
+        setNewAssignmentAnonymous(true);
         setStatusType('success');
         setStatusMessage('Assignment created successfully!');
         setIsModalOpen(false);
@@ -181,6 +184,15 @@ export default function ClassHome() {
                 onInput={setNewAssignmentDueDate}
                 value={newAssignmentDueDate}
               />
+            </label>
+
+            <label className="CheckboxLabel">
+              <input
+                type="checkbox"
+                checked={newAssignmentAnonymous}
+                onChange={(e) => setNewAssignmentAnonymous(e.target.checked)}
+              />
+              <span>Anonymous submissions/reviews</span>
             </label>
 
             <div className="ModalActions">

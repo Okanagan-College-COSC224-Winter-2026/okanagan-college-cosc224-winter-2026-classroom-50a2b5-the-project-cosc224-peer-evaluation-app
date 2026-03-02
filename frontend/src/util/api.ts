@@ -439,6 +439,7 @@ export const createAssignment = async (
   description?: string,
   start_date?: string,
   due_date?: string,
+  is_anonymous: boolean = true,
 )=> {
   const response = await fetch(`${BASE_URL}/assignment/create_assignment`, {
     method: 'POST',
@@ -448,6 +449,7 @@ export const createAssignment = async (
       description,
       start_date,
       due_date,
+      is_anonymous,
     }),
     headers: {
       'Content-Type': 'application/json',
@@ -473,6 +475,7 @@ export const editAssignment = async (
     start_date?: string;
     due_date?: string;
     rubric?: string;
+    is_anonymous?: boolean;
   }
 ) => {
   const response = await fetch(`${BASE_URL}/assignment/edit_assignment/${assignmentID}`, {

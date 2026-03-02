@@ -129,6 +129,17 @@
   border-radius: 4px;
 }
 
+.assignmentManagement .checkboxLabel {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.assignmentManagement .checkboxLabel input {
+  width: auto;
+  padding: 0;
+}
+
 .assignmentManagementButtons {
   display: flex;
   gap: 8px;
