@@ -210,14 +210,6 @@ export default function Assignment() {
 
   return (
     <>
-      <div className="AssignmentHeader">
-        <h2>{assignment?.name ? assignment.name : `Assignment ${id}`}</h2>
-      </div>
-
-      {assignment?.description && (
-        <p className="assignmentDescription">{assignment.description}</p>
-      )}
-
       <TabNavigation
         tabs={[
           {
@@ -235,6 +227,14 @@ export default function Assignment() {
           // Groups are now at course level - access via ClassHome > Groups tab
         ]}
       />
+
+      <div className="AssignmentHeader">
+        <h2>{assignment?.name ? assignment.name : `Assignment ${id}`}</h2>
+      </div>
+
+      {assignment?.description && (
+        <p className="assignmentDescription">{assignment.description}</p>
+      )}
 
       <StatusMessage message={statusMessage} type={statusType} />
 
