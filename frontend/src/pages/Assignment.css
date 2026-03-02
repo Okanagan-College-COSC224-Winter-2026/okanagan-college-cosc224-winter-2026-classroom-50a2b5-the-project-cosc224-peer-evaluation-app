@@ -179,3 +179,30 @@
 .removeAttachmentButton {
   background-color: var(--button-secondary) !important;
 }
+
+.assignmentResources {
+  margin: 12px;
+  padding: 12px;
+  border: 1px solid var(--background-secondary);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.assignmentResources ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resourceItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}

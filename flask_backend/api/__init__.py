@@ -13,6 +13,7 @@ from .controllers import (
     fake_api_controller,
     user_controller,
     assignment_controller,
+    assignment_resource_controller,
     group_controller,
     rubric_controller,
     submission_controller,
@@ -110,6 +111,7 @@ def create_app(test_config=None):
     app.register_blueprint(admin_controller.bp)
     app.register_blueprint(class_controller.bp)
     app.register_blueprint(assignment_controller.bp)
+    app.register_blueprint(assignment_resource_controller.bp)
     app.register_blueprint(group_controller.bp)
     app.register_blueprint(rubric_controller.bp)
     app.register_blueprint(submission_controller.bp)

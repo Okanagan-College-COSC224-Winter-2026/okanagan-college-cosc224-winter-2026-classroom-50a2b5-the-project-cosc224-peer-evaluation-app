@@ -19,6 +19,9 @@ import {
   getMySubmission,
   uploadMySubmission,
   deleteMySubmission,
+  listAssignmentResources,
+  uploadAssignmentResource,
+  deleteAssignmentResource,
 } from "../util/api";
 import StatusMessage from "../components/StatusMessage";
 
@@ -42,6 +45,15 @@ interface SubmissionAttachment {
   assignmentID: number;
 }
 
+interface AssignmentResourceItem {
+  id: number;
+  assignmentID: number;
+  uploaderID: number;
+  original_name: string;
+  download_url: string;
+  created_at?: string;
+}
+
 export default function Assignment() {
   const { id } = useParams();
   const location = useLocation();
@@ -61,6 +73,8 @@ export default function Assignment() {
   const [rubricId, setRubricId] = useState<number | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [mySubmission, setMySubmission] = useState<SubmissionAttachment | null>(null);
+  const [resources, setResources] = useState<AssignmentResourceItem[]>([]);
+  const [resourceUpload, setResourceUpload] = useState<File | null>(null);
 
   const teacherMode = isTeacher();
   const isManageTab = teacherMode && location.pathname.endsWith('/manage');
@@ -89,6 +103,20 @@ export default function Assignment() {
     }
   };
 
+  const loadResources = async () => {
+    if (!id) {
+      setResources([]);
+      return;
+    }
+
+    try {
+      const list = await listAssignmentResources(Number(id));
+      setResources(list || []);
+    } catch {
+      setResources([]);
+    }
+  };
+
   const toDatetimeLocal = (value?: string) => {
     if (!value) {
       return "";
@@ -114,6 +142,7 @@ export default function Assignment() {
         // Load rubric for this assignment
         await loadRubric();
         await loadMySubmission();
+        await loadResources();
         
         // Get assignment to find its courseID, then fetch group members
         try {
@@ -317,6 +346,73 @@ export default function Assignment() {
       )}
 
       {teacherMode && isManageTab && (
+        <div className='assignmentResources'>
+          <h3>Supporting Documents</h3>
+          {resources.length === 0 ? (
+            <p>No supporting documents uploaded yet.</p>
+          ) : (
+            <ul>
+              {resources.map((resource) => (
+                <li key={resource.id} className='resourceItem'>
+                  <a href={resource.download_url} target='_blank' rel='noreferrer'>
+                    {resource.original_name}
+                  </a>
+                  <button
+                    className='removeAttachmentButton'
+                    onClick={async () => {
+                      try {
+                        setStatusMessage('');
+                        await deleteAssignmentResource(resource.id);
+                        await loadResources();
+                        setStatusType('success');
+                        setStatusMessage('Supporting document deleted successfully.');
+                      } catch (error) {
+                        setStatusType('error');
+                        setStatusMessage(error instanceof Error ? error.message : 'Failed to delete supporting document.');
+                      }
+                    }}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <input
+            type='file'
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              setResourceUpload(file || null);
+            }}
+          />
+          <button
+            onClick={async () => {
+              if (!resourceUpload) {
+                setStatusType('error');
+                setStatusMessage('Please choose a supporting document first.');
+                return;
+              }
+
+              try {
+                setStatusMessage('');
+                await uploadAssignmentResource(Number(id), resourceUpload);
+                setResourceUpload(null);
+                await loadResources();
+                setStatusType('success');
+                setStatusMessage('Supporting document uploaded successfully.');
+              } catch (error) {
+                setStatusType('error');
+                setStatusMessage(error instanceof Error ? error.message : 'Failed to upload supporting document.');
+              }
+            }}
+          >
+            Upload Supporting Document
+          </button>
+        </div>
+      )}
+
+      {teacherMode && isManageTab && (
         <>
           {
             rubricId && (
@@ -364,6 +460,21 @@ export default function Assignment() {
 {
       //List group members as radio buttons to select for given review
       !teacherMode && <div className='groupMembers'>
+        <h3>Supporting Documents</h3>
+        {resources.length === 0 ? (
+          <p>No supporting documents available.</p>
+        ) : (
+          <ul>
+            {resources.map((resource) => (
+              <li key={resource.id} className='resourceItem'>
+                <a href={resource.download_url} target='_blank' rel='noreferrer'>
+                  {resource.original_name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+
         <h3>My Attachment</h3>
         {mySubmission ? (
           <div className='attachmentSection'>
