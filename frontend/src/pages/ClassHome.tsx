@@ -10,6 +10,10 @@ import Textbox from "../components/Textbox";
 import StatusMessage from "../components/StatusMessage";
 import { isTeacher } from "../util/login";
 
+//US9 - import the model for assignment editor
+import AssignmentEditor from "../components/AssignmentEditor";
+import { editAssignment, deleteAssignment } from "../util/api";
+
 export default function ClassHome() {
   const { id } = useParams();
   const idNew = Number(id)
@@ -19,6 +23,16 @@ export default function ClassHome() {
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
 
+  
+  // Define update payload type to avoid `any`
+  type AssignmentUpdate = {
+    name?: string
+    due_date?: string | null
+    rubric?: string | null
+  }
+
+  const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null); //edit assignment component state
+
   useEffect(() => {
     (async () => {
       const resp = await listAssignments(String(id));
@@ -27,7 +41,7 @@ export default function ClassHome() {
       setAssignments(resp);
       setClassName(currentClass?.name || null);
     })();
-  }, []);
+  }, [id]);
     
     const tryCreateAssingment = async () => {
       try {
@@ -49,6 +63,40 @@ export default function ClassHome() {
         setStatusMessage('Error creating assignment.');
       }
     };
+
+    //US9 - handle edit assignment
+    const handleEditAssignment = async (updates: AssignmentUpdate) => {
+      if (!editingAssignment) return;
+      try {
+      await editAssignment(editingAssignment.id, updates);
+      setStatusType('success');
+      setStatusMessage('Assignment updated successfully!');
+    
+     // Refresh assignments list
+      const resp = await listAssignments(String(id));
+      setAssignments(resp);
+      setEditingAssignment(null);
+      } catch (error) {
+      console.error('Error updating assignment:', error);
+      setStatusType('error');
+      setStatusMessage('Error updating assignment.');
+    }
+  };
+//US9 - handle delete assignment
+const handleDeleteAssignment = async (assignmentId: number) => {
+  try {
+    await deleteAssignment(assignmentId);
+    setStatusType('success');
+    setStatusMessage('Assignment deleted successfully!');
+    
+    // Refresh assignments list
+    setAssignments(prev => prev.filter(a => a.id !== assignmentId));
+  } catch (error) {
+    console.error('Error deleting assignment:', error);
+    setStatusType('error');
+    setStatusMessage('Error deleting assignment.');
+  }
+};
     
     return (
       <>
@@ -81,13 +129,19 @@ export default function ClassHome() {
 
       <StatusMessage message={statusMessage} type={statusType} />
 
+
       <div className="Class">
         <div className="Assignments">
           <ul className="Assignment">
             {assignments.map((assignment) => {
               return (
                 <li key={assignment.id}>
-                  <AssignmentCard id={assignment.id}>
+                  <AssignmentCard 
+                    id={assignment.id}
+                    onEdit={() => setEditingAssignment(assignment)}
+                    onDelete={handleDeleteAssignment}
+                    isTeacher={isTeacher()}
+                  >
                     {assignment.name}
                   </AssignmentCard>
                 </li>
@@ -114,6 +168,16 @@ export default function ClassHome() {
           </div>
         ) : null}
       </div>
+
+
+
+      {editingAssignment && (
+        <AssignmentEditor
+          assignment={editingAssignment}
+          onSave={handleEditAssignment}
+          onCancel={() => setEditingAssignment(null)}
+        />
+      )}
     </>
   );
 }
