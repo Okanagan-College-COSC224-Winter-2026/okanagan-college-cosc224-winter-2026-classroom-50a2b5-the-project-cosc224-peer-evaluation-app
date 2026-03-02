@@ -141,3 +141,55 @@ def test_teacher_cannot_upload_student_attachment(test_client, make_admin):
 
     assert response.status_code == 403
     assert response.json["msg"] == "Insufficient permissions"
+
+
+def test_student_can_download_own_attachment(test_client, make_admin):
+    make_admin(email="teacher@example.com", password="teacher", name="Teacher User")
+    assignment_id = _setup_course_assignment_and_student(test_client)
+
+    upload_response = test_client.post(
+        f"/submission/{assignment_id}/mine",
+        data={"file": (io.BytesIO(b"download me"), "mine.txt")},
+        content_type="multipart/form-data",
+    )
+    assert upload_response.status_code == 200
+
+    submission_id = upload_response.json["submission"]["id"]
+    download_response = test_client.get(f"/submission/file/{submission_id}")
+
+    assert download_response.status_code == 200
+    assert download_response.data == b"download me"
+
+
+def test_student_cannot_download_other_students_attachment(test_client, make_admin):
+    make_admin(email="teacher@example.com", password="teacher", name="Teacher User")
+    assignment_id = _setup_course_assignment_and_student(test_client)
+
+    upload_response = test_client.post(
+        f"/submission/{assignment_id}/mine",
+        data={"file": (io.BytesIO(b"private file"), "private.txt")},
+        content_type="multipart/form-data",
+    )
+    assert upload_response.status_code == 200
+    submission_id = upload_response.json["submission"]["id"]
+
+    test_client.post(
+        "/auth/register",
+        data=json.dumps(
+            {
+                "name": "Other Student",
+                "email": "other.student@example.com",
+                "password": "studentpass",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "other.student@example.com", "password": "studentpass"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    download_response = test_client.get(f"/submission/file/{submission_id}")
+    assert download_response.status_code == 403
+    assert download_response.json["msg"] == "Unauthorized"

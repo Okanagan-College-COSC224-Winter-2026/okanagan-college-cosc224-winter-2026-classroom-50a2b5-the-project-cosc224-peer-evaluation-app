@@ -109,3 +109,70 @@ def test_student_cannot_upload_assignment_resources(test_client, make_admin):
 
     assert upload_response.status_code == 403
     assert upload_response.json["msg"] == "Insufficient permissions"
+
+
+def test_enrolled_student_can_download_assignment_resource(test_client, make_admin):
+    make_admin(email="teacher@example.com", password="teacher", name="Teacher")
+    class_id, assignment_id = _setup_class_and_assignment(test_client)
+
+    upload_response = test_client.post(
+        f"/assignment-resource/assignment/{assignment_id}",
+        data={"file": (io.BytesIO(b"resource bytes"), "resource.txt")},
+        content_type="multipart/form-data",
+    )
+    assert upload_response.status_code == 201
+    resource_id = upload_response.json["resource"]["id"]
+
+    test_client.post(
+        "/class/enroll_students",
+        data=json.dumps(
+            {
+                "class_id": class_id,
+                "students": "id,name,email\n1,Download Student,download.student@example.com",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "download.student@example.com", "password": "password123"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    download_response = test_client.get(f"/assignment-resource/file/{resource_id}")
+    assert download_response.status_code == 200
+    assert download_response.data == b"resource bytes"
+
+
+def test_student_outside_course_cannot_download_assignment_resource(test_client, make_admin):
+    make_admin(email="teacher@example.com", password="teacher", name="Teacher")
+    _, assignment_id = _setup_class_and_assignment(test_client)
+
+    upload_response = test_client.post(
+        f"/assignment-resource/assignment/{assignment_id}",
+        data={"file": (io.BytesIO(b"secret bytes"), "secret.txt")},
+        content_type="multipart/form-data",
+    )
+    assert upload_response.status_code == 201
+    resource_id = upload_response.json["resource"]["id"]
+
+    test_client.post(
+        "/auth/register",
+        data=json.dumps(
+            {
+                "name": "Outside Student",
+                "email": "outside.student@example.com",
+                "password": "outsidepass",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "outside.student@example.com", "password": "outsidepass"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    download_response = test_client.get(f"/assignment-resource/file/{resource_id}")
+    assert download_response.status_code == 403
+    assert download_response.json["msg"] == "Unauthorized: You do not have access to this class"
