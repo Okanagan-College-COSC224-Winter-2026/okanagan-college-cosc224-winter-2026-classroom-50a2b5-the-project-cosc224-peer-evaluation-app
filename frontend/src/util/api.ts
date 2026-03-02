@@ -534,6 +534,66 @@ export const deleteGroup = async (groupId: number) => {
   return await resp.json()
 }
 
+export const getMySubmission = async (assignmentID: number) => {
+  const resp = await fetch(`${BASE_URL}/submission/${assignmentID}/mine`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => null);
+    throw new Error(data?.msg || `Response status: ${resp.status}`);
+  }
+
+  const data = await resp.json();
+  if (data?.submission?.download_url?.startsWith('/')) {
+    data.submission.download_url = `${BASE_URL}${data.submission.download_url}`;
+  }
+  return data.submission;
+}
+
+export const uploadMySubmission = async (assignmentID: number, file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const resp = await fetch(`${BASE_URL}/submission/${assignmentID}/mine`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  });
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => null);
+    throw new Error(data?.msg || `Response status: ${resp.status}`);
+  }
+
+  const data = await resp.json();
+  if (data?.submission?.download_url?.startsWith('/')) {
+    data.submission.download_url = `${BASE_URL}${data.submission.download_url}`;
+  }
+  return data;
+}
+
+export const deleteMySubmission = async (assignmentID: number) => {
+  const resp = await fetch(`${BASE_URL}/submission/${assignmentID}/mine`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => null);
+    throw new Error(data?.msg || `Response status: ${resp.status}`);
+  }
+
+  return await resp.json();
+}
+
 export const createReview = async (assignmentID: number, reviewerID: number, revieweeID: number) => {
   const response = await fetch(`${BASE_URL}/create_review`, {
     method: 'POST',

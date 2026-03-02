@@ -161,9 +161,10 @@ export default function ClassHome() {
 
             <label>
               <span>Description</span>
-              <Textbox
+              <textarea
+                className="DescriptionTextarea"
                 placeholder="Enter assignment description..."
-                onInput={setNewAssignmentDescription}
+                onChange={(e) => setNewAssignmentDescription(e.target.value)}
                 value={newAssignmentDescription}
               />
             </label>
