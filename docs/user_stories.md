@@ -196,7 +196,8 @@
 
 - [ ] Instructor can view all assignments for a class in one place  
 - [ ] Instructor can open an assignment and view its peer review settings ⚠️
-- [ ] Instructor can edit or delete an assignment from the same interface  
+- [ ] Instructor can edit or delete an assignment from the same interface
+- [ ] Instructor can attach a file to the assignment
 - [ ] Actions provide clear success or error messages  
 
 ---
