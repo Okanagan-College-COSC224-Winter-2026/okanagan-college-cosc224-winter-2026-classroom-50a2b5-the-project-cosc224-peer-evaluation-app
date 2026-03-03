@@ -108,14 +108,15 @@ interface ReviewSubmission {
 
 interface CriteriaFeedback {
   question: string;
-  avg_score: number;
-  max_score: number;
+  average_score: number;
+  score_max: number;
   comments: string[];
 }
 
 interface FeedbackResponse {
+  assignment_id: number;
   assignment_name: string;
-  total_reviews: number;
-  criteria_feedback: CriteriaFeedback[];
+  total_reviews_received: number;
+  criteria: CriteriaFeedback[];
   overall_avg: number;
 }
