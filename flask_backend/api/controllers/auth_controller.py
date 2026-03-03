@@ -12,7 +12,7 @@ from marshmallow import ValidationError
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from ..models import User, UserLoginSchema, UserRegistrationSchema, UserSchema
-
+from ..models.db import db
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 # Create schema instances once (reusable)
@@ -111,6 +111,7 @@ def change_password():
 
     # Update to new password
     user.hash_pass = generate_password_hash(new_password)
+    db.session.add(user)
     user.update()
 
     return jsonify({"msg": "Password updated successfully"}), 200
