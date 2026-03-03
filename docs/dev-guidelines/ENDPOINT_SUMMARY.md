@@ -81,9 +81,9 @@ All require `role = 'admin'`.
 |--------|------|------|----------|-------|
 | GET | `/assignment/<course_id>` | — | `Array<Assignment>` | ✅ Get assignments for course |
 | GET | `/assignment/detail/<id>` | — | `Assignment` | ✅ Get single assignment |
-| POST | `/assignment/create_assignment` | `{ courseID, name, rubric?, due_date? }` | `{ msg, assignment }` | ✅ Create assignment |
-| PATCH | `/assignment/edit_assignment/<id>` | `{ name?, rubric?, due_date? }` | `{ msg, assignment }` | ✅ Edit assignment |
-| DELETE | `/assignment/delete_assignment/<id>` | — | `{ msg }` | ✅ Delete assignment |
+| POST | `/assignment/create_assignment` | `{ courseID, name, description?, start_date?, rubric?, due_date? }` | `{ msg, assignment }` | ✅ Create assignment (teacher/admin only, must own course) |
+| PATCH | `/assignment/edit_assignment/<id>` | `{ name?, description?, start_date?, rubric?, due_date? }` | `{ msg, assignment }` | ✅ Edit assignment (teacher/admin only, must own course) |
+| DELETE | `/assignment/delete_assignment/<id>` | — | `{ msg }` | ✅ Delete assignment (teacher/admin only, must own course) |
 
 ---
 
@@ -136,14 +136,49 @@ All group endpoints require teacher or admin role.
 
 ---
 
+## Rubric Endpoints
+
+Rubrics belong to **assignments** and contain multiple **criteria descriptions** (questions) for peer evaluation.
+
+| Method | Path | Body | Response | Notes |
+|--------|------|------|----------|-------|
+| POST | `/rubric/create` | `{ assignmentID, canComment? }` | `201 { msg, rubric }` | ✅ Create rubric (teacher) |
+| GET | `/rubric/<id>` | — | `Rubric { id, assignmentID, canComment }` | ✅ Get rubric by ID |
+| GET | `/rubric/assignment/<assignment_id>` | — | `Rubric` | ✅ Get rubric for assignment |
+| DELETE | `/rubric/<id>` | — | `{ msg }` | ✅ Delete rubric + cascade criteria (teacher) |
+| POST | `/rubric/<rubric_id>/criteria` | `{ question, scoreMax?, hasScore? }` | `201 { msg, criterion }` | ✅ Add criterion (teacher) |
+| GET | `/rubric/<rubric_id>/criteria` | — | `Array<CriteriaDescription>` | ✅ List criteria for rubric |
+
+### Rubric Response Shapes
+
+**Rubric object:**
+```json
+{
+  "id": 1,
+  "assignmentID": 1,
+  "canComment": true
+}
+```
+
+**CriteriaDescription object:**
+```json
+{
+  "id": 1,
+  "rubricID": 1,
+  "question": "How well did the student communicate?",
+  "scoreMax": 10,
+  "hasScore": true
+}
+```
+
+---
+
 ## Not Yet Implemented (Planned)
 
 These endpoints are planned based on the database schema but not yet implemented in Flask:
 
 | Feature | Endpoints | Notes |
 |---------|-----------|-------|
-| Rubrics | `/rubric/*` | Create/read rubrics |
-| Criteria | `/criteria/*` | Rubric questions/scoring |
 | Reviews | `/review/*` | Peer review submissions |
 | Submissions | `/submission/*` | File uploads |
 

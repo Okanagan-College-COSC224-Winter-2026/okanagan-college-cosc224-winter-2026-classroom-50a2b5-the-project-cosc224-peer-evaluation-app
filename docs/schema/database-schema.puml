@@ -28,6 +28,8 @@ class Assignment {
   +id: Integer
   +courseID: Integer
   +name: String
+  +description: Text (nullable)
+  +start_date: DateTime (nullable)
   +rubric_text: String
   +due_date: DateTime (nullable)
 }

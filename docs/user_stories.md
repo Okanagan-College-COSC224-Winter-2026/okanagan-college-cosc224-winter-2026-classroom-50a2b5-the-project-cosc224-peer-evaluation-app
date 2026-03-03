@@ -2,7 +2,7 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## US0 – Course Group Creation – **In-Progress**
+## US0 – Course Group Creation – **Complete**
 
 **As a teacher, I want to create course groups so that every student is part of a team for that course.**
 
@@ -10,12 +10,19 @@
 
 - Course has a student list
 - Groups are assigned on a per course basis (i.e. students are in the same group for every assignment in the course)
+- Teacher must be the owner of the course to manage its groups
 
-### Capabilities and Acceptance Criteria (⚠️ Verify existing implementation and clarify with client)
+### Capabilities and Acceptance Criteria
 
-- [ ] 
-- [ ]
-- [ ]
+- ✅ Teacher can create a named group within a course
+- ✅ Teacher can add students to a group
+- ✅ Teacher can remove students from a group
+- ✅ Teacher can delete a group
+- ✅ Teacher can view all groups in a course
+- ✅ Teacher can view unassigned students (not yet in any group)
+- ✅ Students can view their own group and group members
+- ✅ A student can only belong to one group per course
+- ✅ Groups persist across all assignments in the course (course-level, not assignment-level)
 
 ## US1 – Student Peer Review Access — **Backlog**
 
@@ -34,9 +41,7 @@
 - ✅ Student can view a list of peer assignments to review  
 - ✅ Number of visible assignments matches what was assigned  
 - [ ] Student cannot open unassigned submissions
-- [ ] Opening an assigned submission shows the content and review interface (⚠️ review interface is not define anywhere...)
-- [ ] Submitted feedback marks that review as complete  
-- [ ] If the review period has ended, the student cannot submit feedback and is notified  
+- [ ] Opening an assigned submission shows the content and review interface (⚠️ review interface is not define anywhere...) 
 
 ---
 
@@ -53,9 +58,10 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Student can see a list of group members  ⚠️ (seems partially implemented...)
+- ✅ Student can see a list of group members
 - [ ] Student can submit ratings and comments for each group member  
-- [ ] Submitted feedback is stored and visible to the instructor  
+- [ ] Submitted feedback is stored and visible to the instructor
+- [ ] Submitted feedback marks that review as complete  
 - [ ] Once submitted, an evaluation cannot be edited  
 - [ ] If the review period is closed, submission is blocked  
 
@@ -81,7 +87,7 @@
 
 ---
 
-## US4 – Class and Assignment Creation — **Complete**
+## US4 – Class and Assignment Creation — **In-Progress**
 
 **As an instructor, I want to be able to create classes and associated assignments with evaluation events, so that I can provide my students with evaluation and review materials.**
 
@@ -93,9 +99,13 @@
 ### Capabilities and Acceptance Criteria
 
 - ✅ Instructor can create a class  
-- ✅ Instructor can create an assignment under that class  
+- ⚠️ Instructor can create an assignment under that class
+    - Title ✅
+    - Description ❌
+    - Startdate ❌
+    - Duedate ❌
 - ✅ Students in that class can see the assignment  
-- ✅ Instructor can edit or delete the assignment before its start or due date  
+- ✅ Instructor can edit or delete the assignment (students cannot)  
 
 ---
 
@@ -186,7 +196,8 @@
 
 - [ ] Instructor can view all assignments for a class in one place  
 - [ ] Instructor can open an assignment and view its peer review settings ⚠️
-- [ ] Instructor can edit or delete an assignment from the same interface  
+- [ ] Instructor can edit or delete an assignment from the same interface
+- [ ] Instructor can attach a file to the assignment
 - [ ] Actions provide clear success or error messages  
 
 ---
@@ -208,7 +219,7 @@
 
 ---
 
-## US11 – Rubric Creation — **In-Progress**
+## US11 – Rubric Creation — **Complete**
 
 **As an instructor, I want to be able to create a rubric, so that students have a set of criteria to mark against.**
 
@@ -217,13 +228,24 @@
 - Instructor is signed in  
 - Instructor has an assignment to attach the rubric to  
 - Rubric builder UI is available  
+- Each assignment can have one rubric; creating a new one requires deleting the existing one first
+- Rubric criteria support configurable score ranges and optional scoring (comment-only criteria)
 
 ### Capabilities and Acceptance Criteria
 
 - ✅ Instructor can add multiple rubric criteria  
 - ✅ Instructor can set scale or score for each criterion  
-- [ ] Instructor can save the rubric and attach it to an assignment  
-- [ ] Students see that rubric when performing a peer review  
+- ✅ Instructor can save the rubric and attach it to an assignment  
+- ✅ Students see that rubric when performing a peer review  
+- ✅ Instructor can delete a rubric (cascades to all criteria)
+- ✅ Instructor can toggle whether reviewers can leave comments
+- ✅ Rubric creator only appears when no rubric exists for the assignment
+
+### Implementation Notes
+
+- Backend: 6 REST endpoints under `/rubric/` — see `docs/Rubrics.md` for full details
+- Frontend: `RubricCreator.tsx` for creation, `RubricDisplay.tsx` for viewing
+- 21 backend tests in `tests/test_rubrics.py` (109 total passing)
 
 ---
 
@@ -278,7 +300,7 @@
 
 ---
 
-## US15 – Course Page Shows Assignments — **In-Progress**
+## US15 – Course Page Shows Assignments — **Complete**
 
 **As a teacher, I want my dashboard to show my courses and their assignments so that I can see what I have created.**
 
@@ -291,7 +313,7 @@
 
 - ✅ Given the teacher has created courses and assignments, the dashboard lists each course  
 - ✅ Each course entry shows the assignments associated with it  
-- [ ] Assignment listings include key metadata such as due dates or status  
+- ✅ Assignment listings include key metadata such as due dates or status  
 
 ---
 
@@ -331,7 +353,7 @@
 
 ## US18 – Student Registration (Roster-Matched) — **Backlog**
 
-**As a student, I want to register if my email is already part of the course roster so that I can join my course.**
+**As a student, I want to be automatically registered for the course if my email is part of its roster so that I can access my course.**
 
 ### Assumptions and Details
 
@@ -340,9 +362,9 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Given the student’s email is on the roster, when they register, the system links them to the course automatically  
+- ✅ Given the student’s email is on the roster, when they register, the system links them to the course automatically  
 - [ ] Student receives confirmation of successful registration  
-- [ ] Duplicate registrations are prevented  
+- ✅ Duplicate registrations are prevented  
 
 ---
 
@@ -423,24 +445,6 @@
 - [ ] Given a group submission exists, the student has access to it on the assignment page 
 - [ ] Access is limited to the student’s own team  
 - [ ] Each submission shows status, timestamp, and attachments  
-
-(⚠️ This story is redundant after US1... request deletion)
----
-
-## US23 – Peer Review Team Members — **Backlog**
-
-**As a student, I want to peer review my team members privately so that I can evaluate their contributions.**
-
-### Assumptions and Details
-
-- Student has team members  
-- Peer reviews are allowed  
-
-### Capabilities and Acceptance Criteria
-
-- [ ] Given the student has team members, they can submit a private review for each member  
-- [ ] Submitted reviews remain hidden from other students  
-- [ ] Instructor can monitor completion of the peer reviews  
 
 ---
 

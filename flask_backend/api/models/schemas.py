@@ -120,7 +120,7 @@ class RubricSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Rubric
         load_instance = True
-        include_fk = False
+        include_fk = True
         sqla_session = db.session
 
 
@@ -128,7 +128,7 @@ class CriteriaDescriptionSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = CriteriaDescription
         load_instance = True
-        include_fk = False
+        include_fk = True
         sqla_session = db.session
 
 
@@ -136,7 +136,7 @@ class CriterionSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Criterion
         load_instance = True
-        include_fk = False
+        include_fk = True
         sqla_session = db.session
 
 

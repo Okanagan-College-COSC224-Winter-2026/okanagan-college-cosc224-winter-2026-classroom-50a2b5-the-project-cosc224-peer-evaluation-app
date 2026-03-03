@@ -19,6 +19,8 @@ CREATE TABLE Assignment (
     id SERIAL PRIMARY KEY,
     courseID INT,
     name VARCHAR(255),
+    description TEXT,
+    start_date TIMESTAMP NULL,
     rubric VARCHAR(255),
     due_date TIMESTAMP NULL
 );
