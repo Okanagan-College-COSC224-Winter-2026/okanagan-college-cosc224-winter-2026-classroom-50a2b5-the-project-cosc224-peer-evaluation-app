@@ -4,6 +4,7 @@ import "./Assignment.css";
 import RubricCreator from "../components/RubricCreator";
 import RubricDisplay from "../components/RubricDisplay";
 import TabNavigation from "../components/TabNavigation";
+import Modal from "../components/Modal";
 import { isTeacher, getUserId } from "../util/login";
 
 import { 
@@ -46,6 +47,8 @@ export default function Assignment() {
   const [statusMessage, setStatusMessage] = useState("");
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
   const [rubricId, setRubricId] = useState<number | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedMemberName, setSelectedMemberName] = useState("");
 
   const loadRubric = async () => {
     try {
@@ -118,31 +121,19 @@ export default function Assignment() {
   }, [revieweeID, id]);
 
   const handleCriterionSelect = (row: number, column: number) => {
-    // Check if this criterion is already selected
-    const existingIndex = selectedCriteria.findIndex(
-      criterion => criterion.row === row && criterion.column === column
-    );
-    
-    if (existingIndex >= 0) {
-      // If already selected, remove it (toggle off)
-      setSelectedCriteria(prev => 
-        prev.filter((_, index) => index !== existingIndex)
-      );
-    } else {
-      // Add the new criterion, removing any other selection in the same row
-      setSelectedCriteria(prev => {
-        // Remove any existing selection for this row
-        const filteredCriteria = prev.filter(criterion => criterion.row !== row);
-        // Add the new selection
-        return [...filteredCriteria, { row, column }];
-      });
-    }
+    // Update the score for this criterion row (column = slider value)
+    setSelectedCriteria(prev => {
+      const filteredCriteria = prev.filter(criterion => criterion.row !== row);
+      return [...filteredCriteria, { row, column }];
+    });
   };
 
   function handleRadioChange(event: ChangeEvent<HTMLInputElement>): void {
     const selectedID = Number(event.target.value);
     setRevieweeID(selectedID);
-    console.log(`Selected group member ID: ${selectedID}`);
+    const member = groupMembers.find(m => m.id === selectedID);
+    setSelectedMemberName(member?.name || "");
+    setIsReviewModalOpen(true);
   }
 
   return (
@@ -161,9 +152,11 @@ export default function Assignment() {
         ]}
       />
 
-      <div className='assignmentRubricDisplay'>
-        <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
-      </div>
+      {isTeacher() && (
+        <div className='assignmentRubricDisplay'>
+          <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
+        </div>
+      )}
       <StatusMessage message={statusMessage} type={statusType} />
       {
         isTeacher() && rubricId && (
@@ -299,21 +292,34 @@ export default function Assignment() {
               </div>
             ))
           )}
-          <button className='submitReview' onClick={async () => {
-            console.log("Submitting review with selected criteria:", selectedCriteria);
-            try {
-              const reviewResponse = await createReview(Number(id), stuID, revieweeID);
-              const reviewData = await reviewResponse.json();
-              console.log("Review response:", reviewData);
-              for (const criterion of selectedCriteria) {
-                await createCriterion(reviewData.id, criterion.row, criterion.column, "");
-              }
-              console.log('Review submitted successfully');
-            } catch (error) {
-              console.error('Error submitting review:', error);
-            }
-          }}>Submit Review</button>
       </div>}
+
+      {!isTeacher() && (
+        <Modal
+          isOpen={isReviewModalOpen}
+          onClose={() => setIsReviewModalOpen(false)}
+          title={`Review: ${selectedMemberName}`}
+        >
+          <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
+          <div className='modalReviewActions'>
+            <button className='submitReview' onClick={async () => {
+              console.log("Submitting review with selected criteria:", selectedCriteria);
+              try {
+                const reviewResponse = await createReview(Number(id), stuID, revieweeID);
+                const reviewData = await reviewResponse.json();
+                console.log("Review response:", reviewData);
+                for (const criterion of selectedCriteria) {
+                  await createCriterion(reviewData.id, criterion.row, criterion.column, "");
+                }
+                console.log('Review submitted successfully');
+                setIsReviewModalOpen(false);
+              } catch (error) {
+                console.error('Error submitting review:', error);
+              }
+            }}>Submit Review</button>
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

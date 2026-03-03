@@ -1,7 +1,7 @@
 import './Criterion.css';
 import { useState } from 'react';
 
-//Component for a single row of the criteria table
+// Component for a single criterion displayed as a card with a slider
 interface props {
     question: string;
     scoreMax: number;
@@ -12,45 +12,34 @@ interface props {
 }
 
 export default function Criterion(props: props) {
-    const [clickedCell, setClickedCell] = useState<number | null>(null);
-    
-    const handleCellClick = (columnIndex: number) => {
-        const column = columnIndex + 1; 
-        
-        // Toggle selection: if same cell is clicked again, deselect it
-        if (clickedCell === column) {
-            setClickedCell(null);
-            // Inform parent component about deselection
-            props.onCriterionSelect(props.questionIndex, column);
-        } else {
-            setClickedCell(column);
-            // Inform parent component about new selection
-            props.onCriterionSelect(props.questionIndex, column);
-        }
-    }
+    const [sliderValue, setSliderValue] = useState<number>(props.grade || 0);
+
+    const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = Number(e.target.value);
+        setSliderValue(value);
+        props.onCriterionSelect(props.questionIndex, value);
+    };
 
     return (
-        <tr className='criterionRow'>
-            <th className='criterionHead'>{props.question}</th>
+        <div className='criterionCard'>
+            <div className='criterionQuestion'>{props.question}</div>
             {props.hasScore ? (
-                Array.from({ length: props.scoreMax }, (_, i) => {
-                    const cellValue = i + 1; 
-                    const isReviewed = cellValue === props.grade; 
-                    return (
-                        <td 
-                            key={i} 
-                            onClick={() => handleCellClick(i)}
-                            className={isReviewed ? 'reviewedCell' : (clickedCell === cellValue ? 'clickedCell' : '')}
-                        >
-                            {cellValue}
-                        </td>
-                    );
-                })
+                <div className='criterionSliderContainer'>
+                    <input
+                        type='range'
+                        min={0}
+                        max={props.scoreMax}
+                        value={sliderValue}
+                        onChange={handleSliderChange}
+                        className='criterionSlider'
+                    />
+                    <div className='criterionScoreLabel'>
+                        <span>{sliderValue}</span> / <span>{props.scoreMax}</span>
+                    </div>
+                </div>
             ) : (
-                <td className='criterionData'>
-                    <textarea className='comment' placeholder='Comment here'/>
-                </td>
+                <textarea className='criterionComment' placeholder='Write your comment here...' />
             )}
-        </tr>
-    )
+        </div>
+    );
 }
