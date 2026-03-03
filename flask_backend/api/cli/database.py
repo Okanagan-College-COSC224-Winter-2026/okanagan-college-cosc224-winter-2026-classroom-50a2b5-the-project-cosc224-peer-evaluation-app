@@ -5,7 +5,7 @@ from flask.cli import with_appcontext
 from sqlalchemy import inspect, text
 from werkzeug.security import generate_password_hash
 
-from ..models import User, Course, Assignment
+from ..models import User, Course, Assignment, AssignmentResource
 from ..models.db import db
 
 
@@ -44,6 +44,20 @@ def migrate_assignment_columns_command():
         click.echo(f"Assignment migration completed ({applied} column(s) added)")
     else:
         click.echo("Assignment migration completed (no changes needed)")
+
+
+@click.command("migrate_assignment_resources")
+@with_appcontext
+def migrate_assignment_resources_command():
+    """Create AssignmentResource table if missing (idempotent)."""
+
+    inspector = inspect(db.engine)
+    if inspector.has_table("AssignmentResource"):
+        click.echo("AssignmentResource table already exists")
+        return
+
+    AssignmentResource.__table__.create(bind=db.engine, checkfirst=True)
+    click.echo("AssignmentResource table created")
 
 
 @click.command("init_db")
@@ -210,6 +224,7 @@ def init_app(app):
     app.cli.add_command(init_db_command)
     app.cli.add_command(drop_db_command)
     app.cli.add_command(migrate_assignment_columns_command)
+    app.cli.add_command(migrate_assignment_resources_command)
     app.cli.add_command(add_users_command)
     app.cli.add_command(create_admin_command)
     app.cli.add_command(ensure_admin_command)
