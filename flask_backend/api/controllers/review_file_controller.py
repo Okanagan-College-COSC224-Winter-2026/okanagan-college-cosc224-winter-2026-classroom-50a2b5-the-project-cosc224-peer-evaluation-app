@@ -1,11 +1,13 @@
 """
-Review file controller for the peer evaluation app.
-Handles file attachments on peer review submissions (Feature B).
+Review & Conclusion file controller for the peer evaluation app.
+Handles file uploads/downloads for peer review attachments and teacher conclusions.
 
 Endpoints:
-    POST /review/<id>/upload       — Upload a file attached to a review (student/reviewer only)
-    GET  /review/<id>/files        — List all files attached to a review (any authenticated user)
-    GET  /review/file/<file_id>    — Download a specific review file (any authenticated user)
+    POST   /review/<id>/upload          — Upload file(s) with review (student)
+    GET    /review/<id>/files           — List files attached to a review
+    GET    /review/file/<file_id>       — Download a specific review file
+    POST   /assignment/<id>/conclusion/upload  — Upload conclusion file (teacher)
+    GET    /assignment/<id>/conclusion/files   — List conclusion files for assignment
 """
 
 import os
@@ -13,189 +15,140 @@ import os
 from flask import Blueprint, current_app, jsonify, request, send_from_directory
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from ..models import Review, User
+from ..models import Assignment, Review, User
 from ..models.review_file_model import ReviewFile
+from ..models.conclusion_file_model import ConclusionFile
+from .auth_controller import jwt_teacher_required
 
-review_file_bp = Blueprint("review_file", __name__, url_prefix="/review")
+review_file_bp = Blueprint("review_file", __name__)
 
-# ── File validation constants ─────────────────────────────────────────────────
-MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
+# Maximum allowed upload size: 10MB
+MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 
-# Accepted extensions and their expected MIME types
-ALLOWED_MIMETYPES = {
-    "pdf":  "application/pdf",
-    "png":  "image/png",
-    "jpg":  "image/jpeg",
+# Accepted file types: PDF, PNG, JPG/JPEG, DOCX
+ALLOWED_EXTENSIONS = {
+    "pdf": "application/pdf",
+    "png": "image/png",
+    "jpg": "image/jpeg",
     "jpeg": "image/jpeg",
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
 
 
-# ── Private helpers ───────────────────────────────────────────────────────────
-
-def _get_upload_dir() -> str:
-    """
-    Return the absolute path to the reviews upload subdirectory.
-    Uses a separate subdirectory from Feature A (uploads/reviews/) to avoid
-    storage conflicts with assignment attachments (uploads/assignments/).
-    Creates the directory if it does not already exist.
-    """
+def _get_review_upload_dir():
+    """Return the absolute path to the review uploads directory."""
     upload_dir = os.path.join(current_app.instance_path, "uploads", "reviews")
     os.makedirs(upload_dir, exist_ok=True)
     return upload_dir
 
 
-def _get_extension(filename: str) -> str:
-    """Extract and return the lowercase file extension without the dot."""
-    return filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+def _get_conclusion_upload_dir():
+    """Return the absolute path to the conclusion uploads directory."""
+    upload_dir = os.path.join(current_app.instance_path, "uploads", "conclusions")
+    os.makedirs(upload_dir, exist_ok=True)
+    return upload_dir
 
 
 def _is_allowed_file(file) -> bool:
-    """
-    Validate that the uploaded file is an accepted type.
-    Checks both the filename extension and the client-reported MIME type.
-    Server-side only — never trust the client alone.
-    """
+    """Validate that the uploaded file has an allowed extension and MIME type."""
     filename = file.filename or ""
-    ext = _get_extension(filename)
-    if ext not in ALLOWED_MIMETYPES:
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext not in ALLOWED_EXTENSIONS:
         return False
-    return file.mimetype == ALLOWED_MIMETYPES[ext]
+    expected_mime = ALLOWED_EXTENSIONS[ext]
+    return file.mimetype == expected_mime
 
 
 def _file_size_bytes(file) -> int:
-    """
-    Measure file size in bytes without consuming the stream.
-    Seeks to end, reads position, then resets to start before saving.
-    """
+    """Measure file size without consuming the stream."""
     file.seek(0, os.SEEK_END)
     size = file.tell()
     file.seek(0)
     return size
 
 
-def _format_size(size_bytes: int) -> str:
-    """Return a human-readable file size string e.g. '1.8MB'."""
-    return f"{size_bytes / (1024 * 1024):.1f}MB"
-
-
 # ============================================================
-# POST /review/<id>/upload
-# Upload a file attachment to a review (reviewer only)
+# POST /review/<id>/upload — Upload file with review (student)
 # ============================================================
 
-@review_file_bp.route("/<int:review_id>/upload", methods=["POST"])
+@review_file_bp.route("/review/<int:review_id>/upload", methods=["POST"])
 @jwt_required()
 def upload_review_file(review_id):
-    """
-    Upload a file and attach it to an existing peer review.
-
-    Only the reviewer who submitted the review can attach files to it.
-    Expects multipart/form-data with a 'file' field.
-    Accepted types: PDF, PNG, JPG, JPEG, DOCX — max 10MB each.
-
-    Returns:
-        201 { "message": str, "file_id": int, "filename": str, "size": str }
-        400 — missing file, unsupported type, or file too large
-        403 — caller is not the reviewer of this review
-        404 — review not found
-    """
-    # ── Resolve review ────────────────────────────────────────────────────────
+    """Upload a file attachment to an existing review."""
     review = Review.get_by_id(review_id)
     if review is None:
         return jsonify({"msg": "Review not found"}), 404
 
-    # ── Confirm caller is the reviewer ────────────────────────────────────────
     email = get_jwt_identity()
-    uploader = User.get_by_email(email)
-    if uploader is None:
+    user = User.get_by_email(email)
+    if user is None:
         return jsonify({"msg": "User not found"}), 404
 
-    if review.reviewerID != uploader.id:
-        return jsonify({"msg": "Unauthorized: You can only attach files to your own reviews"}), 403
+    # Only the reviewer who submitted the review can attach files
+    if review.reviewerID != user.id:
+        return jsonify({"msg": "Unauthorized: Only the reviewer can upload files to this review"}), 403
 
-    # ── Validate file presence ────────────────────────────────────────────────
     if "file" not in request.files:
-        return jsonify({"msg": "No file provided. Include a 'file' field in your multipart/form-data request"}), 400
+        return jsonify({"msg": "No file provided"}), 400
 
     uploaded_file = request.files["file"]
-
-    if not uploaded_file.filename:
+    if uploaded_file.filename == "" or uploaded_file.filename is None:
         return jsonify({"msg": "No file selected"}), 400
 
-    # ── Validate file type ────────────────────────────────────────────────────
     if not _is_allowed_file(uploaded_file):
-        allowed = ", ".join(ext.upper() for ext in ALLOWED_MIMETYPES)
-        return jsonify({"msg": f"Invalid file type. Accepted types: {allowed}"}), 400
+        return jsonify({"msg": "Invalid file type. Allowed types: PDF, PNG, JPG, DOCX"}), 400
 
-    # ── Enforce 10MB size limit ───────────────────────────────────────────────
     file_size = _file_size_bytes(uploaded_file)
     if file_size > MAX_FILE_SIZE_BYTES:
-        return jsonify({"msg": f"File too large ({_format_size(file_size)}). Maximum allowed size is 10MB"}), 400
+        size_mb = file_size / (1024 * 1024)
+        return jsonify({"msg": f"File too large ({size_mb:.1f}MB). Maximum allowed size is 10MB"}), 400
 
-    # ── Build a safe filename scoped to this review ───────────────────────────
-    # Format: review_<review_id>_<original_filename>
-    # Keeps filenames readable and avoids collisions between reviews.
     original_filename = uploaded_file.filename
     safe_filename = f"review_{review_id}_{original_filename}"
-    upload_dir = _get_upload_dir()
+    upload_dir = _get_review_upload_dir()
     save_path = os.path.join(upload_dir, safe_filename)
 
-    # ── Save file to disk ─────────────────────────────────────────────────────
     uploaded_file.save(save_path)
 
-    # ── Persist ReviewFile record ─────────────────────────────────────────────
     review_file = ReviewFile(
         reviewID=review_id,
-        uploaderID=uploader.id,
         filename=original_filename,
-        path=save_path,
+        file_path=save_path,
+        uploaderID=user.id,
     )
-    ReviewFile.create_review_file(review_file)
+    ReviewFile.create(review_file)
 
+    size_mb = file_size / (1024 * 1024)
     return jsonify({
         "message": "File uploaded successfully",
         "file_id": review_file.id,
         "filename": original_filename,
-        "size": _format_size(file_size),
+        "size": f"{size_mb:.1f}MB",
     }), 201
 
 
 # ============================================================
-# GET /review/<id>/files
-# List all files attached to a review (any authenticated user)
+# GET /review/<id>/files — List files attached to a review
 # ============================================================
 
-@review_file_bp.route("/<int:review_id>/files", methods=["GET"])
+@review_file_bp.route("/review/<int:review_id>/files", methods=["GET"])
 @jwt_required()
 def list_review_files(review_id):
-    """
-    Return metadata for all files attached to a given review.
-
-    Returns:
-        200 { "review_id": int, "files": [ { file metadata } ] }
-        404 — review not found
-    """
+    """List all files attached to a review."""
     review = Review.get_by_id(review_id)
     if review is None:
         return jsonify({"msg": "Review not found"}), 404
 
-    files = ReviewFile.get_files_by_review(review_id)
-
+    files = ReviewFile.get_by_review(review_id)
     return jsonify({
         "review_id": review_id,
         "files": [
             {
                 "file_id": f.id,
                 "filename": f.filename,
-                "uploaded_at": (
-                    f.uploaded_at.isoformat() + "Z" if f.uploaded_at else None
-                ),
-                "size": (
-                    _format_size(os.path.getsize(f.path))
-                    if os.path.isfile(f.path)
-                    else "unknown"
-                ),
+                "uploaded_at": f.uploaded_at.isoformat() + "Z" if f.uploaded_at else None,
+                "size": f"{os.path.getsize(f.file_path) / (1024 * 1024):.1f}MB"
+                if os.path.isfile(f.file_path) else "0MB",
             }
             for f in files
         ],
@@ -203,35 +156,112 @@ def list_review_files(review_id):
 
 
 # ============================================================
-# GET /review/file/<file_id>
-# Download a specific review file by its ID (any authenticated user)
+# GET /review/file/<file_id> — Download a specific review file
 # ============================================================
 
-@review_file_bp.route("/file/<int:file_id>", methods=["GET"])
+@review_file_bp.route("/review/file/<int:file_id>", methods=["GET"])
 @jwt_required()
 def download_review_file(file_id):
-    """
-    Download a specific file attached to a review.
-
-    Returns the file as a download response using the original filename.
-
-    Returns:
-        200 — file download response
-        404 — file record not found, or file missing from disk
-    """
+    """Download a specific review file by its ID."""
     review_file = ReviewFile.get_by_id(file_id)
     if review_file is None:
         return jsonify({"msg": "File not found"}), 404
 
-    if not os.path.isfile(review_file.path):
+    if not os.path.isfile(review_file.file_path):
         return jsonify({"msg": "File not found on server"}), 404
 
-    upload_dir = _get_upload_dir()
-    safe_filename = f"review_{review_file.reviewID}_{review_file.filename}"
+    directory = os.path.dirname(review_file.file_path)
+    basename = os.path.basename(review_file.file_path)
 
     return send_from_directory(
-        upload_dir,
-        safe_filename,
+        directory,
+        basename,
         as_attachment=True,
         download_name=review_file.filename,
     )
+
+
+# ============================================================
+# POST /assignment/<id>/conclusion/upload — Teacher uploads conclusion file
+# ============================================================
+
+@review_file_bp.route("/assignment/<int:assignment_id>/conclusion/upload", methods=["POST"])
+@jwt_teacher_required
+def upload_conclusion_file(assignment_id):
+    """Upload a conclusion/summary file to an assignment (teacher only)."""
+    assignment = Assignment.get_by_id(assignment_id)
+    if assignment is None:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    email = get_jwt_identity()
+    teacher = User.get_by_email(email)
+    if teacher is None:
+        return jsonify({"msg": "User not found"}), 404
+
+    if assignment.course.teacherID != teacher.id:
+        return jsonify({"msg": "Unauthorized: You are not the teacher of this assignment's course"}), 403
+
+    if "file" not in request.files:
+        return jsonify({"msg": "No file provided"}), 400
+
+    uploaded_file = request.files["file"]
+    if uploaded_file.filename == "" or uploaded_file.filename is None:
+        return jsonify({"msg": "No file selected"}), 400
+
+    if not _is_allowed_file(uploaded_file):
+        return jsonify({"msg": "Invalid file type. Allowed types: PDF, PNG, JPG, DOCX"}), 400
+
+    file_size = _file_size_bytes(uploaded_file)
+    if file_size > MAX_FILE_SIZE_BYTES:
+        size_mb = file_size / (1024 * 1024)
+        return jsonify({"msg": f"File too large ({size_mb:.1f}MB). Maximum allowed size is 10MB"}), 400
+
+    original_filename = uploaded_file.filename
+    safe_filename = f"conclusion_{assignment_id}_{original_filename}"
+    upload_dir = _get_conclusion_upload_dir()
+    save_path = os.path.join(upload_dir, safe_filename)
+
+    uploaded_file.save(save_path)
+
+    conclusion_file = ConclusionFile(
+        assignmentID=assignment_id,
+        filename=original_filename,
+        file_path=save_path,
+        teacherID=teacher.id,
+    )
+    ConclusionFile.create(conclusion_file)
+
+    size_mb = file_size / (1024 * 1024)
+    return jsonify({
+        "message": "File uploaded successfully",
+        "file_id": conclusion_file.id,
+        "filename": original_filename,
+        "size": f"{size_mb:.1f}MB",
+    }), 201
+
+
+# ============================================================
+# GET /assignment/<id>/conclusion/files — List conclusion files
+# ============================================================
+
+@review_file_bp.route("/assignment/<int:assignment_id>/conclusion/files", methods=["GET"])
+@jwt_required()
+def list_conclusion_files(assignment_id):
+    """List all conclusion files for an assignment."""
+    assignment = Assignment.get_by_id(assignment_id)
+    if assignment is None:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    files = ConclusionFile.get_by_assignment(assignment_id)
+    return jsonify({
+        "assignment_id": assignment_id,
+        "files": [
+            {
+                "file_id": f.id,
+                "filename": f.filename,
+                "uploaded_at": f.uploaded_at.isoformat() + "Z" if f.uploaded_at else None,
+                "teacher": f.teacher.name if f.teacher else None,
+            }
+            for f in files
+        ],
+    }), 200

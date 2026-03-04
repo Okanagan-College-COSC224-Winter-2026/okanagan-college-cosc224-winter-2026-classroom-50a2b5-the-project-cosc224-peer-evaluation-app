@@ -1,57 +1,49 @@
+"""
+ConclusionFile model for the peer evaluation app.
+Stores conclusion/summary files uploaded by teachers for assignments.
+"""
 from datetime import datetime
-
-from api.models.db import db
+from .db import db
 
 
 class ConclusionFile(db.Model):
-    __tablename__ = "conclusion_files"
+    """File attachment linked to an assignment conclusion (teacher-uploaded)."""
+    __tablename__ = "ConclusionFile"
 
     id = db.Column(db.Integer, primary_key=True)
-
-    # FIXED: must match Assignment.__tablename__ = "Assignment"
-    assignmentID = db.Column(
-        db.Integer,
-        db.ForeignKey("Assignment.id"),
-        nullable=False,
-        index=True,
-    )
-
-    # NOTE: if User.__tablename__ is "User" keep as "User.id"
-    # If it is something else, replace the string below to match it.
-    teacherID = db.Column(
-        db.Integer,
-        db.ForeignKey("User.id"),
-        nullable=False,
-        index=True,
-    )
-
+    assignmentID = db.Column(db.Integer, db.ForeignKey("Assignment.id"), nullable=False, index=True)
     filename = db.Column(db.String(255), nullable=False)
-    path = db.Column(db.String(512), nullable=False)
+    file_path = db.Column(db.String(512), nullable=False)
     uploaded_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    teacherID = db.Column(db.Integer, db.ForeignKey("User.id"), nullable=False, index=True)
 
-    assignment = db.relationship("Assignment", back_populates="conclusion_files")
-    teacher = db.relationship("User")
+    # relationships
+    assignment = db.relationship("Assignment", back_populates="conclusion_files", lazy="joined")
+    teacher = db.relationship("User", lazy="joined")
+
+    def __init__(self, assignmentID, filename, file_path, teacherID):
+        self.assignmentID = assignmentID
+        self.filename = filename
+        self.file_path = file_path
+        self.teacherID = teacherID
+
+    def __repr__(self):
+        return f"<ConclusionFile id={self.id} assignmentID={self.assignmentID}>"
 
     @classmethod
-    def get_by_id(cls, file_id: int):
-        return cls.query.get(file_id)
+    def get_by_id(cls, file_id):
+        return db.session.get(cls, int(file_id))
 
     @classmethod
-    def get_files_by_assignment(cls, assignment_id: int):
-        return (
-            cls.query.filter_by(assignmentID=assignment_id)
-            .order_by(cls.uploaded_at.desc())
-            .all()
-        )
+    def get_by_assignment(cls, assignment_id):
+        return cls.query.filter_by(assignmentID=int(assignment_id)).all()
 
     @classmethod
-    def create_conclusion_file(cls, assignment_id: int, teacher_id: int, filename: str, path: str):
-        new_file = cls(
-            assignmentID=assignment_id,
-            teacherID=teacher_id,
-            filename=filename,
-            path=path,
-        )
-        db.session.add(new_file)
+    def create(cls, conclusion_file):
+        db.session.add(conclusion_file)
         db.session.commit()
-        return new_file
+        return conclusion_file
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
