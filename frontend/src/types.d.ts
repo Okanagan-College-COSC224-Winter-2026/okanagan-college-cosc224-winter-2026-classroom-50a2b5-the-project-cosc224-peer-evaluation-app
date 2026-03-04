@@ -51,6 +51,7 @@ interface Assignment {
   has_attachment?: boolean;
 }
 
+
 interface CourseWithAssignments extends Course {
   assignments?: Assignment[];
   assignmentCount?: number;
