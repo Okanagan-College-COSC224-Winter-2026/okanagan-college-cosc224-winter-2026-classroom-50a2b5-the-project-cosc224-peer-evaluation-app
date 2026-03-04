@@ -233,3 +233,24 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 | /review/file/<file_id> | GET | Any | Download a review file |
 | /assignment/<id>/conclusion/upload | POST | Teacher | Upload conclusion file |
 | /assignment/<id>/conclusion/files | GET | Any | List conclusion files for assignment |
+---
+
+## Assignment File Attachment Endpoints
+
+### POST /assignment/<id>/upload
+**Description:** Upload a PDF attachment to an assignment.  
+**Authentication:** @jwt_required() – Teacher only  
+**Request Type:** multipart/form-data  
+**File Field:** file  
+
+**Validation:**
+- File must be PDF
+- Maximum size: 10MB
+
+**Response (200 OK):**
+```json
+{
+  "message": "File uploaded successfully",
+  "filename": "assignment_spec.pdf",
+  "size": "2.4MB"
+}

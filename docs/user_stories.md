@@ -80,6 +80,8 @@
 
 - [ ] Instructor can create a class  
 - [ ] Instructor can create an assignment under that class  
+- [ ] Assignment supports rich text description (stored in description_html)  
+- [ ] Instructor can upload a PDF attachment (max 10MB)    
 - [ ] Students in that class can see the assignment  
 - [ ] Instructor can edit or delete the assignment before its start or due date  
 
@@ -172,7 +174,9 @@
 
 - [ ] Instructor can view all assignments for a class in one place  
 - [ ] Instructor can open an assignment and view its peer review settings  
-- [ ] Instructor can edit or delete an assignment from the same interface  
+- [ ] Instructor can edit an assignment’s rich text description  
+- [ ] Instructor can replace or remove the PDF attachment  
+- [ ] Instructor can delete an assignment from the same interface    
 - [ ] Actions provide clear success or error messages  
 
 ---
