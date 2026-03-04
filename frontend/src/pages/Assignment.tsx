@@ -4,7 +4,12 @@ import "./Assignment.css";
 import RubricCreator from "../components/RubricCreator";
 import RubricDisplay from "../components/RubricDisplay";
 import TabNavigation from "../components/TabNavigation";
+<<<<<<< Updated upstream
 import { isTeacher } from "../util/login";
+=======
+import { isTeacher, isStudent } from "../util/login";
+import AssignmentAttachment from "../components/AssignmentAttachment";
+>>>>>>> Stashed changes
 
 import { 
   listStuGroup,
@@ -100,6 +105,8 @@ export default function Assignment() {
             <RubricCreator id={Number(id)}/>
           </div>
       }
+
+      <AssignmentAttachment assignmentId={Number(id)} />
 
 {
       //List group members as radio buttons to select for given review
