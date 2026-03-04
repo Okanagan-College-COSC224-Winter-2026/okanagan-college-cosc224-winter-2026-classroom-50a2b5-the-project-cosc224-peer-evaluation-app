@@ -162,6 +162,7 @@ export default function Group() {
       cancelled = true;
     };
   }, [id]); // ✅ FIX: include id dependency
+  }, [id]);
 
   return (
     <>
@@ -173,12 +174,12 @@ export default function Group() {
         tabs={[
           {
             label: "Home",
-            path: `/assignment/${id}`,
+            path: `/assignments/${id}`,
           },
           {
             label: "Group",
-            path: `/assignment/${id}/group`,
-          },
+            path: `/assignments/${id}/group`,
+          }
         ]}
       />
 
