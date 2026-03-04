@@ -1,32 +1,48 @@
-// import { useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import './Profile.css'
-// import { useEffect, useState } from 'react'
-// import { getProfile } from '../util/api'
+import { useEffect, useState } from 'react'
+
+const BASE_URL = 'http://localhost:5000'
 
 export default function Profile() {
-  // const { id } = useParams()
+  const { id } = useParams()
+  const [profile, setProfile] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // const [profile, setProfile] = useState({})
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const resp = await fetch(`${BASE_URL}/user/${id}`, {
+          credentials: 'include'
+        })
+        if (resp.ok) {
+          setProfile(await resp.json())
+        }
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [id])
 
-  // useEffect(() => {
-  //   const f = async () => {
-  //     setProfile(await getProfile(id))
-  //   }
-
-  //   f()
-  // }, [])
+  if (loading) {
+    return <div className="Profile"><p>Loading...</p></div>
+  }
 
   return (
     <div className="Profile">
       <div className="profile-image">
-        <img src={`https://placehold.co/200x200`} alt="profile" />
+        <img src="https://placehold.co/200x200" alt="profile" />
       </div>
 
       <div className="profile-info">
         <h1>Full Name</h1>
-        <span>Place Holder</span>
+        <span>{profile?.name ?? '—'}</span>
         <h1>Email</h1>
-        <span>placeholder@email.com</span>
+        <span>{profile?.email ?? '—'}</span>
+        <h1>Role</h1>
+        <span style={{ textTransform: 'capitalize' }}>{profile?.role ?? '—'}</span>
       </div>
     </div>
   )

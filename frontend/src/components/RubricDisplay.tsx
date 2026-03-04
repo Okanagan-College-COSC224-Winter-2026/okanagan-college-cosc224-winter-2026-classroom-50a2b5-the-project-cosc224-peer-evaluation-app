@@ -1,52 +1,27 @@
 import { useEffect, useState } from 'react';
-import Criteria from './Criteria';
-import { getCriteria, getRubric } from '../util/api';
+import { getRubricByAssignment } from '../util/api';
 import './RubricDisplay.css';
 
 interface RubricDisplayProps {
-    rubricId: number | null;
+    rubricId: number | null;  // actually the assignment ID
     onCriterionSelect: (row: number, column: number) => void;
     grades: number[];
 }
 
-interface RubricInfo {
-    id: number;
-    assignmentID: number;
-    canComment: boolean;
-    grades: number[];
-}
-
-export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: RubricDisplayProps) {
-    const [criteria, setCriteria] = useState<Criterion[]>([]);
-    const [rubricInfo, setRubricInfo] = useState<RubricInfo | null>(null);
-    const questions: string[] = [];
-    const scoreMaxes: number[] = [];
-    const hasScores: boolean[] = [];
+export default function RubricDisplay({ rubricId }: RubricDisplayProps) {
+    const [rubric, setRubric] = useState<RubricResponse | null>(null);
 
     useEffect(() => {
-        const loadData = async () => {
-            if (rubricId) {
-                const [criteriaResp, rubricResp] = await Promise.all([
-                    getCriteria(rubricId),
-                    getRubric(rubricId)
-                ]);
-                setCriteria(criteriaResp);
-                setRubricInfo(rubricResp);
-            }
-        };
-        loadData();
+        if (!rubricId) return;
+        getRubricByAssignment(rubricId)
+            .then(setRubric)
+            .catch(() => setRubric(null));
     }, [rubricId]);
 
-    criteria.forEach((crit) => {
-        questions.push(crit.question);
-        scoreMaxes.push(crit.scoreMax);
-        hasScores.push(crit.hasScore);
-    });
-
-    if (!rubricId || criteria.length === 0) {
+    if (!rubric || rubric.criteria.length === 0) {
         return (
             <div className="RubricDisplay">
-                <p>No rubric available yet</p>
+                <p className="RubricDisplay__empty">No rubric assigned yet.</p>
             </div>
         );
     }
@@ -54,14 +29,16 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
     return (
         <div className="RubricDisplay">
             <h2>Rubric</h2>
-            <Criteria
-                questions={questions}
-                scoreMaxes={scoreMaxes}
-                canComment={rubricInfo?.canComment ?? false}
-                hasScores={hasScores}
-                onCriterionSelect={onCriterionSelect}
-                grades={grades}
-            />
+            <div className="RubricDisplay__criteria">
+                {rubric.criteria.map((c, i) => (
+                    <div key={i} className="RubricDisplay__criterion">
+                        <span className="RubricDisplay__question">{c.question}</span>
+                        {c.has_score && (
+                            <span className="RubricDisplay__score">out of {c.score_max}</span>
+                        )}
+                    </div>
+                ))}
+            </div>
         </div>
     );
-} 
+}
