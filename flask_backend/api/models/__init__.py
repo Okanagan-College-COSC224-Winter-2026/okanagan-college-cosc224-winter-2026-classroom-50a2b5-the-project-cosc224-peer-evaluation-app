@@ -1,62 +1,58 @@
-from .assignment_model import Assignment
-from .course_group_model import CourseGroup
-from .course_model import Course
-from .criteria_description_model import CriteriaDescription
-from .criterion_model import Criterion
-from .db import db, ma
-from .group_members_model import Group_Members
-from .review_file_model import ReviewFile
-from .review_model import Review
-from .rubric_model import Rubric
-from .schemas import (
-    AssignmentSchema,
-    CourseGroupSchema,
-    CourseListSchema,
-    CourseSchema,
-    CriteriaDescriptionSchema,
-    CriterionSchema,
-    GroupMembersSchema,
-    ReviewSchema,
-    RubricSchema,
-    SubmissionSchema,
-    UserCourseSchema,
-    UserListSchema,
-    UserLoginSchema,
-    UserRegistrationSchema,
+from api.models.user_model import User
+from api.models.course_model import Course
+from api.models.course_group_model import CourseGroup
+from api.models.class_model import Class
+from api.models.group_model import Group
+from api.models.student_model import Student
+from api.models.criterion_model import Criterion
+from api.models.criteria_description_model import CriteriaDescription
+from api.models.assignment_model import Assignment
+from api.models.review_model import Review
+
+# NEW imports for Feature B
+from api.models.conclusion_file_model import ConclusionFile
+
+from api.models.schemas import (
     UserSchema,
+    CourseSchema,
+    CourseGroupSchema,
+    ClassSchema,
+    GroupSchema,
+    StudentSchema,
+    CriterionSchema,
+    CriteriaDescriptionSchema,
+    ReviewSchema,
+    AssignmentSchema,
+    # NEW schemas for Feature B
+    ReviewFileSchema,
+    ConclusionFileSchema,
 )
-from .submission_model import Submission
-from .user_course_model import User_Course
-from .user_model import User
 
 __all__ = [
-    "db",
-    "ma",
     "User",
     "Course",
-    "Assignment",
-    "Rubric",
-    "CriteriaDescription",
-    "Criterion",
-    "Review",
-    "ReviewFile",
     "CourseGroup",
-    "Group_Members",
-    "User_Course",
-    "Submission",
+    "Class",
+    "Group",
+    "Student",
+    "Criterion",
+    "CriteriaDescription",
+    "Assignment",
+    "Review",
+    # Feature B model
+    "ConclusionFile",
+    # Schemas
     "UserSchema",
-    "UserRegistrationSchema",
-    "UserLoginSchema",
-    "UserListSchema",
     "CourseSchema",
-    "CourseListSchema",
-    "AssignmentSchema",
-    "RubricSchema",
-    "CriteriaDescriptionSchema",
-    "CriterionSchema",
-    "ReviewSchema",
     "CourseGroupSchema",
-    "GroupMembersSchema",
-    "UserCourseSchema",
-    "SubmissionSchema",
+    "ClassSchema",
+    "GroupSchema",
+    "StudentSchema",
+    "CriterionSchema",
+    "CriteriaDescriptionSchema",
+    "ReviewSchema",
+    "AssignmentSchema",
+    # Feature B schemas
+    "ReviewFileSchema",
+    "ConclusionFileSchema",
 ]
