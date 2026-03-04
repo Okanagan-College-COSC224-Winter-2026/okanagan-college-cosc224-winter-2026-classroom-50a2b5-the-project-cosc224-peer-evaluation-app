@@ -2,7 +2,6 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./components/Sidebar";
-
 import "./App.css";
 import Profile from "./pages/Profile";
 import CreateClass from "./pages/CreateClass";
@@ -14,6 +13,9 @@ import Group from "./pages/Group";
 import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
+import ChangePasswordForm from "./pages/ChangePasswordForm";
+import Feedback from "./pages/Feedback";
+
 
 function AppContent() {
   const location = useLocation();
@@ -75,6 +77,21 @@ function AppContent() {
               <Group />
             </ProtectedRoute>
           } />
+
+          {/* Sprint B - Feature B: Feedback with file download links */}
+          <Route path="/assignments/:assignmentId/feedback/:revieweeId" element={
+            <ProtectedRoute>
+              <Feedback />
+            </ProtectedRoute>
+          } />
+
+          {/* Sprint C - Feature C: Password change form */}
+          <Route path="/change-password-form" element={
+            <ProtectedRoute>
+              <ChangePasswordForm />
+            </ProtectedRoute>
+          } />
+
         </Routes>
       </div>
     </div>

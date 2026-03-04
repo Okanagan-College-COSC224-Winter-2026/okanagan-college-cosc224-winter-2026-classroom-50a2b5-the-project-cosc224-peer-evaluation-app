@@ -1,20 +1,21 @@
-// import { useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import './Profile.css'
-// import { useEffect, useState } from 'react'
-// import { getProfile } from '../util/api'
+import { useEffect, useState } from 'react'
+import { getProfile } from '../util/api'
+
 
 export default function Profile() {
-  // const { id } = useParams()
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const [profile, setProfile] = useState<any>({})
 
-  // const [profile, setProfile] = useState({})
-
-  // useEffect(() => {
-  //   const f = async () => {
-  //     setProfile(await getProfile(id))
-  //   }
-
-  //   f()
-  // }, [])
+  useEffect(() => {
+    const f = async () => {
+      setProfile(await getProfile(id))
+    }
+    f()
+  }, [id])
 
   return (
     <div className="Profile">
@@ -24,9 +25,25 @@ export default function Profile() {
 
       <div className="profile-info">
         <h1>Full Name</h1>
-        <span>Place Holder</span>
+        <span>{profile.name ?? "Place Holder"}</span>
         <h1>Email</h1>
-        <span>placeholder@email.com</span>
+        <span>{profile.email ?? "placeholder@email.com"}</span>
+      </div>
+
+      <div className="profile-actions" style={{ marginTop: "1.5rem" }}>
+        <button
+          onClick={() => navigate("/change-password-form")}
+          style={{
+            padding: "0.6rem 1.2rem",
+            backgroundColor: "#007bff",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          🔒 Change Password
+        </button>
       </div>
     </div>
   )
