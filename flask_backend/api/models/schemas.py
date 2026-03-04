@@ -1,6 +1,10 @@
 from marshmallow import Schema, fields
 
 
+# ----------------------------
+# Core entities
+# ----------------------------
+
 class UserSchema(Schema):
     id = fields.Int(dump_only=True)
     username = fields.Str()
@@ -9,6 +13,19 @@ class UserSchema(Schema):
     email = fields.Str()
     first_name = fields.Str()
     last_name = fields.Str()
+
+class UserLoginSchema(Schema):
+    username = fields.Str(required=True)
+    password = fields.Str(required=True)
+
+
+class UserRegistrationSchema(Schema):
+    username = fields.Str(required=True)
+    password = fields.Str(required=True)
+    role = fields.Str(required=True)
+    email = fields.Str(required=True)
+    first_name = fields.Str(required=True)
+    last_name = fields.Str(required=True)
 
 
 class CourseSchema(Schema):
@@ -19,77 +36,64 @@ class CourseSchema(Schema):
 
 class CourseGroupSchema(Schema):
     id = fields.Int(dump_only=True)
-    courseID = fields.Int()
-    group_name = fields.Str()
+    courseID = fields.Int(required=True)
+    group_name = fields.Str(required=True)
+    # keep nested course optional (dump only) if relationship exists
     course = fields.Nested(CourseSchema, dump_only=True)
 
 
-class ClassSchema(Schema):
+class AssignmentSchema(Schema):
     id = fields.Int(dump_only=True)
-    courseGroupID = fields.Int()
-    class_name = fields.Str()
+    courseGroupID = fields.Int(required=True)
+    assignment_name = fields.Str(required=True)
+    start_date = fields.DateTime(required=True)
+    end_date = fields.DateTime(required=True)
     course_group = fields.Nested(CourseGroupSchema, dump_only=True)
 
 
-class GroupSchema(Schema):
-    id = fields.Int(dump_only=True)
-    courseGroupID = fields.Int()
-    group_name = fields.Str()
-    course_group = fields.Nested(CourseGroupSchema, dump_only=True)
-
-
-class StudentSchema(Schema):
-    id = fields.Int(dump_only=True)
-    userID = fields.Int()
-    classID = fields.Int()
-    groupID = fields.Int(allow_none=True)
-    user = fields.Nested(UserSchema, dump_only=True)
-    group = fields.Nested(GroupSchema, dump_only=True)
-    class_ = fields.Nested(ClassSchema, dump_only=True)
-
+# ----------------------------
+# Rubric / criteria
+# ----------------------------
 
 class CriterionSchema(Schema):
     id = fields.Int(dump_only=True)
-    courseGroupID = fields.Int()
-    criterion_name = fields.Str()
+    courseGroupID = fields.Int(required=True)
+    criterion_name = fields.Str(required=True)
     course_group = fields.Nested(CourseGroupSchema, dump_only=True)
 
 
 class CriteriaDescriptionSchema(Schema):
     id = fields.Int(dump_only=True)
-    criterionID = fields.Int()
-    rating = fields.Int()
-    description = fields.Str()
+    criterionID = fields.Int(required=True)
+    rating = fields.Int(required=True)
+    description = fields.Str(required=True)
     criterion = fields.Nested(CriterionSchema, dump_only=True)
 
+
+class RubricSchema(Schema):
+    id = fields.Int(dump_only=True)
+    assignmentID = fields.Int(required=True)
+    criterionID = fields.Int(required=True)
+    weight = fields.Float(allow_none=True)
+    assignment = fields.Nested(AssignmentSchema, dump_only=True)
+    criterion = fields.Nested(CriterionSchema, dump_only=True)
+
+
+# ----------------------------
+# Reviews + attached review files
+# ----------------------------
 
 class ReviewSchema(Schema):
     id = fields.Int(dump_only=True)
-    reviewerID = fields.Int()
-    revieweeID = fields.Int()
-    assignmentID = fields.Int()
-    criterionID = fields.Int()
-    rating = fields.Int()
-    comment = fields.Str()
+    reviewerID = fields.Int(required=True)
+    revieweeID = fields.Int(required=True)
+    assignmentID = fields.Int(required=True)
+    criterionID = fields.Int(required=True)
+    rating = fields.Int(required=True)
+    comment = fields.Str(allow_none=True)
     created_at = fields.DateTime(dump_only=True)
-    reviewer = fields.Nested(StudentSchema, dump_only=True)
-    reviewee = fields.Nested(StudentSchema, dump_only=True)
-    assignment = fields.Nested("AssignmentSchema", dump_only=True)
-    criterion = fields.Nested(CriterionSchema, dump_only=True)
 
 
-class AssignmentSchema(Schema):
-    id = fields.Int(dump_only=True)
-    courseGroupID = fields.Int()
-    classID = fields.Int()
-    assignment_name = fields.Str()
-    start_date = fields.DateTime()
-    end_date = fields.DateTime()
-    course_group = fields.Nested(CourseGroupSchema, dump_only=True)
-    course_class = fields.Nested(ClassSchema, dump_only=True)
-
-
-# NEW: ReviewFile schema (for Feature B models)
 class ReviewFileSchema(Schema):
     id = fields.Int(dump_only=True)
     review_id = fields.Int(required=True)
@@ -99,7 +103,32 @@ class ReviewFileSchema(Schema):
     uploader_id = fields.Int(required=True)
 
 
-# NEW: ConclusionFile schema (for Feature B models)
+# ----------------------------
+# Submissions
+# ----------------------------
+
+class SubmissionSchema(Schema):
+    id = fields.Int(dump_only=True)
+    assignmentID = fields.Int(required=True)
+    userID = fields.Int(required=True)
+    submitted_at = fields.DateTime(dump_only=True)
+
+
+class UserCourseSchema(Schema):
+    id = fields.Int(dump_only=True)
+    userID = fields.Int(required=True)
+    courseID = fields.Int(required=True)
+
+
+class GroupMembersSchema(Schema):
+    id = fields.Int(dump_only=True)
+    courseGroupID = fields.Int(required=True)
+    userID = fields.Int(required=True)
+
+# ----------------------------
+# Conclusion files (teacher uploads)
+# ----------------------------
+
 class ConclusionFileSchema(Schema):
     id = fields.Int(dump_only=True)
     assignmentID = fields.Int(required=True)
