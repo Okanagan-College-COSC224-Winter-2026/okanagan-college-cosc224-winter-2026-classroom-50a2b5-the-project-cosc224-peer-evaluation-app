@@ -196,7 +196,7 @@ export const listUnassignedGroups = async (assignmentId : number) => {
 }
 
 export const listCourseMembers = async (classId: string) => {
-  const resp = await fetch(`${BASE_URL}/classes/members`, {
+  const resp = await fetch(`${BASE_URL}/class/classes/members`, {
     method: 'POST',
     body: JSON.stringify({
       id: classId,
@@ -271,7 +271,7 @@ export const saveGroups = async (groupID: number, userID: number, assignmentID :
 }
 
 export const getCriteria = async (rubricID: number) => {
-  const resp = await fetch(`${BASE_URL}/criteria?rubricID=${rubricID}`, {
+  const resp = await fetch(`${BASE_URL}/assignment/criteria?rubricID=${rubricID}`, {
     credentials: 'include'
   })
 
@@ -285,11 +285,9 @@ export const getCriteria = async (rubricID: number) => {
 }
 
 export const createCriteria = async (rubricID: number, question: string, scoreMax: number, canComment: boolean, hasScore: boolean = true) => {
-  const response = await fetch(`${BASE_URL}/create_criteria`, {
+  const response = await fetch(`${BASE_URL}/assignment/rubric/${rubricID}/criteria`, {
     method: 'POST',
-    body: JSON.stringify({
-      rubricID, question, scoreMax, canComment, hasScore
-    }),
+    body: JSON.stringify({ question, scoreMax, hasScore }),
     headers: {
       'Content-Type': 'application/json',
     },
@@ -304,11 +302,9 @@ export const createCriteria = async (rubricID: number, question: string, scoreMa
 }
 
 export const createRubric = async (id: number, assignmentID: number, canComment: boolean): Promise<{ id: number }> => {
-  const response = await fetch(`${BASE_URL}/create_rubric`, {
+  const response = await fetch(`${BASE_URL}/assignment/${assignmentID}/rubric`, {
     method: 'POST',
-    body: JSON.stringify({
-      id, assignmentID, canComment
-    }),
+    body: JSON.stringify({ canComment }),
     headers: {
       'Content-Type': 'application/json',
     },
@@ -325,7 +321,7 @@ export const createRubric = async (id: number, assignmentID: number, canComment:
 }
 
 export const getRubric = async (rubricID: number) => {
-  const resp = await fetch(`${BASE_URL}/rubric?rubricID=${rubricID}`, {
+  const resp = await fetch(`${BASE_URL}/assignment/rubric/by-id?rubricID=${rubricID}`, {
       credentials: 'include'
   });
 
@@ -373,53 +369,8 @@ export const deleteGroup = async (groupID: number) => {
   })
 }
 
-export const createReview = async (assignmentID: number, reviewerID: number, revieweeID: number) => {
-  const response = await fetch(`${BASE_URL}/create_review`, {
-    method: 'POST',
-    body: JSON.stringify({
-      assignmentID,
-      reviewerID,
-      revieweeID,
-    }),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include'
-  })
-
-  maybeHandleExpire(response);
-
-  if (!response.ok) {
-    throw new Error(`Response status: ${response.status}`);
-  }
-  return response
-}
-
-export const createCriterion = async (reviewID: number, criterionRowID: number, grade: number, comments: string) => {
-  const response = await fetch(`${BASE_URL}/create_criterion`, {
-    method: 'POST',
-    body: JSON.stringify({
-      reviewID,
-      criterionRowID,
-      grade,
-      comments,
-    }),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include'
-  })
-
-  maybeHandleExpire(response);
-
-  if (!response.ok) {
-    throw new Error(`Response status: ${response.status}`);
-  }
-  return response
-}
-
 export const getReview = async (assignmentID: number, reviewerID: number, revieweeID: number) => {
-  const resp = await fetch(`${BASE_URL}/review?assignmentID=${assignmentID}&reviewerID=${reviewerID}&revieweeID=${revieweeID}`, {
+  const resp = await fetch(`${BASE_URL}/assignment/review?assignmentID=${assignmentID}&reviewerID=${reviewerID}&revieweeID=${revieweeID}`, {
     credentials: 'include'
   })
 
@@ -519,4 +470,90 @@ export const changePassword = async (currentPassword: string, newPassword: strin
   }
 
   return await response.json();
+}
+
+export const getAssignment = async (assignmentId: number): Promise<Assignment> => {
+  const resp = await fetch(`${BASE_URL}/assignment/detail/${assignmentId}`, {
+    method: 'GET',
+    credentials: 'include'
+  })
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json()
+}
+
+// Peer Review Submission (US1/US11)
+
+export const getRubricByAssignment = async (assignmentId: number): Promise<RubricResponse> => {
+  const resp = await fetch(`${BASE_URL}/assignment/${assignmentId}/rubric`, {
+    method: 'GET',
+    credentials: 'include'
+  })
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json()
+}
+
+export const submitReview = async (data: ReviewSubmission): Promise<{ review_id: number }> => {
+  const response = await fetch(`${BASE_URL}/api/reviews/submit`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include'
+  })
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.msg || `Response status: ${response.status}`);
+  }
+
+  return await response.json()
+}
+
+export const getStudentGrades = async (): Promise<StudentGradesResponse> => {
+  const resp = await fetch(`${BASE_URL}/student/grades`, {
+    method: 'GET',
+    credentials: 'include'
+  })
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json()
+}
+
+// ============================================================
+// STUDENT FEEDBACK (US12) — Dev 5
+// ============================================================
+
+export const getStudentFeedback = async (assignmentId: number): Promise<FeedbackResponse> => {
+  const resp = await fetch(`${BASE_URL}/student/assignments/${assignmentId}/feedback`, {
+    method: 'GET',
+    credentials: 'include'
+  })
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json()
 }

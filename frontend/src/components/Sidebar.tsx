@@ -1,9 +1,19 @@
 import { logout } from '../util/login'
 import './Sidebar.css'
 
+function getLoggedInUserId(): number {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user.id || 0;
+  } catch {
+    return 0;
+  }
+}
+
 export default function Sidebar() {
   // Check which page we are on
   const location = window.location.pathname
+  const userId = getLoggedInUserId();
 
   return (
     <div className="Sidebar">
@@ -24,8 +34,7 @@ export default function Sidebar() {
           Home
         </SidebarRow>
         
-        { /* TODO: make this ID match who is logged in */ }
-        <SidebarRow selected={location.includes('/profile')} href="/profile/1">
+        <SidebarRow selected={location.includes('/profile')} href={`/profile/${userId}`}>
           My Info
         </SidebarRow>
       </div>
