@@ -105,7 +105,7 @@ class AssignmentSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Assignment
         load_instance = True
-        include_fk = False
+        include_fk = True  # Include courseID in serialization
         sqla_session = db.session
 
     course = fields.Nested(CourseListSchema, dump_only=True)
@@ -120,7 +120,7 @@ class RubricSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Rubric
         load_instance = True
-        include_fk = False
+        include_fk = True
         sqla_session = db.session
 
 
@@ -128,7 +128,7 @@ class CriteriaDescriptionSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = CriteriaDescription
         load_instance = True
-        include_fk = False
+        include_fk = True
         sqla_session = db.session
 
 
@@ -136,7 +136,7 @@ class CriterionSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Criterion
         load_instance = True
-        include_fk = False
+        include_fk = True
         sqla_session = db.session
 
 
@@ -192,7 +192,7 @@ class CourseGroupSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = CourseGroup
         load_instance = True
-        include_fk = False
+        include_fk = True  # Include courseID in serialization
         sqla_session = db.session
 
 
@@ -200,7 +200,7 @@ class GroupMembersSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Group_Members
         load_instance = True
-        include_fk = False
+        include_fk = True  # Include userID and groupID in serialization
         sqla_session = db.session
 
 

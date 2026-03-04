@@ -5,7 +5,7 @@ This document captures the relational schema implemented by the active Flask bac
 ## Source of truth + regeneration
 
 - **Models:** `flask_backend/api/models/*.py` — authoritative field list, constraints, and cascades
-- **DDL reference:** `schema.sql` — kept in sync for seed data and CI, but may lag new columns (e.g., `Assignment.due_date`)
+- **DDL reference:** `schema.sql` — kept in sync for seed data and CI
 - **Diagram:** `docs/schema/database-schema.puml` renders to `database-schema.png`; regenerate after structural changes using the PlantUML CLI or the VS Code PlantUML extension
 
 ## PlantUML Diagram (source)
@@ -33,14 +33,15 @@ Field types, primary keys, and notable constraints are included for quick refere
 ### Assignments and Grouping
 
 - Assignment
-  - id (PK), courseID (FK -> Course.id), name, `rubric_text` column (stored as `rubric`), `due_date` (nullable, timezone-aware)
-  - Relationships: `course`, `rubrics`, `groups`, `submissions`, `reviews`, `group_members`
+  - id (PK), courseID (FK -> Course.id), name, `description` (nullable), `start_date` (nullable, timezone-aware), `rubric_text` column (stored as `rubric`), `due_date` (nullable, timezone-aware)
+  - Relationships: `course`, `rubrics`, `submissions`, `reviews`
 - CourseGroup
-  - id (PK), name, assignmentID (FK -> Assignment.id, not null)
+  - id (PK), name, courseID (FK -> Course.id, not null)
+  - Groups belong to **courses**, not assignments — students stay in the same group for all assignments in a course
 - Group_Members
   - PK: (userID, groupID)
-  - Columns: groupID (FK -> CourseGroup.id), userID (FK -> User.id), assignmentID (FK -> Assignment.id, nullable)
-  - Represents assignment-scoped group membership for users
+  - Columns: groupID (FK -> CourseGroup.id), userID (FK -> User.id)
+  - Represents course-scoped group membership for users
 
 ### Submissions
 

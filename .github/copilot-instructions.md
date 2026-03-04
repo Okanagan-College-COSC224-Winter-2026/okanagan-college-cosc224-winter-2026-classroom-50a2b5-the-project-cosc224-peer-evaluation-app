@@ -27,7 +27,7 @@ Key files: `flask_backend/api/models/users_model.py` (role validation + helper m
 - Controllers: `flask_backend/api/controllers/{auth_controller.py,user_controller.py,admin_controller.py,class_controller.py}`
 - Models: `flask_backend/api/models/{db.py,users_model.py}` — more models planned per `docs/schema/`
 - Tests (truth): `flask_backend/tests/{conftest.py,test_login.py,test_user.py,test_model.py}` — pytest with in-memory SQLite
-- CLI: `flask_backend/api/cli/database.py` — commands: `flask init_db`, `flask add_users`, `flask create_admin`, `flask drop_db`
+- CLI: `flask_backend/api/cli/database.py` — commands: `flask init_db`, `flask drop_db`, `flask add_users`, `flask add_sample_courses`, `flask create_admin`, `flask ensure_admin`, `flask migrate_assignment_columns`
 - Frontend contract: `frontend/src/util/api.ts` (all fetch calls include `credentials: 'include'` for cookies), `frontend/src/util/login.ts` (role helpers: `getUserRole()`, `isAdmin()`, `isTeacher()`)
 
 ## Dev workflows (local — Flask backend)
@@ -101,6 +101,15 @@ const response = await fetch(`${BASE_URL}/auth/login`, {
 - **Role checks:** Use decorators (`@jwt_role_required('admin')`) or model methods (`user.is_admin()`, `user.has_role('teacher', 'admin')`)
 - **Config hierarchy:** Defaults in `api/__init__.py`, overrides in `api/config.py` (not committed), env vars for secrets
 
+## Database schema changes
+When adding new columns to a SQLAlchemy model, **always** provide a migration path so existing dev databases don't break:
+1. Add the column to the model as `nullable=True` (so old rows survive)
+2. Write (or extend) a CLI migration command in `flask_backend/api/cli/database.py` that uses `ALTER TABLE ... ADD COLUMN` for each new column (idempotent — check if the column exists first)
+3. Register the command in `init_app()` and document it in this file's CLI list above
+4. Mention the migration command in your PR description so other developers know to run it
+
+**Never** tell developers to drop and recreate the database as the first option. Always check `flask_backend/api/cli/database.py` for an existing migration command first (e.g., `flask migrate_assignment_columns`). Only use `flask drop_db` + `flask init_db` as a last resort.
+
 ## Known gaps and integration points
 - **Endpoints.json vs reality:** `docs/dev-guidelines/endpoints.json` is a legacy Node API spec (for reference only). Many routes (`/classes`, `/create_*`, groups, rubrics) exist in Node `backend/src/routes/` but NOT in Flask. When implementing missing endpoints, use Flask patterns (blueprints + Marshmallow) and add tests.
 - **Database schema mismatch:** Flask has minimal models (User, Class). Full schema in `docs/schema/database-schema.md` includes Group, Assignment, Review, Criteria — implement as needed.
@@ -133,3 +142,24 @@ SELECT id, name, email, role FROM User;
 3. Match response shape from `endpoints.json` using Marshmallow schema
 4. Add test covering Node behavior
 5. Update frontend if response differs
+
+## Git Workflow
+
+- **Base branch:** Always use `dev` as the base branch. Never touch `main`.
+- **Branch naming:** Use prefixes like `feature/`, `bug/`, `fix/`, `chore/`.
+- **Commits:** Use conventional commit messages (e.g., `fix(frontend): ...`, `feat(api): ...`).
+- **Pull requests:** Each PR should address one thing (single responsibility).
+- **Before creating a branch:** Always pull latest from `dev` first.
+
+## Learning Mode
+
+This project is being used as a learning environment. When assisting:
+
+1. **Explain the "why"** — Don't just provide code; explain the reasoning behind decisions
+2. **Teach concepts** — When introducing new patterns, tools, or commands, briefly explain what they do
+3. **Offer alternatives** — Show different approaches when relevant (e.g., "You could also do X, but Y is better here because...")
+4. **Encourage understanding** — Before running commands, explain what they will do
+5. **Build on prior knowledge** — Reference concepts we've covered before rather than re-explaining from scratch
+6. **Ask clarifying questions** — When the user's intent is unclear, ask rather than assume
+7. **Highlight gotchas** — Point out common mistakes or edge cases related to what we're doing
+
