@@ -519,4 +519,204 @@ export const changePassword = async (currentPassword: string, newPassword: strin
   }
 
   return await response.json();
+<<<<<<< Updated upstream
+=======
+};
+
+/**
+ * Get the download URL for an assignment's attachment.
+ * Returns the URL string that can be used in an <a> tag or window.open().
+ *
+ * @param assignmentId - The assignment to download from
+ * @returns The full download URL
+ */
+export const getAssignmentAttachmentUrl = (assignmentId: number): string => {
+  return `${BASE_URL}/assignment/${assignmentId}/attachment`;
+};
+
+/**
+ * Download an assignment's attachment (triggers browser download).
+ * Uses fetch with credentials to handle auth, then creates a blob URL.
+ *
+ * @param assignmentId - The assignment to download from
+ * @param filename - Suggested filename for the download
+ */
+export const downloadAssignmentAttachment = async (
+  assignmentId: number,
+  filename: string = "attachment.pdf"
+): Promise<void> => {
+  const response = await fetch(
+    `${BASE_URL}/assignment/${assignmentId}/attachment`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    throw new Error(`Download failed: ${response.status}`);
+  }
+
+  // Convert response to blob and trigger download
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};
+
+/**
+ * Delete an assignment's attachment.
+ * Only teachers can delete.
+ *
+ * @param assignmentId - The assignment to remove the attachment from
+ */
+export const deleteAssignmentAttachment = async (
+  assignmentId: number
+): Promise<{ message: string }> => {
+  const response = await fetch(
+    `${BASE_URL}/assignment/${assignmentId}/attachment`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.msg || errorData.message || `Delete failed: ${response.status}`
+    );
+  }
+
+  return await response.json();
+};
+
+export const updateAssignment = async (assignmentId: number, name: string, description_html: string) => {
+  const response = await fetch(`${BASE_URL}/assignment/edit_assignment/${assignmentId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name, description_html }),
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  })
+  maybeHandleExpire(response)
+  if (!response.ok) throw new Error(`Response status: ${response.status}`)
+  return await response.json()
+>>>>>>> Stashed changes
 }
+/**
+ * Upload a conclusion file to an assignment (teacher only).
+ * Accepted types: PDF, PNG, JPG, DOCX. Max 10MB.
+ *
+ * @param assignmentId - The assignment to attach the conclusion to
+ * @param file - The file to upload
+ * @returns Upload result with file_id, filename, and size
+ */
+export const uploadConclusionFile = async (
+  assignmentId: number,
+  file: File
+): Promise<{ message: string; file_id: number; filename: string; size: string }> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(
+    `${BASE_URL}/assignment/${assignmentId}/conclusion/upload`,
+    {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    }
+  );
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.msg || errorData.message || `Upload failed: ${response.status}`
+    );
+  }
+
+  return await response.json();
+};
+
+/**
+ * List all conclusion files for an assignment.
+ *
+ * @param assignmentId - The assignment to list conclusion files for
+ * @returns Object with assignment_id and files array
+ */
+export const listConclusionFiles = async (
+  assignmentId: number
+): Promise<{
+  assignment_id: number;
+  files: Array<{
+    file_id: number;
+    filename: string;
+    uploaded_at: string | null;
+    teacher: string | null;
+  }>;
+}> => {
+  const resp = await fetch(
+    `${BASE_URL}/assignment/${assignmentId}/conclusion/files`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Failed to list conclusion files: ${resp.status}`);
+  }
+
+  return await resp.json();
+};
+
+/**
+ * Download a specific conclusion file by its file ID.
+ * Uses fetch with credentials, then creates a blob URL to trigger download.
+ *
+ * @param fileId - The conclusion file ID to download
+ * @param filename - Suggested filename for the download
+ */
+export const downloadConclusionFile = async (
+  fileId: number,
+  filename: string = "conclusion.pdf"
+): Promise<void> => {
+  // Conclusion files are served through the same review file download endpoint
+  // since they share the file infrastructure. The backend routes them to the
+  // correct directory based on the file record.
+  const response = await fetch(
+    `${BASE_URL}/review/file/${fileId}`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    throw new Error(`Download failed: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};
