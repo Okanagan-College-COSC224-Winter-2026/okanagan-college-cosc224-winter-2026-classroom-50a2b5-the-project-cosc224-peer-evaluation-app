@@ -32,12 +32,14 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-peereval}
       POSTGRES_USER: ${POSTGRES_USER:-peereval_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password_change_in_prod}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-peereval_user} -d ${POSTGRES_DB:-peereval}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-peereval_user} -d ${POSTGRES_DB:-peereval}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -60,21 +62,21 @@ services:
       FLASK_APP: api
       FLASK_ENV: ${FLASK_ENV:-production}
       # To enable development mode, set FLASK_ENV=development in your .env file or environment.
-      
+
       # Security secrets (override via .env file or environment)
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-prod}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-jwt-secret-change-in-prod}
-      
+
       # Database connection (uses environment variables to avoid hardcoded credentials)
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-peereval_user}:${POSTGRES_PASSWORD:-dev_password_change_in_prod}@postgres:5432/${POSTGRES_DB:-peereval}}
-      
+
       # CORS configuration (allow frontend origin)
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:80,http://localhost:3000}
-      
+
       # Optional: JWT cookie domain for cross-subdomain authentication (production)
       # Set to .yourdomain.com in production for subdomain cookie sharing
       JWT_COOKIE_DOMAIN: ${JWT_COOKIE_DOMAIN:-}
-      
+
       # Gunicorn worker configuration
       GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
       GUNICORN_THREADS: ${GUNICORN_THREADS:-2}
@@ -89,7 +91,11 @@ services:
       - peereval-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/hello').read()\""]
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:5000/hello'').read()"',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -112,7 +118,15 @@ services:
       - peereval-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost/health",
+        ]
       interval: 30s
       timeout: 3s
       retries: 3
