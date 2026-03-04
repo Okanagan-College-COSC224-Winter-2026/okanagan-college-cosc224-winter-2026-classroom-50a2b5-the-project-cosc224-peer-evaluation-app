@@ -771,8 +771,8 @@ export const createTeacherAccount = async (name: string, email: string, password
 
 // User - Change Password
 export const changePassword = async (currentPassword: string, newPassword: string) => {
-  const response = await fetch(`${BASE_URL}/user/password`, {
-    method: 'PATCH',
+  const response = await fetch(`${BASE_URL}/auth/change-password`, {
+    method: 'PUT',
     body: JSON.stringify({
       current_password: currentPassword,
       new_password: newPassword

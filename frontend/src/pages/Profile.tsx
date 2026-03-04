@@ -27,6 +27,10 @@ export default function Profile() {
         <span>Place Holder</span>
         <h1>Email</h1>
         <span>placeholder@email.com</span>
+        <button onClick={() => window.location.href = '/change-password'}
+          style={{ marginTop: '1rem', padding: '0.5rem 1rem', cursor: 'pointer' }}>
+          Change Password
+        </button>
       </div>
     </div>
   )
