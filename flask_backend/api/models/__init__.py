@@ -5,6 +5,7 @@ from .criteria_description_model import CriteriaDescription
 from .criterion_model import Criterion
 from .db import db, ma
 from .group_members_model import Group_Members
+from .review_file_model import ReviewFile
 from .review_model import Review
 from .rubric_model import Rubric
 from .schemas import (
@@ -38,6 +39,7 @@ __all__ = [
     "CriteriaDescription",
     "Criterion",
     "Review",
+    "ReviewFile",
     "CourseGroup",
     "Group_Members",
     "User_Course",

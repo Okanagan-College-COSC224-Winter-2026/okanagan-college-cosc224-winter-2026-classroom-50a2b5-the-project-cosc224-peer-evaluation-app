@@ -16,6 +16,8 @@ from .controllers import (
     student_controller,
     review_controller,
     group_controller,
+    file_controller,
+    review_file_controller,
 )
 from .models.db import db, ma
 
@@ -114,5 +116,7 @@ def create_app(test_config=None):
     app.register_blueprint(student_controller.student_bp)
     app.register_blueprint(review_controller.review_bp)
     app.register_blueprint(group_controller.group_bp)
+    app.register_blueprint(file_controller.file_bp)
+    app.register_blueprint(review_file_controller.review_file_bp)
 
     return app
