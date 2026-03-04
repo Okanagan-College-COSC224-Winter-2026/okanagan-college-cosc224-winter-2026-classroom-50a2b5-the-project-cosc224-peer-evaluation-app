@@ -68,15 +68,7 @@ export default function ClassMembers() {
       cancelled = true;
     };
   }, [id]);
-    ;(async () => {
-      const members = await listCourseMembers(id as string)
-      const classes = await listClasses();
-      const currentClass = classes.find((c: { id: number }) => c.id === Number(id));
-      setMembers(members)
-      setClassName(currentClass?.name || null);
-    })()
-  }, [id])  
-
+  
   return (
     <>
       <div className="ClassHeader">

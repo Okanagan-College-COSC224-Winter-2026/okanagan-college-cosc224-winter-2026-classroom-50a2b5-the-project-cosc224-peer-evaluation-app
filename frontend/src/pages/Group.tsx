@@ -161,7 +161,6 @@ export default function Group() {
     return () => {
       cancelled = true;
     };
-  }, [id]); // ✅ FIX: include id dependency
   }, [id]);
 
   return (

@@ -573,7 +573,7 @@ export const getDashboard = async () => {
 
   return await resp.json();
 };
-}
+
 
 
 // US9 - edit assignment
