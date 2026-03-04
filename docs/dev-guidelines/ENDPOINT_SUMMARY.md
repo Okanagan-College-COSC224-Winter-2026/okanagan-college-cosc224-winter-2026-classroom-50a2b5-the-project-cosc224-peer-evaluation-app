@@ -223,3 +223,13 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 - `404` — Assignment not found
 
 **Privacy:** Reviewer identities are never included in the response.
+
+### Feature B: File Attachments on Reviews & Conclusions
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| /review/<id>/upload | POST | Student | Upload files with peer review submission |
+| /review/<id>/files | GET | Any | List files attached to a review |
+| /review/file/<file_id> | GET | Any | Download a review file |
+| /assignment/<id>/conclusion/upload | POST | Teacher | Upload conclusion file |
+| /assignment/<id>/conclusion/files | GET | Any | List conclusion files for assignment |
