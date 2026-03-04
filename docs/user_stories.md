@@ -21,7 +21,8 @@
 - [ ] Student cannot open unassigned submissions  
 - [ ] Opening an assigned submission shows the content and review interface  
 - [ ] Submitted feedback marks that review as complete  
-- [ ] If the review period has ended, the student cannot submit feedback and is notified  
+- [ ] If the review period has ended, the student cannot submit feedback and is notified
+- [ ] Extension: Students may attach files (PDF, images, documents) when submitting reviews
 
 ---
 
@@ -225,7 +226,8 @@
 
 - [ ] Student can open an assignment and see received feedback  
 - [ ] Feedback shows rubric scores and comments  
-- [ ] Feedback remains available after viewing  
+- [ ] Feedback remains available after viewing
+- [ ] Extension: Attached review and conclusion files are downloadable on feedback pages  
 
 ---
 
