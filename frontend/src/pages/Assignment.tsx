@@ -1,14 +1,17 @@
-﻿import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import { useParams } from "react-router-dom";
 import DOMPurify from "dompurify";
 import "./Assignment.css";
 import RubricCreator from "../components/RubricCreator";
 import RubricDisplay from "../components/RubricDisplay";
 import TabNavigation from "../components/TabNavigation";
-import { isTeacher } from "../util/login";
+import { isTeacher, isStudent } from "../util/login";
+import AssignmentAttachment from "../components/AssignmentAttachment";
+import ConclusionSection from "../components/ConclusionSection";
 import {
   listStuGroup,
   getUserId,
+  listCourseMembers,
   createReview,
   createCriterion,
   getReview,
@@ -117,6 +120,19 @@ export default function Assignment() {
             grades={review}
           />
 
+      <AssignmentAttachment assignmentId={Number(id)} />
+
+{
+      //List group members as radio buttons to select for given review
+      !isTeacher() && <div className='groupMembers'>
+        <h3>Select a group member to review</h3>
+          {stuGroup.map((stus) => {
+                return (
+                  <div key={stus.userID}>
+                  <input type='radio' id={stus.userID.toString()} value={stus.userID} name='groupMembers' onChange={handleRadioChange}></input>
+                  <label htmlFor={stus.userID.toString()}>{nameFromId(stus.userID)}</label>
+                  </div>
+                )
           <button
             onClick={async () => {
               try {

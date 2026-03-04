@@ -339,6 +339,121 @@ export const getStudentFeedback = async (assignmentId: number): Promise<Feedback
   return await resp.json()
 }
 
+/**
+ * Upload a PDF attachment to an assignment.
+ * Only teachers can upload. Max 10MB, PDF only.
+ *
+ * @param assignmentId - The assignment to attach the file to
+ * @param file - The PDF File object to upload
+ * @returns Upload result with filename and size
+ */
+export const uploadAssignmentFile = async (
+  assignmentId: number,
+  file: File
+): Promise<{ message: string; filename: string; size: string }> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  // NOTE: Do NOT set Content-Type header — the browser sets it
+  // automatically with the correct multipart boundary
+  const response = await fetch(
+    `${BASE_URL}/assignment/${assignmentId}/upload`,
+    {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    }
+  );
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.msg || errorData.message || `Upload failed: ${response.status}`
+    );
+  }
+
+  return await response.json();
+};
+
+/**
+ * Get the download URL for an assignment's attachment.
+ * Returns the URL string that can be used in an <a> tag or window.open().
+ *
+ * @param assignmentId - The assignment to download from
+ * @returns The full download URL
+ */
+export const getAssignmentAttachmentUrl = (assignmentId: number): string => {
+  return `${BASE_URL}/assignment/${assignmentId}/attachment`;
+};
+
+/**
+ * Download an assignment's attachment (triggers browser download).
+ * Uses fetch with credentials to handle auth, then creates a blob URL.
+ *
+ * @param assignmentId - The assignment to download from
+ * @param filename - Suggested filename for the download
+ */
+export const downloadAssignmentAttachment = async (
+  assignmentId: number,
+  filename: string = "attachment.pdf"
+): Promise<void> => {
+  const response = await fetch(
+    `${BASE_URL}/assignment/${assignmentId}/attachment`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    throw new Error(`Download failed: ${response.status}`);
+  }
+
+  // Convert response to blob and trigger download
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};
+
+/**
+ * Delete an assignment's attachment.
+ * Only teachers can delete.
+ *
+ * @param assignmentId - The assignment to remove the attachment from
+ */
+export const deleteAssignmentAttachment = async (
+  assignmentId: number
+): Promise<{ message: string }> => {
+  const response = await fetch(
+    `${BASE_URL}/assignment/${assignmentId}/attachment`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.msg || errorData.message || `Delete failed: ${response.status}`
+    );
+  }
+
+  return await response.json();
+};
+=======
 export const updateAssignment = async (assignmentId: number, name: string, description_html: string) => {
   const response = await fetch(`${BASE_URL}/assignment/edit_assignment/${assignmentId}`, {
     method: "PATCH",
