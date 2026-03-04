@@ -47,6 +47,10 @@ class Assignment(db.Model):
         "CourseGroup", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
     )
 
+    conclusion_files = db.relationship(
+        "ConclusionFile", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
+    )
+
     def __init__(
         self,
         courseID,
