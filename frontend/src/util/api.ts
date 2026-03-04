@@ -314,7 +314,7 @@ export const createRubric = async (assignmentID: number, canComment: boolean): P
     },
     credentials: 'include'
   })
-
+  
   maybeHandleExpire(response);
 
   if (!response.ok) {

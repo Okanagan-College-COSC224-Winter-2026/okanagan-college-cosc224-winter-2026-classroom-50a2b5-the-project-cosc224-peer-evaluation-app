@@ -45,12 +45,10 @@ def create_rubric():
 
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
-
     # Delete existing rubric with same ID if it exists (as per endpoint spec)
     existing = Rubric.query.filter_by(assignmentID=assignment_id).first()
     if existing:
         existing.delete()
-
     new_rubric = Rubric(assignmentID=assignment_id, canComment=can_comment)
     Rubric.create_rubric(new_rubric)
 
