@@ -1,13 +1,12 @@
-import { useParams, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import './Profile.css'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import { useEffect, useState } from 'react'
 import { getProfile, updateProfile, listClasses } from '../util/api'
 
 export default function Profile() {
-  const { id } = useParams<{ id: string }>()
   const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [courses, setCourses] = useState<any[]>([])
+  const [courses, setCourses] = useState<Course[]>([])
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
   const [nameInput, setNameInput] = useState('')
@@ -24,7 +23,7 @@ export default function Profile() {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await getProfile(id)
+        const data = await getProfile()
         setProfile(data)
         setNameInput(data.name)
         
@@ -37,7 +36,7 @@ export default function Profile() {
       }
     }
     load()
-  }, [id])
+  }, [])
 
   if (error) {
     return (
@@ -204,12 +203,20 @@ export default function Profile() {
                       }
                       
                       try {
-                        await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/user/password`, {
+                        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/user/password`, {
                           method: 'PATCH',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
                           credentials: 'include'
                         });
+                        
+                        const data = await response.json();
+                        
+                        if (!response.ok) {
+                          setPasswordError(data.msg || 'Failed to change password');
+                          return;
+                        }
+                        
                         setPasswordSuccess('Password changed successfully!');
                         setTimeout(() => {
                           setCurrentPassword('');

@@ -2,10 +2,9 @@ import { didExpire, removeToken } from "./login";
 
 const BASE_URL = 'http://localhost:5000'
 
-export const getProfile = async (id?: string) => {
-  // The backend only needs the JWT to return the current user, so we ignore
-  // the id parameter.  This call is used by the profile page to load the
-  // logged-in user's information.
+export const getProfile = async () => {
+  // The backend only needs the JWT to return the current user.
+  // This call is used by the profile page to load the logged-in user's information.
   const resp = await fetch(`${BASE_URL}/user/`, {
     method: 'GET',
     credentials: 'include',
