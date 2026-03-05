@@ -1,130 +1,159 @@
-﻿import { useEffect, useState, ChangeEvent } from "react"
-import { useParams } from "react-router-dom"
-import DOMPurify from "dompurify"
-import "./Assignment.css"
-import RubricCreator from "../components/RubricCreator"
-import TabNavigation from "../components/TabNavigation"
-import RichTextEditor from "../components/RichTextEditor"
-import Button from "../components/Button"
-import StatusMessage from "../components/StatusMessage"
-import ReviewFileUpload from "../components/ReviewFileUpload"
-import { isTeacher, isStudent } from "../util/login"
+import { useEffect, useState, ChangeEvent } from "react";
+import { useParams } from "react-router-dom";
+import DOMPurify from "dompurify";
+import "./Assignment.css";
+import RubricCreator from "../components/RubricCreator";
+import RubricDisplay from "../components/RubricDisplay";
+import TabNavigation from "../components/TabNavigation";
+import RichTextEditor from "../components/RichTextEditor";
+import Button from "../components/Button";
+import StatusMessage from "../components/StatusMessage";
+import ReviewFileUpload from "../components/ReviewFileUpload";
+import { isTeacher, isStudent } from "../util/login";
+import AssignmentAttachment from "../components/AssignmentAttachment";
+import ConclusionSection from "../components/ConclusionSection";
+
 import {
   listStuGroup,
   getUserId,
   listCourseMembers,
+  createReview,
+  createCriterion,
   getReview,
   getAssignment,
   updateAssignment,
   uploadReviewFiles,
-} from "../util/api"
+} from "../util/api";
 
+interface SelectedCriterion {
+  row: number;
+  column: number;
+}
+
+interface AssignmentData {
+  id: number;
+  name: string;
+  description_html?: string;
+}
 
 export default function Assignment() {
-  const { id } = useParams()
-  const [stuGroup, setStuGroup] = useState<StudentGroups[]>([])
-  const [classMembers, setClassMembers] = useState<User[]>([])
-  const [revieweeID, setRevieweeID] = useState<number>(0)
-  const [assignment, setAssignment] = useState<Assignment | null>(null)
-  const [editName, setEditName] = useState("")
-  const [editDescription, setEditDescription] = useState("")
-  const [isEditing, setIsEditing] = useState(false)
-  const [editStatus, setEditStatus] = useState("")
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([])
-  const [uploadStatus, setUploadStatus] = useState<string | null>(null)
-
+  const { id } = useParams();
+  const [stuGroup, setStuGroup] = useState<any[]>([]);
+  const [classMembers, setClassMembers] = useState<User[]>([]);
+  const [revieweeID, setRevieweeID] = useState(0);
+  const [stuID, setStuID] = useState(0);
+  const [selectedCriteria, setSelectedCriteria] = useState<SelectedCriterion[]>([]);
+  const [review, setReview] = useState<number[]>([]);
+  const [assignment, setAssignment] = useState<AssignmentData | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editStatus, setEditStatus] = useState("");
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const fetchedID = await getUserId()
-      const stus = await listStuGroup(Number(id), fetchedID)
-      setStuGroup(stus)
-      if (revieweeID > 0) {
-        try {
-          const reviewResponse = await getReview(Number(id), fetchedID, revieweeID)
-          const reviewData = await reviewResponse.json()
-          console.log("Review grades:", reviewData.grades)
-        } catch { /* No review yet */ }
+      const fetchedID = await getUserId();
+      setStuID(fetchedID);
+      const stus = await listStuGroup(Number(id), fetchedID);
+      setStuGroup(stus);
+
+      try {
+        const data = await getAssignment(Number(id));
+        setAssignment(data);
+        setEditName(data.name ?? "");
+        setEditDescription(data.description_html ?? "");
+      } catch {
+        // Assignment unavailable
       }
+
       try {
-        const members = await listCourseMembers(String(id))
-        setClassMembers(members)
-      } catch { /* Members unavailable */ }
+        const reviewResponse = await getReview(Number(id), fetchedID, revieweeID);
+        const reviewData = await reviewResponse.json();
+        setReview(reviewData.grades);
+      } catch {
+        // No review yet — expected
+      }
+
       try {
-        const data = await getAssignment(Number(id))
-        setAssignment(data)
-        setEditName(data.name ?? "")
-        setEditDescription(data.description_html ?? "")
-      } catch { /* Assignment unavailable */ }
-    })()
-  }, [id])
+        const members = await listCourseMembers(String(id));
+        setClassMembers(members);
+      } catch {
+        // Members list unavailable
+      }
+    })();
+  }, [revieweeID, id, stuID]);
 
+  const nameFromId = (userId: number) => {
+    return classMembers.find((m) => m.id === userId)?.name || `Student #${userId}`;
+  };
 
-  const nameFromId = (userId: number) =>
-    classMembers.find((m) => m.id === userId)?.name || `Student #${userId}`
-
+  const handleCriterionSelect = (row: number, column: number) => {
+    const existingIndex = selectedCriteria.findIndex(
+      (criterion) => criterion.row === row && criterion.column === column
+    );
+    if (existingIndex >= 0) {
+      setSelectedCriteria((prev) =>
+        prev.filter((_, index) => index !== existingIndex)
+      );
+    } else {
+      setSelectedCriteria((prev) => {
+        const filteredCriteria = prev.filter((criterion) => criterion.row !== row);
+        return [...filteredCriteria, { row, column }];
+      });
+    }
+  };
 
   function handleRadioChange(event: ChangeEvent<HTMLInputElement>) {
-    setRevieweeID(Number(event.target.value))
+    setRevieweeID(Number(event.target.value));
   }
-
 
   const handleSaveDescription = async () => {
     try {
-      setEditStatus("Saving...")
-      await updateAssignment(Number(id), editName, editDescription)
-      setAssignment((prev) => prev ? { ...prev, name: editName, description_html: editDescription } : prev)
-      setIsEditing(false)
-      setEditStatus("Saved successfully!")
-      setTimeout(() => setEditStatus(""), 3000)
+      setEditStatus("Saving...");
+      await updateAssignment(Number(id), editName, editDescription);
+      setAssignment((prev) =>
+        prev ? { ...prev, name: editName, description_html: editDescription } : prev
+      );
+      setIsEditing(false);
+      setEditStatus("Saved successfully!");
+      setTimeout(() => setEditStatus(""), 3000);
     } catch {
-      setEditStatus("Error saving. Please try again.")
+      setEditStatus("Error saving. Please try again.");
     }
-  }
-
-
-  const handleSubmitReview = async () => {
-    setUploadStatus(null)
-    if (revieweeID === 0) {
-      alert("Please select a group member to review.")
-      return
-    }
-    try {
-      window.location.href = `/assignments/${id}/review/${revieweeID}`
-    } catch {
-      setUploadStatus("Error navigating to review page.")
-    }
-  }
-
+  };
 
   const handleReviewWithFiles = async (reviewId: number) => {
     if (attachedFiles.length > 0) {
       try {
-        await uploadReviewFiles(reviewId, attachedFiles)
-        setUploadStatus(`${attachedFiles.length} file(s) uploaded successfully.`)
-        setAttachedFiles([])
+        await uploadReviewFiles(reviewId, attachedFiles);
+        setUploadStatus(`${attachedFiles.length} file(s) uploaded successfully.`);
+        setAttachedFiles([]);
       } catch {
-        setUploadStatus("Error uploading files.")
+        setUploadStatus("Error uploading files.");
       }
     }
-  }
-
+  };
 
   const tabs = [
     { label: "Home", path: `/assignments/${id}` },
     { label: "Group", path: `/assignments/${id}/group` },
-  ]
+  ];
+
   if (isStudent()) {
-    tabs.push({ label: "Feedback", path: `/assignments/${id}/feedback` })
+    tabs.push({ label: "Feedback", path: `/assignments/${id}/feedback` });
   }
 
-
   return (
-    <div>
+    <>
+      <div className="AssignmentHeader">
+        <h2>Assignment {id}</h2>
+      </div>
+
       <TabNavigation tabs={tabs} />
-      <h2>Assignment {id}</h2>
 
-
+      {/* Description section — teachers can edit, everyone sees rendered HTML */}
       {assignment && (
         <div className="assignment-description-section">
           {isTeacher() && !isEditing && (
@@ -157,7 +186,9 @@ export default function Assignment() {
           {!isEditing && assignment.description_html && (
             <div
               className="assignment-description-html"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(assignment.description_html) }}
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(assignment.description_html),
+              }}
             />
           )}
           {!isEditing && !assignment.description_html && (
@@ -166,12 +197,25 @@ export default function Assignment() {
         </div>
       )}
 
+      <div className="assignmentRubricDisplay">
+        <RubricDisplay
+          rubricId={Number(id)}
+          onCriterionSelect={handleCriterionSelect}
+          grades={review}
+        />
+      </div>
 
-      {isTeacher() && <RubricCreator id={Number(id)} />}
+      {isTeacher() && (
+        <div className="assignmentRubric">
+          <RubricCreator id={Number(id)} />
+        </div>
+      )}
 
+      <AssignmentAttachment assignmentId={Number(id)} />
+      <ConclusionSection assignmentId={Number(id)} />
 
       {!isTeacher() && (
-        <div>
+        <div className="groupMembers">
           <h3>Select a group member to review</h3>
           {stuGroup.map((stus) => (
             <div key={stus.userID}>
@@ -197,19 +241,31 @@ export default function Assignment() {
             </p>
           )}
 
-          <Button
-            onClick={() => {
+          <button
+            className="submitReview"
+            onClick={async () => {
               if (revieweeID === 0) {
-                alert("Please select a group member to review.")
-                return
+                alert("Please select a group member to review.");
+                return;
               }
-              window.location.href = `/assignments/${id}/review/${revieweeID}`
+              try {
+                const reviewResponse = await createReview(Number(id), stuID, revieweeID);
+                const reviewData = await reviewResponse.json();
+                for (const criterion of selectedCriteria) {
+                  await createCriterion(reviewData.id, criterion.row, criterion.column, "");
+                }
+                // Upload attached files if any
+                await handleReviewWithFiles(reviewData.id);
+                console.log("Review submitted successfully");
+              } catch (error) {
+                console.error("Error submitting review:", error);
+              }
             }}
           >
-            Review This Member
-          </Button>
+            Submit Review
+          </button>
         </div>
       )}
-    </div>
-  )
+    </>
+  );
 }

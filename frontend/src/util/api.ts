@@ -339,6 +339,98 @@ export const getStudentFeedback = async (assignmentId: number): Promise<Feedback
   return await resp.json()
 }
 
+// ============================================================
+// ASSIGNMENT FILE ATTACHMENTS (Feature A) — Dev 5
+// ============================================================
+
+export const uploadAssignmentFile = async (
+  assignmentId: number,
+  file: File
+): Promise<{ message: string; filename: string; size: string }> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(
+    `${BASE_URL}/assignment/${assignmentId}/upload`,
+    {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    }
+  );
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.msg || errorData.message || `Upload failed: ${response.status}`
+    );
+  }
+
+  return await response.json();
+};
+
+export const getAssignmentAttachmentUrl = (assignmentId: number): string => {
+  return `${BASE_URL}/assignment/${assignmentId}/attachment`;
+};
+
+export const downloadAssignmentAttachment = async (
+  assignmentId: number,
+  filename: string = "attachment.pdf"
+): Promise<void> => {
+  const response = await fetch(
+    `${BASE_URL}/assignment/${assignmentId}/attachment`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    throw new Error(`Download failed: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};
+
+export const deleteAssignmentAttachment = async (
+  assignmentId: number
+): Promise<{ message: string }> => {
+  const response = await fetch(
+    `${BASE_URL}/assignment/${assignmentId}/attachment`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.msg || errorData.message || `Delete failed: ${response.status}`
+    );
+  }
+
+  return await response.json();
+};
+
+// ============================================================
+// UPDATE ASSIGNMENT (from dev)
+// ============================================================
+
 export const updateAssignment = async (assignmentId: number, name: string, description_html: string) => {
   const response = await fetch(`${BASE_URL}/assignment/edit_assignment/${assignmentId}`, {
     method: "PATCH",
@@ -385,3 +477,91 @@ export const downloadReviewFile = (fileId: number): string => {
   return `${BASE_URL}/review/file/${fileId}`;
 };
 
+// ============================================================
+// CONCLUSION FILES (Feature B) — Dev 5
+// ============================================================
+
+export const uploadConclusionFile = async (
+  assignmentId: number,
+  file: File
+): Promise<{ message: string; file_id: number; filename: string; size: string }> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(
+    `${BASE_URL}/assignment/${assignmentId}/conclusion/upload`,
+    {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    }
+  );
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.msg || errorData.message || `Upload failed: ${response.status}`
+    );
+  }
+
+  return await response.json();
+};
+
+export const listConclusionFiles = async (
+  assignmentId: number
+): Promise<{
+  assignment_id: number;
+  files: Array<{
+    file_id: number;
+    filename: string;
+    uploaded_at: string | null;
+    teacher: string | null;
+  }>;
+}> => {
+  const resp = await fetch(
+    `${BASE_URL}/assignment/${assignmentId}/conclusion/files`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Failed to list conclusion files: ${resp.status}`);
+  }
+
+  return await resp.json();
+};
+
+export const downloadConclusionFile = async (
+  fileId: number,
+  filename: string = "conclusion.pdf"
+): Promise<void> => {
+  const response = await fetch(
+    `${BASE_URL}/review/file/${fileId}`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    throw new Error(`Download failed: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};

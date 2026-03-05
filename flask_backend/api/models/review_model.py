@@ -1,15 +1,12 @@
 """
 Review model for the peer evaluation app.
 """
-
 from sqlalchemy.orm import joinedload
-
 from .db import db
 
 
 class Review(db.Model):
     """Review model representing peer evaluations"""
-
     __tablename__ = "Review"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -27,6 +24,9 @@ class Review(db.Model):
     )
     criteria = db.relationship(
         "Criterion", back_populates="review", cascade="all, delete-orphan", lazy="dynamic"
+    )
+    files = db.relationship(
+        "ReviewFile", back_populates="review", cascade="all, delete-orphan", lazy="dynamic"
     )
 
     def __init__(self, assignmentID, reviewerID, revieweeID):
