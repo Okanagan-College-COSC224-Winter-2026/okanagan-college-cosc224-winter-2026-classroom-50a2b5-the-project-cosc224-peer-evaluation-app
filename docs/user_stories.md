@@ -2,7 +2,7 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## US1 – Student Peer Review Access — **Backlog**
+## US1 – Student Peer Review Access — **Complete**
 
 **As a student, I want to be able to access a set number of assignments assigned by my instructor, so that I can provide feedback on my classmates’ work.**
 
@@ -21,7 +21,8 @@
 - [ ] Student cannot open unassigned submissions  
 - [ ] Opening an assigned submission shows the content and review interface  
 - [ ] Submitted feedback marks that review as complete  
-- [ ] If the review period has ended, the student cannot submit feedback and is notified  
+- [ ] If the review period has ended, the student cannot submit feedback and is notified
+- [ ] Extension: Students may attach files (PDF, images, documents) when submitting reviews
 
 ---
 
@@ -79,6 +80,8 @@
 
 - [ ] Instructor can create a class  
 - [ ] Instructor can create an assignment under that class  
+- [ ] Assignment supports rich text description (stored in description_html)  
+- [ ] Instructor can upload a PDF attachment (max 10MB)    
 - [ ] Students in that class can see the assignment  
 - [ ] Instructor can edit or delete the assignment before its start or due date  
 
@@ -171,7 +174,9 @@
 
 - [ ] Instructor can view all assignments for a class in one place  
 - [ ] Instructor can open an assignment and view its peer review settings  
-- [ ] Instructor can edit or delete an assignment from the same interface  
+- [ ] Instructor can edit an assignment’s rich text description  
+- [ ] Instructor can replace or remove the PDF attachment  
+- [ ] Instructor can delete an assignment from the same interface    
 - [ ] Actions provide clear success or error messages  
 
 ---
@@ -193,7 +198,7 @@
 
 ---
 
-## US11 – Rubric Creation — **In-Progress**
+## US11 – Rubric Creation — **Complete**
 
 **As an instructor, I want to be able to create a rubric, so that students have a set of criteria to mark against.**
 
@@ -212,7 +217,7 @@
 
 ---
 
-## US12 – Student Feedback Viewing — **Backlog**
+## US12 – Student Feedback Viewing — **Complete**
 
 **As a student, I want to be able to view the feedback I receive from my peers, so that I can understand how to improve my work.**
 
@@ -225,7 +230,8 @@
 
 - [ ] Student can open an assignment and see received feedback  
 - [ ] Feedback shows rubric scores and comments  
-- [ ] Feedback remains available after viewing  
+- [ ] Feedback remains available after viewing
+- [ ] Extension: Attached review and conclusion files are downloadable on feedback pages  
 
 ---
 
@@ -347,7 +353,7 @@
 
 ---
 
-## US20 – Student Course Grade on Course Card — **Backlog**
+## US20 – Student Course Grade on Course Card — **Complete**
 
 **As a student, I want to see my total grade on each course card so that I know how I am performing.**
 

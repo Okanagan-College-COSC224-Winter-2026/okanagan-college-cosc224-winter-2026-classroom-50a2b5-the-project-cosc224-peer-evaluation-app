@@ -14,8 +14,8 @@ import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
 import ChangePasswordForm from "./pages/ChangePasswordForm";
-import Feedback from "./pages/Feedback";
-
+import ReviewSubmission from "./pages/ReviewSubmission";
+import FeedbackView from "./pages/FeedbackView";
 
 function AppContent() {
   const location = useLocation();
@@ -72,26 +72,28 @@ function AppContent() {
             </ProtectedRoute>
           } />
 
+          <Route path="/assignments/:id/review/:revieweeId" element={
+            <ProtectedRoute>
+              <ReviewSubmission />
+            </ProtectedRoute>
+          } />
+
           <Route path="/assignments/:id/group" element={
             <ProtectedRoute>
               <Group />
             </ProtectedRoute>
           } />
-
-          {/* Sprint B - Feature B: Feedback with file download links */}
-          <Route path="/assignments/:assignmentId/feedback/:revieweeId" element={
+          
+          <Route path="/assignments/:id/feedback" element={
             <ProtectedRoute>
-              <Feedback />
+              <FeedbackView />
             </ProtectedRoute>
           } />
-
-          {/* Sprint C - Feature C: Password change form */}
           <Route path="/change-password-form" element={
             <ProtectedRoute>
               <ChangePasswordForm />
             </ProtectedRoute>
           } />
-
         </Routes>
       </div>
     </div>
