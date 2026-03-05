@@ -157,6 +157,8 @@ def enroll_students():
     # check if the authenticated user is the teacher of the class
     email = get_jwt_identity()
     user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
     if course.teacherID != user.id:
         return jsonify({"msg": "You are not authorized to enroll students in this class"}), 403
 

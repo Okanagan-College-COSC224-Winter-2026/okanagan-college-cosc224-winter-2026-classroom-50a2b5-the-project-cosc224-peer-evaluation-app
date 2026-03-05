@@ -202,7 +202,4 @@ def assignment_feedback(assignment_id):
 
     feedback = get_assignment_feedback(assignment_id, user.id)
 
-    if feedback is None:
-        return jsonify({"msg": "Assignment not found"}), 404
-
     return jsonify(feedback), 200

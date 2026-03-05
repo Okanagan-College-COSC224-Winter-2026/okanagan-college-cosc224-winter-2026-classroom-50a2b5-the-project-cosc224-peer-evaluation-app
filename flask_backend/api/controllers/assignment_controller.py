@@ -70,8 +70,6 @@ def edit_assignment(assignment_id):
         return jsonify({"msg": "User not found"}), 404
 
     course = Course.get_by_id(assignment.courseID)
-    if course is None:
-        return jsonify({"msg": "Course not found"}), 404
 
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
@@ -112,8 +110,6 @@ def delete_assignment(assignment_id):
         return jsonify({"msg": "User not found"}), 404
 
     course = Course.get_by_id(assignment.courseID)
-    if not course:
-        return jsonify({"msg": "Course not found"}), 404
 
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
