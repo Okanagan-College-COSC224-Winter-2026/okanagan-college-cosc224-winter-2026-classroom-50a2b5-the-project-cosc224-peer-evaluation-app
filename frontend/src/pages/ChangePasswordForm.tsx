@@ -1,5 +1,6 @@
 import { useState, ChangeEvent } from "react"
 import { changePassword } from "../util/api"
+import PasswordToggle from "../components/PasswordToggle"
 
 interface ValidationState {
   minLength: boolean
@@ -52,7 +53,7 @@ export default function ChangePasswordForm() {
 
   const CriterionRow = ({ met, label }: { met: boolean; label: string }) => (
     <p style={{ color: met ? "green" : "red", margin: "2px 0" }}>
-      {met ? "✅" : "❌"} {label}
+      {met ? "\u2705" : "\u274C"} {label}
     </p>
   )
 
@@ -61,22 +62,30 @@ export default function ChangePasswordForm() {
       <h2>Change Password</h2>
 
       <label>Current Password</label>
-      <input
-        type="password"
-        value={currentPassword}
-        onChange={(e: ChangeEvent<HTMLInputElement>) => setCurrentPassword(e.target.value)}
-        placeholder="Enter current password"
-        style={{ display: "block", width: "100%", marginBottom: "1rem", padding: "0.5rem" }}
-      />
+      <PasswordToggle>
+        {(inputType) => (
+          <input
+            type={inputType}
+            value={currentPassword}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setCurrentPassword(e.target.value)}
+            placeholder="Enter current password"
+            style={{ display: "block", width: "100%", marginBottom: "1rem", padding: "0.5rem" }}
+          />
+        )}
+      </PasswordToggle>
 
       <label>New Password</label>
-      <input
-        type="password"
-        value={newPassword}
-        onChange={(e: ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)}
-        placeholder="Enter new password"
-        style={{ display: "block", width: "100%", marginBottom: "0.5rem", padding: "0.5rem" }}
-      />
+      <PasswordToggle>
+        {(inputType) => (
+          <input
+            type={inputType}
+            value={newPassword}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)}
+            placeholder="Enter new password"
+            style={{ display: "block", width: "100%", marginBottom: "0.5rem", padding: "0.5rem" }}
+          />
+        )}
+      </PasswordToggle>
 
       {newPassword.length > 0 && (
         <div style={{ marginBottom: "1rem", fontSize: "0.9rem" }}>
@@ -88,13 +97,17 @@ export default function ChangePasswordForm() {
       )}
 
       <label>Confirm New Password</label>
-      <input
-        type="password"
-        value={confirmPassword}
-        onChange={(e: ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
-        placeholder="Confirm new password"
-        style={{ display: "block", width: "100%", marginBottom: "0.5rem", padding: "0.5rem" }}
-      />
+      <PasswordToggle>
+        {(inputType) => (
+          <input
+            type={inputType}
+            value={confirmPassword}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
+            placeholder="Confirm new password"
+            style={{ display: "block", width: "100%", marginBottom: "0.5rem", padding: "0.5rem" }}
+          />
+        )}
+      </PasswordToggle>
       {confirmPassword.length > 0 && (
         <CriterionRow met={validation.passwordsMatch} label="Passwords match" />
       )}

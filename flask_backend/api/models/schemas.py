@@ -34,6 +34,12 @@ class CourseSchema(Schema):
     course_code = fields.Str()
 
 
+class CourseListSchema(Schema):
+    id = fields.Int(dump_only=True)
+    course_name = fields.Str()
+    course_code = fields.Str()
+
+
 class CourseGroupSchema(Schema):
     id = fields.Int(dump_only=True)
     courseID = fields.Int(required=True)
@@ -136,3 +142,12 @@ class ConclusionFileSchema(Schema):
     filename = fields.Str(required=True)
     path = fields.Str(required=True)
     uploaded_at = fields.DateTime(dump_only=True)
+
+
+# ----------------------------
+# Password change (Feature C)
+# ----------------------------
+
+class PasswordChangeSchema(Schema):
+    current_password = fields.Str(required=True)
+    new_password = fields.Str(required=True)
