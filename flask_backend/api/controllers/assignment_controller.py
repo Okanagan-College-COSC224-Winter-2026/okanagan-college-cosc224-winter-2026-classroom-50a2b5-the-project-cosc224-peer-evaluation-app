@@ -81,6 +81,7 @@ def edit_assignment(assignment_id):
 
     assignment.name = data.get("name", assignment.name)
     assignment.rubric_text = data.get("rubric", assignment.rubric_text)
+    assignment.description_html = data.get("description_html", assignment.description_html)
     due_date = data.get("due_date")
     if due_date:
         assignment.due_date = datetime.fromisoformat(due_date)

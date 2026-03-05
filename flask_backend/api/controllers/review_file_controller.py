@@ -242,10 +242,6 @@ def upload_conclusion_file(assignment_id):
 
 
 # ============================================================
-# GET /assignment/<id>/conclusion/files — List conclusion files
-# ============================================================
-
-# ============================================================
 # GET /assignment/<id>/conclusion/file/<file_id> — Download conclusion file
 # ============================================================
 

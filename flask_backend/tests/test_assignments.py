@@ -207,6 +207,52 @@ def test_teacher_can_edit_assignment_before_due_date(test_client, make_admin):
     assert edit_response.json["assignment"]["due_date"] == "2099-11-30T23:59:59"
 
 
+def test_teacher_can_edit_assignment_description_html(test_client, make_admin):
+    """
+    GIVEN a teacher user
+    WHEN they edit an assignment to add description_html
+    THEN the assignment should be updated with the HTML description
+    """
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    class_response = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "English 101"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_response.json["class"]["id"]
+
+    future_due = datetime.datetime(2099, 12, 31, 23, 59, 59).isoformat()
+
+    assignment_response = test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps(
+            {
+                "courseID": class_id,
+                "name": "Essay 1",
+                "rubric": "Quality",
+                "due_date": future_due,
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+    assignment_id = assignment_response.json["assignment"]["id"]
+
+    edit_response = test_client.patch(
+        f"/assignment/edit_assignment/{assignment_id}",
+        data=json.dumps({"description_html": "<h1>Assignment Instructions</h1><p>Write an essay.</p>"}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert edit_response.status_code == 200
+    assert edit_response.json["assignment"]["description_html"] == "<h1>Assignment Instructions</h1><p>Write an essay.</p>"
+
+
 def test_teacher_cannot_edit_assignment_after_due_date(test_client, make_admin):
     """
     GIVEN a teacher user
