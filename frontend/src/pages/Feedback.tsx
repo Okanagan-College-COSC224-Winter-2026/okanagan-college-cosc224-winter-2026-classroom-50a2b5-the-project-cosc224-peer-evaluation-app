@@ -12,7 +12,7 @@ interface ReviewFile {
 
 export default function Feedback() {
   const { assignmentId, revieweeId } = useParams();
-  const [reviewId, setReviewId] = useState<number | null>(null);
+  const [, setReviewId] = useState<number | null>(null);
   const [files, setFiles] = useState<ReviewFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -169,7 +169,7 @@ export const getCriteria = async (rubricID: number) => {
   return await resp.json()
 }
 
-export const createCriteria = async (rubricID: number, question: string, scoreMax: number, canComment: boolean, hasScore: boolean = true) => {
+export const createCriteria = async (rubricID: number, question: string, scoreMax: number, _canComment: boolean, hasScore: boolean = true) => {
   const response = await fetch(`${BASE_URL}/assignment/rubric/${rubricID}/criteria`, {
     method: 'POST',
     body: JSON.stringify({ question, scoreMax, hasScore }),
@@ -180,7 +180,7 @@ export const createCriteria = async (rubricID: number, question: string, scoreMa
   if (!response.ok) throw new Error(`Response status: ${response.status}`);
 }
 
-export const createRubric = async (id: number, assignmentID: number, canComment: boolean): Promise<{ id: number }> => {
+export const createRubric = async (_id: number, assignmentID: number, canComment: boolean): Promise<{ id: number }> => {
   const response = await fetch(`${BASE_URL}/assignment/${assignmentID}/rubric`, {
     method: 'POST',
     body: JSON.stringify({ canComment }),
