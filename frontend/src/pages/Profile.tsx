@@ -1,20 +1,44 @@
-// import { useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import './Profile.css'
-// import { useEffect, useState } from 'react'
-// import { getProfile } from '../util/api'
+import { useEffect, useState } from 'react'
+import { getProfile, updateProfile } from '../util/api'
 
 export default function Profile() {
-  // const { id } = useParams()
+  const { id } = useParams<{ id: string }>()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [nameInput, setNameInput] = useState('')
 
-  // const [profile, setProfile] = useState({})
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await getProfile(id)
+        setProfile(data)
+        setNameInput(data.name)
+      } catch (err) {
+        console.error(err)
+        setError('Unable to fetch profile information.')
+      }
+    }
+    load()
+  }, [id])
 
-  // useEffect(() => {
-  //   const f = async () => {
-  //     setProfile(await getProfile(id))
-  //   }
+  if (error) {
+    return (
+      <div className="Profile">
+        <p className="error">{error}</p>
+      </div>
+    )
+  }
 
-  //   f()
-  // }, [])
+  if (!profile) {
+    return (
+      <div className="Profile">
+        <p>Loading...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="Profile">
@@ -24,12 +48,55 @@ export default function Profile() {
 
       <div className="profile-info">
         <h1>Full Name</h1>
-        <span>Place Holder</span>
+        {editing ? (
+          <input
+            type="text"
+            value={nameInput}
+            onChange={e => setNameInput(e.target.value)}
+          />
+        ) : (
+          <span>{profile.name}</span>
+        )}
+
         <h1>Email</h1>
-        <span>placeholder@email.com</span>
-        <button onClick={() => window.location.href = '/change-password'}
-          style={{ marginTop: '1rem', padding: '0.5rem 1rem', cursor: 'pointer' }}>
-          Change Password
+        <span>{profile.email}</span>
+        <h1>Role</h1>
+        <span>{profile.role}</span>
+
+        {editing ? (
+          <>
+            <button onClick={async () => {
+                try {
+                  const updated = await updateProfile({ name: nameInput });
+                  setProfile(updated);
+                  setEditing(false);
+                } catch (e) {
+                  console.error(e);
+                  setError('Could not save changes');
+                }
+              }}
+            >
+              Save
+            </button>
+            <button onClick={() => { setEditing(false); setNameInput(profile.name); }}>
+              Cancel
+            </button>
+          </>
+        ) : (
+          <button onClick={() => setEditing(true)}>Edit name</button>
+        )}
+
+        <p className="note">
+          If any of the above information is incorrect, please contact your instructor or
+          administrator to request a correction.
+        </p>
+        <button
+          className="request-correction"
+          onClick={() => {
+            alert('Please contact your instructor or administrator to request a correction');
+          }}
+        >
+          Request correction
         </button>
       </div>
     </div>
