@@ -223,3 +223,51 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 - `404` — Assignment not found
 
 **Privacy:** Reviewer identities are never included in the response.
+
+### Feature B: File Attachments on Reviews & Conclusions
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| /review/<id>/upload | POST | Student | Upload files with peer review submission |
+| /review/<id>/files | GET | Any | List files attached to a review |
+| /review/file/<file_id> | GET | Any | Download a review file |
+| /assignment/<id>/conclusion/upload | POST | Teacher | Upload conclusion file |
+| /assignment/<id>/conclusion/files | GET | Any | List conclusion files for assignment |
+---
+
+## Assignment File Attachment Endpoints
+
+### POST /assignment/<id>/upload
+**Description:** Upload a PDF attachment to an assignment.  
+**Authentication:** @jwt_required() – Teacher only  
+**Request Type:** multipart/form-data  
+**File Field:** file  
+
+**Validation:**
+- File must be PDF
+- Maximum size: 10MB
+
+**Response (200 OK):**
+```json
+{
+  "message": "File uploaded successfully",
+  "filename": "assignment_spec.pdf",
+  "size": "2.4MB"
+}
+
+---
+
+## Password Management (Feature C)
+
+### PUT /user/password
+
+**Description:** Change authenticated user's password.
+
+**Auth:** `@jwt_required()` — Any authenticated role
+
+**Request Body:**
+```json
+{
+  "current_password": "password123",
+  "new_password": "MySecure#1"
+}

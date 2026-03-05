@@ -47,7 +47,7 @@ def test_teacher_can_create_assignment(test_client, make_admin):
     assert assignment_response.status_code == 201
     assert assignment_response.json["msg"] == "Assignment created"
     assert assignment_response.json["assignment"]["name"] == "Essay 1"
-    assert assignment_response.json["assignment"]["rubric_text"] == "Quality of writing"
+    assert assignment_response.json["assignment"]["rubric"] == "Quality of writing"
     assert assignment_response.json["assignment"]["due_date"] == "2099-12-31T23:59:59"
 
 
@@ -71,7 +71,7 @@ def test_create_assignment_missing_fields(test_client, make_admin):
         headers={"Content-Type": "application/json"},
     )
     assert response.status_code == 400
-    assert response.json["msg"] == "Course ID is required"
+    assert response.json["msg"] == "courseID and name are required"
 
     response = test_client.post(
         "/assignment/create_assignment",
@@ -79,7 +79,7 @@ def test_create_assignment_missing_fields(test_client, make_admin):
         headers={"Content-Type": "application/json"},
     )
     assert response.status_code == 400
-    assert response.json["msg"] == "Assignment name is required"
+    assert response.json["msg"] == "courseID and name are required"
 
 
 def test_non_assigned_teacher_cannot_create_assignment(test_client, make_admin):
@@ -116,7 +116,7 @@ def test_non_assigned_teacher_cannot_create_assignment(test_client, make_admin):
         headers={"Content-Type": "application/json"},
     )
     assert response.status_code == 403
-    assert response.json["msg"] == "Unauthorized: You are not the teacher of this class"
+    assert response.json["msg"] == "Forbidden: you are not the teacher of this class"
 
 
 def test_nonexistent_class_cannot_create_assignment(test_client, make_admin):
@@ -203,7 +203,7 @@ def test_teacher_can_edit_assignment_before_due_date(test_client, make_admin):
     assert edit_response.status_code == 200
     assert edit_response.json["msg"] == "Assignment updated"
     assert edit_response.json["assignment"]["name"] == "Updated Lab Report 1"
-    assert edit_response.json["assignment"]["rubric_text"] == "Thoroughness"
+    assert edit_response.json["assignment"]["rubric"] == "Thoroughness"
     assert edit_response.json["assignment"]["due_date"] == "2099-11-30T23:59:59"
 
 
@@ -257,7 +257,7 @@ def test_teacher_cannot_edit_assignment_after_due_date(test_client, make_admin):
     """
     GIVEN a teacher user
     WHEN they try to edit an assignment after its due date
-    THEN the API should return a 400 error
+    THEN the API should return a 403 error
     """
     make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
 
@@ -293,8 +293,8 @@ def test_teacher_cannot_edit_assignment_after_due_date(test_client, make_admin):
         data=json.dumps({"name": "Updated Painting 1"}),
         headers={"Content-Type": "application/json"},
     )
-    assert edit_response.status_code == 400
-    assert edit_response.json["msg"] == "Assignment cannot be modified after its due date"
+    assert edit_response.status_code == 403
+    assert edit_response.json["msg"] == "Cannot edit: assignment is past due date"
 
 
 def test_non_assigned_teacher_cannot_edit_assignment(test_client, make_admin):
@@ -338,7 +338,7 @@ def test_non_assigned_teacher_cannot_edit_assignment(test_client, make_admin):
         headers={"Content-Type": "application/json"},
     )
     assert edit_response.status_code == 403
-    assert edit_response.json["msg"] == "Unauthorized: You are not the teacher of this class"
+    assert edit_response.json["msg"] == "Forbidden: you are not the teacher of this class"
 
 
 def test_delete_assignment(test_client, make_admin):
@@ -388,7 +388,7 @@ def test_delete_assignment_after_due_date(test_client, make_admin):
     """
     GIVEN a teacher user
     WHEN they try to delete an assignment after its due date
-    THEN the API should return a 400 error
+    THEN the API should return a 403 error
     """
     make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
 
@@ -423,8 +423,8 @@ def test_delete_assignment_after_due_date(test_client, make_admin):
         f"/assignment/delete_assignment/{assignment_id}",
         headers={"Content-Type": "application/json"},
     )
-    assert delete_response.status_code == 400
-    assert delete_response.json["msg"] == "Assignment cannot be deleted after its due date"
+    assert delete_response.status_code == 403
+    assert delete_response.json["msg"] == "Cannot delete: assignment is past due date"
 
 
 def test_non_assigned_teacher_cannot_delete_assignment(test_client, make_admin):
@@ -474,7 +474,7 @@ def test_non_assigned_teacher_cannot_delete_assignment(test_client, make_admin):
         headers={"Content-Type": "application/json"},
     )
     assert delete_response.status_code == 403
-    assert delete_response.json["msg"] == "Unauthorized: You are not the teacher of this class"
+    assert delete_response.json["msg"] == "Forbidden: you are not the teacher of this class"
 
 
 def test_unauthenticated_user_cannot_delete_assignment(test_client):

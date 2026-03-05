@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 import Textbox from '../components/Textbox';
 import StatusMessage from '../components/StatusMessage';
+import PasswordToggle from '../components/PasswordToggle';
 import { changePassword } from '../util/api';
 import './LoginPage.css';
 
@@ -70,32 +71,44 @@ export default function ChangePassword() {
           <div className="LoginInputs">
             <div className="LoginInputChunk">
               <span>Current Password</span>
-              <Textbox
-                type='password'
-                placeholder='Current password...'
-                onInput={setCurrentPassword}
-                className='LoginInput'
-              />
+              <PasswordToggle>
+                {(inputType) => (
+                  <Textbox
+                    type={inputType}
+                    placeholder='Current password...'
+                    onInput={setCurrentPassword}
+                    className='LoginInput'
+                  />
+                )}
+              </PasswordToggle>
             </div>
 
             <div className="LoginInputChunk">
               <span>New Password</span>
-              <Textbox
-                type='password'
-                placeholder='New password...'
-                onInput={setNewPassword}
-                className='LoginInput'
-              />
+              <PasswordToggle>
+                {(inputType) => (
+                  <Textbox
+                    type={inputType}
+                    placeholder='New password...'
+                    onInput={setNewPassword}
+                    className='LoginInput'
+                  />
+                )}
+              </PasswordToggle>
             </div>
 
             <div className="LoginInputChunk">
               <span>Confirm New Password</span>
-              <Textbox
-                type='password'
-                placeholder='Confirm new password...'
-                onInput={setConfirmPassword}
-                className='LoginInput'
-              />
+              <PasswordToggle>
+                {(inputType) => (
+                  <Textbox
+                    type={inputType}
+                    placeholder='Confirm new password...'
+                    onInput={setConfirmPassword}
+                    className='LoginInput'
+                  />
+                )}
+              </PasswordToggle>
             </div>
           </div>
         </div>

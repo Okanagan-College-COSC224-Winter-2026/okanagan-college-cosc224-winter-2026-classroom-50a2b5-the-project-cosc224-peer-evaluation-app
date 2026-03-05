@@ -2,15 +2,12 @@
 ReviewFile model for the peer evaluation app.
 Stores file attachments uploaded alongside peer reviews.
 """
-
 from datetime import datetime
-
 from .db import db
 
 
 class ReviewFile(db.Model):
     """File attachment linked to a specific peer review."""
-
     __tablename__ = "ReviewFile"
 
     id = db.Column(db.Integer, primary_key=True)

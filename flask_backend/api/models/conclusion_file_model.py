@@ -2,15 +2,12 @@
 ConclusionFile model for the peer evaluation app.
 Stores conclusion/summary files uploaded by teachers for assignments.
 """
-
 from datetime import datetime
-
 from .db import db
 
 
 class ConclusionFile(db.Model):
     """File attachment linked to an assignment conclusion (teacher-uploaded)."""
-
     __tablename__ = "ConclusionFile"
 
     id = db.Column(db.Integer, primary_key=True)

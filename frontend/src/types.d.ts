@@ -46,7 +46,11 @@ interface Assignment {
   courseID: number;
   rubric?: string;
   due_date?: string;
+  description_html?: string;
+  attachment_filename?: string;
+  has_attachment?: boolean;
 }
+
 
 interface CourseWithAssignments extends Course {
   assignments?: Assignment[];

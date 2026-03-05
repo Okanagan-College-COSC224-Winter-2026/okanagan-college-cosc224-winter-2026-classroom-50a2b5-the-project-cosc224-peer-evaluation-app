@@ -1,15 +1,12 @@
 """
 Review model for the peer evaluation app.
 """
-
 from sqlalchemy.orm import joinedload
-
 from .db import db
 
 
 class Review(db.Model):
     """Review model representing peer evaluations"""
-
     __tablename__ = "Review"
 
     id = db.Column(db.Integer, primary_key=True)
