@@ -53,6 +53,7 @@ class UserLoginSchema(ma.Schema):
     password = fields.Str(required=True, load_only=True)
 
 
+<<<<<<< Updated upstream
 class UserListSchema(ma.SQLAlchemyAutoSchema):
     """Lightweight user schema for lists (minimal fields)"""
 
@@ -60,6 +61,20 @@ class UserListSchema(ma.SQLAlchemyAutoSchema):
         model = User
         fields = ("id", "name", "email", "role")
         dump_only = ("id",)
+=======
+class CourseListSchema(Schema):
+    id = fields.Int(dump_only=True)
+    course_name = fields.Str()
+    course_code = fields.Str()
+
+
+class CourseGroupSchema(Schema):
+    id = fields.Int(dump_only=True)
+    courseID = fields.Int(required=True)
+    group_name = fields.Str(required=True)
+    # keep nested course optional (dump only) if relationship exists
+    course = fields.Nested(CourseSchema, dump_only=True)
+>>>>>>> Stashed changes
 
 
 # ============================================================
@@ -209,6 +224,7 @@ class GroupMembersSchema(ma.SQLAlchemyAutoSchema):
 # ============================================================
 
 
+<<<<<<< Updated upstream
 class UserCourseSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = User_Course
@@ -223,3 +239,21 @@ class SubmissionSchema(ma.SQLAlchemyAutoSchema):
         load_instance = True
         include_fk = False
         sqla_session = db.session
+=======
+class ConclusionFileSchema(Schema):
+    id = fields.Int(dump_only=True)
+    assignmentID = fields.Int(required=True)
+    teacherID = fields.Int(required=True)
+    filename = fields.Str(required=True)
+    path = fields.Str(required=True)
+    uploaded_at = fields.DateTime(dump_only=True)
+
+
+# ----------------------------
+# Password change (Feature C)
+# ----------------------------
+
+class PasswordChangeSchema(Schema):
+    current_password = fields.Str(required=True)
+    new_password = fields.Str(required=True)
+>>>>>>> Stashed changes
