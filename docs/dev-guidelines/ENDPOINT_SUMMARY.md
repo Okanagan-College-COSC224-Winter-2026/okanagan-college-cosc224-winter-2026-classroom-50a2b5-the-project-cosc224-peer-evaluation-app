@@ -254,3 +254,20 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
   "filename": "assignment_spec.pdf",
   "size": "2.4MB"
 }
+
+---
+
+## Password Management (Feature C)
+
+### PUT /user/password
+
+**Description:** Change authenticated user's password.
+
+**Auth:** `@jwt_required()` — Any authenticated role
+
+**Request Body:**
+```json
+{
+  "current_password": "password123",
+  "new_password": "MySecure#1"
+}
