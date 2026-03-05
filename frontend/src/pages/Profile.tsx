@@ -1,12 +1,13 @@
-import { Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import './Profile.css'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import { useEffect, useState } from 'react'
 import { getProfile, updateProfile, listClasses } from '../util/api'
 
 export default function Profile() {
+  const { id } = useParams<{ id: string }>()
   const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [courses, setCourses] = useState<Course[]>([])
+  const [courses, setCourses] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
   const [nameInput, setNameInput] = useState('')
@@ -23,7 +24,7 @@ export default function Profile() {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await getProfile()
+        const data = await getProfile(id)
         setProfile(data)
         setNameInput(data.name)
         
@@ -36,7 +37,7 @@ export default function Profile() {
       }
     }
     load()
-  }, [])
+  }, [id])
 
   if (error) {
     return (
@@ -72,7 +73,7 @@ export default function Profile() {
           ) : (
             <span>{profile.name}</span>
           )}
-          {editing ? (
+          {editing && (
             <>
               <button className="save-btn" onClick={async () => {
                   try {
@@ -91,8 +92,6 @@ export default function Profile() {
                 Cancel
               </button>
             </>
-          ) : (
-            <button className="edit-name-btn" onClick={() => setEditing(true)}>Edit name</button>
           )}
         </div>
 
