@@ -1,25 +1,22 @@
 import { useEffect, useState, ChangeEvent } from "react";
 import { useParams } from "react-router-dom";
+import DOMPurify from "dompurify";
 import "./Assignment.css";
 import RubricCreator from "../components/RubricCreator";
 import RubricDisplay from "../components/RubricDisplay";
 import TabNavigation from "../components/TabNavigation";
-<<<<<<< Updated upstream
-import { isTeacher } from "../util/login";
-
-import { 
-=======
 import { isTeacher, isStudent } from "../util/login";
 import AssignmentAttachment from "../components/AssignmentAttachment";
 import ConclusionSection from "../components/ConclusionSection";
 
 import {
->>>>>>> Stashed changes
   listStuGroup,
   getUserId,
+  listCourseMembers,
   createReview,
   createCriterion,
-  getReview
+  getReview,
+  getAssignment,
 } from "../util/api";
 
 interface SelectedCriterion {
@@ -27,38 +24,28 @@ interface SelectedCriterion {
   column: number;
 }
 
+interface AssignmentData {
+  id: number;
+  name: string;
+  description_html?: string;
+}
+
 export default function Assignment() {
   const { id } = useParams();
-<<<<<<< Updated upstream
-  const [stuGroup, setStuGroup] = useState<StudentGroups[]>([]);
-  const [revieweeID, setRevieweeID] = useState<number>(0);
-  const [stuID, setStuID] = useState<number>(0);
-=======
   const [stuGroup, setStuGroup] = useState<any[]>([]);
   const [classMembers, setClassMembers] = useState<User[]>([]);
   const [revieweeID, setRevieweeID] = useState(0);
   const [stuID, setStuID] = useState(0);
->>>>>>> Stashed changes
   const [selectedCriteria, setSelectedCriteria] = useState<SelectedCriterion[]>([]);
   const [review, setReview] = useState<number[]>([]);
+  const [assignment, setAssignment] = useState<AssignmentData | null>(null);
 
   useEffect(() => {
-      (async () => {
-        const stuID = await getUserId();
+    (async () => {
+      const stuID = await getUserId();
       setStuID(stuID);
       const stus = await listStuGroup(Number(id), stuID);
       setStuGroup(stus);
-<<<<<<< Updated upstream
-        try {
-          const reviewResponse = await getReview(Number(id), stuID, revieweeID);
-          const reviewData = await reviewResponse.json();
-          setReview(reviewData.grades);
-          console.log("Review data:", reviewData);
-        } catch (error) {
-          console.error('Error fetching review:', error);
-        }
-      })();
-=======
 
       try {
         const assignmentData = await getAssignment(Number(id));
@@ -82,7 +69,6 @@ export default function Assignment() {
         // Members list unavailable
       }
     })();
->>>>>>> Stashed changes
   }, [revieweeID, id, stuID]);
 
   const nameFromId = (userId: number) => {
@@ -90,22 +76,16 @@ export default function Assignment() {
   };
 
   const handleCriterionSelect = (row: number, column: number) => {
-    // Check if this criterion is already selected
     const existingIndex = selectedCriteria.findIndex(
-      criterion => criterion.row === row && criterion.column === column
+      (criterion) => criterion.row === row && criterion.column === column
     );
-    
     if (existingIndex >= 0) {
-      // If already selected, remove it (toggle off)
-      setSelectedCriteria(prev => 
+      setSelectedCriteria((prev) =>
         prev.filter((_, index) => index !== existingIndex)
       );
     } else {
-      // Add the new criterion, removing any other selection in the same row
-      setSelectedCriteria(prev => {
-        // Remove any existing selection for this row
-        const filteredCriteria = prev.filter(criterion => criterion.row !== row);
-        // Add the new selection
+      setSelectedCriteria((prev) => {
+        const filteredCriteria = prev.filter((criterion) => criterion.row !== row);
         return [...filteredCriteria, { row, column }];
       });
     }
@@ -114,7 +94,6 @@ export default function Assignment() {
   function handleRadioChange(event: ChangeEvent<HTMLInputElement>): void {
     const selectedID = Number(event.target.value);
     setRevieweeID(selectedID);
-    console.log(`Selected group member ID: ${selectedID}`);
   }
 
   const tabs = [
@@ -131,49 +110,18 @@ export default function Assignment() {
       <div className="AssignmentHeader">
         <h2>Assignment {id}</h2>
       </div>
-<<<<<<< Updated upstream
-=======
 
       <TabNavigation tabs={tabs} />
->>>>>>> Stashed changes
 
-      <TabNavigation
-        tabs={[
-          {
-            label: "Home",
-            path: `/assignment/${id}`,
-          },
-          {
-            label: "Group",
-            path: `/assignment/${id}/group`,
-          }
-        ]}
-      />
+      {assignment?.description_html && (
+        <div
+          className="Assignment__description"
+          dangerouslySetInnerHTML={{
+            __html: DOMPurify.sanitize(assignment.description_html),
+          }}
+        />
+      )}
 
-<<<<<<< Updated upstream
-      <div className='assignmentRubricDisplay'>
-        <RubricDisplay rubricId={Number(id)} onCriterionSelect={handleCriterionSelect} grades={review} />
-      </div>
-      {
-        isTeacher() && 
-          <div className='assignmentRubric'>
-            <RubricCreator id={Number(id)}/>
-          </div>
-      }
-
-{
-      //List group members as radio buttons to select for given review
-      !isTeacher() && <div className='groupMembers'>
-        <h3>Select a group member to review</h3>
-          {stuGroup.map((stus) => {
-                return (
-                  <>
-                  <input type='radio' id={stus.userID.toString()} value={stus.userID} name='groupMembers' onChange={handleRadioChange}></input>
-                  <label htmlFor={stus.userID.toString()}>{stus.userID}</label>
-                  <br></br>
-                  </>
-                )
-=======
       <div className="assignmentRubricDisplay">
         <RubricDisplay
           rubricId={Number(id)}
@@ -224,30 +172,13 @@ export default function Assignment() {
                 console.log("Review submitted successfully");
               } catch (error) {
                 console.error("Error submitting review:", error);
->>>>>>> Stashed changes
               }
-            )
-          }
-          <button className='submitReview' onClick={async () => {
-            console.log("Submitting review with selected criteria:", selectedCriteria);
-            try {
-              const reviewResponse = await createReview(Number(id), stuID, revieweeID);
-              const reviewData = await reviewResponse.json();
-              console.log("Review response:", reviewData);
-              for (const criterion of selectedCriteria) {
-                await createCriterion(reviewData.id, criterion.row, criterion.column, "");
-              }
-              console.log('Review submitted successfully');
-            } catch (error) {
-              console.error('Error submitting review:', error);
-            }
-          }}>Submit Review</button>
-      </div>}
+            }}
+          >
+            Submit Review
+          </button>
+        </div>
+      )}
     </>
   );
-<<<<<<< Updated upstream
 }
-
-=======
-}
->>>>>>> Stashed changes
