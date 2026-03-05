@@ -294,6 +294,7 @@ export const getAssignment = async (assignmentId: number): Promise<Assignment> =
   return await resp.json()
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const getRubricByAssignment = async (assignmentId: number): Promise<any> => {
   const resp = await fetch(`${BASE_URL}/assignment/${assignmentId}/rubric`, {
     method: 'GET',

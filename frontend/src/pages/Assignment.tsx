@@ -34,7 +34,7 @@ interface AssignmentData {
 
 export default function Assignment() {
   const { id } = useParams();
-  const [stuGroup, setStuGroup] = useState<any[]>([]);
+  const [stuGroup, setStuGroup] = useState<StudentGroups[]>([]);
   const [classMembers, setClassMembers] = useState<User[]>([]);
   const [revieweeID, setRevieweeID] = useState(0);
   const [stuID, setStuID] = useState(0);
