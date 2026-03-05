@@ -34,7 +34,7 @@ export default function RubricDisplay({ rubricId }: RubricDisplayProps) {
     if (!rubricId) return;
 
     getRubricByAssignment(rubricId)
-    .then((data: any) => setRubric(data))
+    .then((data) => setRubric(data as RubricResponse))
     .catch(() => setRubric(null));
   }, [rubricId]);
 
