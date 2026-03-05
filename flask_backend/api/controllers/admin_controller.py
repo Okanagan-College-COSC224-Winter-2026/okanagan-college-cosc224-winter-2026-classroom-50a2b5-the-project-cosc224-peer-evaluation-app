@@ -94,6 +94,8 @@ def update_user_role(user_id):
     # Prevent self-demotion from admin
     current_email = get_jwt_identity()
     current_user = User.get_by_email(current_email)
+    if not current_user:
+        return jsonify({"msg": "User not found"}), 404
     if current_user.id == user_id and new_role != "admin":
         return jsonify({"msg": "Cannot demote yourself from admin role"}), 400
 
@@ -118,6 +120,8 @@ def delete_user(user_id):
     """Delete a user (admin only)"""
     current_email = get_jwt_identity()
     current_user = User.get_by_email(current_email)
+    if not current_user:
+        return jsonify({"msg": "User not found"}), 404
 
     # Prevent self-deletion
     if current_user.id == user_id:

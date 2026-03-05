@@ -8,6 +8,7 @@ Endpoints:
     GET    /review/file/<file_id>       — Download a specific review file
     POST   /assignment/<id>/conclusion/upload  — Upload conclusion file (teacher)
     GET    /assignment/<id>/conclusion/files   — List conclusion files for assignment
+    GET    /assignment/<id>/conclusion/file/<file_id> — Download a specific conclusion file
 """
 
 import os
@@ -238,6 +239,32 @@ def upload_conclusion_file(assignment_id):
         "filename": original_filename,
         "size": f"{size_mb:.1f}MB",
     }), 201
+
+
+# ============================================================
+# GET /assignment/<id>/conclusion/file/<file_id> — Download conclusion file
+# ============================================================
+
+@review_file_bp.route("/assignment/<int:assignment_id>/conclusion/file/<int:file_id>", methods=["GET"])
+@jwt_required()
+def download_conclusion_file(assignment_id, file_id):
+    """Download a specific conclusion file by its ID."""
+    conclusion_file = ConclusionFile.get_by_id(file_id)
+    if conclusion_file is None or conclusion_file.assignmentID != assignment_id:
+        return jsonify({"msg": "File not found"}), 404
+
+    if not os.path.isfile(conclusion_file.file_path):
+        return jsonify({"msg": "File not found on server"}), 404
+
+    directory = os.path.dirname(conclusion_file.file_path)
+    basename = os.path.basename(conclusion_file.file_path)
+
+    return send_from_directory(
+        directory,
+        basename,
+        as_attachment=True,
+        download_name=conclusion_file.filename,
+    )
 
 
 # ============================================================

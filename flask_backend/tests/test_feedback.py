@@ -128,8 +128,8 @@ def test_get_feedback_success(test_client, db):
     assert response.status_code == 200
     json_data = response.get_json()
     assert json_data["assignment_name"] == "Peer Review Assignment 1"
-    assert json_data["total_reviews_received"] == 2
-    assert len(json_data["criteria"]) == 2
+    assert json_data["total_reviews"] == 2
+    assert len(json_data["criteria_feedback"]) == 2
     assert "overall_avg" in json_data
     assert json_data["overall_avg"] > 0
 
@@ -140,8 +140,8 @@ def test_get_feedback_no_reviews(test_client, db):
     response = test_client.get(f"/student/assignments/{data['assignment1'].id}/feedback")
     assert response.status_code == 200
     json_data = response.get_json()
-    assert json_data["total_reviews_received"] == 0
-    assert json_data["criteria"] == []
+    assert json_data["total_reviews"] == 0
+    assert json_data["criteria_feedback"] == []
 
 
 def test_get_feedback_unauthenticated(test_client, db):
@@ -175,11 +175,11 @@ def test_feedback_score_aggregation(test_client, db):
     response = test_client.get(f"/student/assignments/{data['assignment1'].id}/feedback")
     assert response.status_code == 200
     json_data = response.get_json()
-    criteria = {cf["question"]: cf for cf in json_data["criteria"]}
-    assert criteria["Communication"]["average_score"] == 4.5
-    assert criteria["Communication"]["score_max"] == 5
-    assert criteria["Contribution"]["average_score"] == 3.5
-    assert criteria["Contribution"]["score_max"] == 5
+    criteria = {cf["question"]: cf for cf in json_data["criteria_feedback"]}
+    assert criteria["Communication"]["avg_score"] == 4.5
+    assert criteria["Communication"]["max_score"] == 5
+    assert criteria["Contribution"]["avg_score"] == 3.5
+    assert criteria["Contribution"]["max_score"] == 5
     assert "Good communicator" in criteria["Communication"]["comments"]
     assert "Excellent communication" in criteria["Communication"]["comments"]
     assert "Could contribute more" in criteria["Contribution"]["comments"]
