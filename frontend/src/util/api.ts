@@ -443,6 +443,40 @@ export const updateAssignment = async (assignmentId: number, name: string, descr
   return await response.json()
 }
 
+// Feature B - Review File Upload
+
+export const uploadReviewFiles = async (reviewID: number, files: File[]) => {
+  const formData = new FormData();
+  files.forEach((file) => formData.append("files", file));
+
+  const response = await fetch(`${BASE_URL}/review/${reviewID}/upload`, {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+  });
+  maybeHandleExpire(response);
+  if (!response.ok) {
+    throw new Error(`Response status: ${response.status}`);
+  }
+  return await response.json();
+};
+
+export const getReviewFiles = async (reviewID: number) => {
+  const resp = await fetch(`${BASE_URL}/review/${reviewID}/files`, {
+    method: "GET",
+    credentials: "include",
+  });
+  maybeHandleExpire(resp);
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+  return await resp.json();
+};
+
+export const downloadReviewFile = (fileId: number): string => {
+  return `${BASE_URL}/review/file/${fileId}`;
+};
+
 // ============================================================
 // CONCLUSION FILES (Feature B) — Dev 5
 // ============================================================

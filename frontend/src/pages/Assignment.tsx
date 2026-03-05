@@ -5,6 +5,10 @@ import "./Assignment.css";
 import RubricCreator from "../components/RubricCreator";
 import RubricDisplay from "../components/RubricDisplay";
 import TabNavigation from "../components/TabNavigation";
+import RichTextEditor from "../components/RichTextEditor";
+import Button from "../components/Button";
+import StatusMessage from "../components/StatusMessage";
+import ReviewFileUpload from "../components/ReviewFileUpload";
 import { isTeacher, isStudent } from "../util/login";
 import AssignmentAttachment from "../components/AssignmentAttachment";
 import ConclusionSection from "../components/ConclusionSection";
@@ -17,6 +21,8 @@ import {
   createCriterion,
   getReview,
   getAssignment,
+  updateAssignment,
+  uploadReviewFiles,
 } from "../util/api";
 
 interface SelectedCriterion {
@@ -39,23 +45,31 @@ export default function Assignment() {
   const [selectedCriteria, setSelectedCriteria] = useState<SelectedCriterion[]>([]);
   const [review, setReview] = useState<number[]>([]);
   const [assignment, setAssignment] = useState<AssignmentData | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editStatus, setEditStatus] = useState("");
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const stuID = await getUserId();
-      setStuID(stuID);
-      const stus = await listStuGroup(Number(id), stuID);
+      const fetchedID = await getUserId();
+      setStuID(fetchedID);
+      const stus = await listStuGroup(Number(id), fetchedID);
       setStuGroup(stus);
 
       try {
-        const assignmentData = await getAssignment(Number(id));
-        setAssignment(assignmentData);
-      } catch (error) {
-        console.error("Error fetching assignment:", error);
+        const data = await getAssignment(Number(id));
+        setAssignment(data);
+        setEditName(data.name ?? "");
+        setEditDescription(data.description_html ?? "");
+      } catch {
+        // Assignment unavailable
       }
 
       try {
-        const reviewResponse = await getReview(Number(id), stuID, revieweeID);
+        const reviewResponse = await getReview(Number(id), fetchedID, revieweeID);
         const reviewData = await reviewResponse.json();
         setReview(reviewData.grades);
       } catch {
@@ -91,10 +105,36 @@ export default function Assignment() {
     }
   };
 
-  function handleRadioChange(event: ChangeEvent<HTMLInputElement>): void {
-    const selectedID = Number(event.target.value);
-    setRevieweeID(selectedID);
+  function handleRadioChange(event: ChangeEvent<HTMLInputElement>) {
+    setRevieweeID(Number(event.target.value));
   }
+
+  const handleSaveDescription = async () => {
+    try {
+      setEditStatus("Saving...");
+      await updateAssignment(Number(id), editName, editDescription);
+      setAssignment((prev) =>
+        prev ? { ...prev, name: editName, description_html: editDescription } : prev
+      );
+      setIsEditing(false);
+      setEditStatus("Saved successfully!");
+      setTimeout(() => setEditStatus(""), 3000);
+    } catch {
+      setEditStatus("Error saving. Please try again.");
+    }
+  };
+
+  const handleReviewWithFiles = async (reviewId: number) => {
+    if (attachedFiles.length > 0) {
+      try {
+        await uploadReviewFiles(reviewId, attachedFiles);
+        setUploadStatus(`${attachedFiles.length} file(s) uploaded successfully.`);
+        setAttachedFiles([]);
+      } catch {
+        setUploadStatus("Error uploading files.");
+      }
+    }
+  };
 
   const tabs = [
     { label: "Home", path: `/assignments/${id}` },
@@ -113,13 +153,48 @@ export default function Assignment() {
 
       <TabNavigation tabs={tabs} />
 
-      {assignment?.description_html && (
-        <div
-          className="Assignment__description"
-          dangerouslySetInnerHTML={{
-            __html: DOMPurify.sanitize(assignment.description_html),
-          }}
-        />
+      {/* Description section — teachers can edit, everyone sees rendered HTML */}
+      {assignment && (
+        <div className="assignment-description-section">
+          {isTeacher() && !isEditing && (
+            <Button onClick={() => setIsEditing(true)}>Edit Description</Button>
+          )}
+          {isTeacher() && isEditing && (
+            <div className="edit-description-form">
+              <label>Assignment Name:</label>
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="edit-name-input"
+                title="Assignment name"
+                placeholder="Assignment name"
+              />
+              <label>Description:</label>
+              <RichTextEditor
+                value={editDescription}
+                onChange={setEditDescription}
+                placeholder="Write assignment instructions..."
+              />
+              <div className="edit-description-actions">
+                <Button onClick={handleSaveDescription}>Save</Button>
+                <Button onClick={() => setIsEditing(false)} type="secondary">Cancel</Button>
+              </div>
+              <StatusMessage message={editStatus} type="success" />
+            </div>
+          )}
+          {!isEditing && assignment.description_html && (
+            <div
+              className="assignment-description-html"
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(assignment.description_html),
+              }}
+            />
+          )}
+          {!isEditing && !assignment.description_html && (
+            <p className="assignment-no-description">No description added yet.</p>
+          )}
+        </div>
       )}
 
       <div className="assignmentRubricDisplay">
@@ -150,12 +225,22 @@ export default function Assignment() {
                 value={stus.userID}
                 name="groupMembers"
                 onChange={handleRadioChange}
+                title="Select group member"
               />
               <label htmlFor={stus.userID.toString()}>
                 {nameFromId(stus.userID)}
               </label>
             </div>
           ))}
+
+          <ReviewFileUpload files={attachedFiles} onChange={setAttachedFiles} />
+
+          {uploadStatus && (
+            <p style={{ color: uploadStatus.startsWith("Error") ? "red" : "green" }}>
+              {uploadStatus}
+            </p>
+          )}
+
           <button
             className="submitReview"
             onClick={async () => {
@@ -169,6 +254,8 @@ export default function Assignment() {
                 for (const criterion of selectedCriteria) {
                   await createCriterion(reviewData.id, criterion.row, criterion.column, "");
                 }
+                // Upload attached files if any
+                await handleReviewWithFiles(reviewData.id);
                 console.log("Review submitted successfully");
               } catch (error) {
                 console.error("Error submitting review:", error);
