@@ -32,6 +32,66 @@
   margin-bottom: 0.5rem;
 }
 
+.Profile .profile-info .name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.Profile .profile-info .name-row span {
+  font-size: 1rem;
+}
+
+.Profile .profile-info .name-row input {
+  font-size: 1rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.Profile .profile-info .edit-name-btn {
+  padding: 0.4rem 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.Profile .profile-info .edit-name-btn:hover {
+  background-color: #0056b3;
+}
+
+.Profile .profile-info .save-btn,
+.Profile .profile-info .cancel-btn {
+  padding: 0.4rem 0.8rem;
+  margin: 0;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.Profile .profile-info .save-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.Profile .profile-info .save-btn:hover {
+  background-color: #218838;
+}
+
+.Profile .profile-info .cancel-btn {
+  background-color: #6c757d;
+  color: white;
+}
+
+.Profile .profile-info .cancel-btn:hover {
+  background-color: #5a6268;
+}
+
 .Profile .profile-info .note {
   margin-top: 1rem;
   font-size: 0.9rem;
@@ -53,4 +113,238 @@
 .Profile .error {
   color: red;
   font-weight: bold;
+}
+
+.Profile .profile-info h2 {
+  font-size: 1.1rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+  border-top: 1px solid #ddd;
+  padding-top: 1rem;
+}
+
+.Profile .courses-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.Profile .courses-list li {
+  padding: 0.4rem 0;
+  font-size: 0.95rem;
+}
+
+.Profile .courses-list li a {
+  color: #007bff;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  cursor: pointer;
+}
+
+.Profile .courses-list li a:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+.Profile .empty {
+  color: #999;
+  font-style: italic;
+  margin: 0.5rem 0;
+}
+
+.change-password-btn {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.change-password-btn:hover {
+  background-color: #218838;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-width: 400px;
+  width: 90%;
+  padding: 0;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+.password-form {
+  padding: 1.5rem;
+  background-color: white;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.form-group input {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 4px rgba(0, 123, 255, 0.25);
+}
+
+.input-with-toggle {
+  position: relative;
+  width: 100%;
+}
+
+.input-with-toggle input {
+  width: 100%;
+  padding: 0.5rem;
+  padding-right: 2.8rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.input-with-toggle input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 4px rgba(0, 123, 255, 0.25);
+}
+
+.eye-toggle {
+  position: absolute;
+  right: -8px;
+  top: 40%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  transition: color 0.2s ease;
+  z-index: 10;
+  line-height: 1;
+}
+
+.eye-toggle i {
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eye-toggle:hover {
+  color: #666;
+}
+
+.password-form .success {
+  color: #28a745;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.submit-btn {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.submit-btn:hover {
+  background-color: #0056b3;
+}
+
+.cancel-btn {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background-color: #5a6268;
 }
