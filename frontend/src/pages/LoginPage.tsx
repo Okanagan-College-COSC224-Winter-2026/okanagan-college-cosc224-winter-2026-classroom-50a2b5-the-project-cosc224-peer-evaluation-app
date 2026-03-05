@@ -4,6 +4,7 @@ import './LoginPage.css';
 import Textbox from '../components/Textbox';
 import Button from '../components/Button';
 import StatusMessage from '../components/StatusMessage';
+import PasswordToggle from '../components/PasswordToggle';
 import { tryLogin } from '../util/api';
 
 export default function LoginPage() {
@@ -49,12 +50,16 @@ export default function LoginPage() {
 
             <div className="LoginInputChunk">
               <span>Password</span>
-              <Textbox
-                type='password'
-                placeholder='Password...'
-                onInput={setPassword}
-                className='LoginInput'
-              />
+              <PasswordToggle>
+                {(inputType) => (
+                  <Textbox
+                    type={inputType}
+                    placeholder='Password...'
+                    onInput={setPassword}
+                    className='LoginInput'
+                  />
+                )}
+              </PasswordToggle>
             </div>
           </div>
 
