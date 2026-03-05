@@ -8,7 +8,6 @@ import TabNavigation from "../components/TabNavigation";
 import RichTextEditor from "../components/RichTextEditor";
 import Button from "../components/Button";
 import StatusMessage from "../components/StatusMessage";
-import ReviewFileUpload from "../components/ReviewFileUpload";
 import { isTeacher, isStudent } from "../util/login";
 import AssignmentAttachment from "../components/AssignmentAttachment";
 import ConclusionSection from "../components/ConclusionSection";
@@ -17,12 +16,9 @@ import {
   listStuGroup,
   getUserId,
   listCourseMembers,
-  createReview,
-  createCriterion,
   getReview,
   getAssignment,
   updateAssignment,
-  uploadReviewFiles,
 } from "../util/api";
 
 interface SelectedCriterion {
@@ -49,8 +45,6 @@ export default function Assignment() {
   const [editDescription, setEditDescription] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editStatus, setEditStatus] = useState("");
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
-  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -121,18 +115,6 @@ export default function Assignment() {
       setTimeout(() => setEditStatus(""), 3000);
     } catch {
       setEditStatus("Error saving. Please try again.");
-    }
-  };
-
-  const handleReviewWithFiles = async (reviewId: number) => {
-    if (attachedFiles.length > 0) {
-      try {
-        await uploadReviewFiles(reviewId, attachedFiles);
-        setUploadStatus(`${attachedFiles.length} file(s) uploaded successfully.`);
-        setAttachedFiles([]);
-      } catch {
-        setUploadStatus("Error uploading files.");
-      }
     }
   };
 
@@ -233,36 +215,17 @@ export default function Assignment() {
             </div>
           ))}
 
-          <ReviewFileUpload files={attachedFiles} onChange={setAttachedFiles} />
-
-          {uploadStatus && (
-            <p style={{ color: uploadStatus.startsWith("Error") ? "red" : "green" }}>
-              {uploadStatus}
-            </p>
-          )}
-
           <button
             className="submitReview"
-            onClick={async () => {
+            onClick={() => {
               if (revieweeID === 0) {
                 alert("Please select a group member to review.");
                 return;
               }
-              try {
-                const reviewResponse = await createReview(Number(id), stuID, revieweeID);
-                const reviewData = await reviewResponse.json();
-                for (const criterion of selectedCriteria) {
-                  await createCriterion(reviewData.id, criterion.row, criterion.column, "");
-                }
-                // Upload attached files if any
-                await handleReviewWithFiles(reviewData.id);
-                console.log("Review submitted successfully");
-              } catch (error) {
-                console.error("Error submitting review:", error);
-              }
+              window.location.href = `/assignments/${id}/review/${revieweeID}`;
             }}
           >
-            Submit Review
+            Review This Member
           </button>
         </div>
       )}
