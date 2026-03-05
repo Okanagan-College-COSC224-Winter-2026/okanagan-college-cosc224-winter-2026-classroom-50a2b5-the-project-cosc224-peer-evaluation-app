@@ -35,6 +35,12 @@ def get_current_user():
         return jsonify({"msg": "User not found"}), 404
     return jsonify(user_schema.dump(user)), 200
 
+# alias for older clients
+@bp.route("/profile", methods=["GET"])
+@jwt_required()
+def get_user_profile_alias():
+    """Alias for GET /user/ - returns current user's profile"""
+    return get_current_user()
 
 @bp.route("/<int:user_id>", methods=["GET"])
 @jwt_required()

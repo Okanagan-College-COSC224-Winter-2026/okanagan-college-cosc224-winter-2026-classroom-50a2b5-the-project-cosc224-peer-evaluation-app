@@ -35,6 +35,11 @@ def test_get_current_user(test_client):
     assert response.json["role"] == "student"  # Default role
     assert "password" not in response.json  # Password should not be exposed
 
+    # alias route should behave the same
+    alias_resp = test_client.get("/user/profile")
+    assert alias_resp.status_code == 200
+    assert alias_resp.json["email"] == "test@example.com"
+
 
 def test_get_current_user_unauthorized(test_client):
     """

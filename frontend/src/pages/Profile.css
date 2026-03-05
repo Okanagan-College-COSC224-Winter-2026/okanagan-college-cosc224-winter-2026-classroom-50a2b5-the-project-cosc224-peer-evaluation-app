@@ -31,3 +31,26 @@
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
 }
+
+.Profile .profile-info .note {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.Profile .profile-info input {
+  font-size: 1rem;
+  padding: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.Profile .profile-info button {
+  margin-right: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+.Profile .error {
+  color: red;
+  font-weight: bold;
+}

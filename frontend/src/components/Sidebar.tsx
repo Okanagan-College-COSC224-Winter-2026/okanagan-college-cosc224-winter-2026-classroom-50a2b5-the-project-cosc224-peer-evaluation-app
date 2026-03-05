@@ -24,8 +24,11 @@ export default function Sidebar() {
           Home
         </SidebarRow>
         
-        { /* TODO: make this ID match who is logged in */ }
-        <SidebarRow selected={location.includes('/profile')} href="/profile/1">
+        { /* navigate to profile for current user using stored info */ }
+        <SidebarRow
+          selected={location.includes('/profile')}
+          href={`/profile/${JSON.parse(localStorage.getItem('user') || '{}').id || ''}`}
+        >
           My Info
         </SidebarRow>
       </div>

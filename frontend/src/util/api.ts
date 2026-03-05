@@ -2,9 +2,41 @@ import { didExpire, removeToken } from "./login";
 
 const BASE_URL = 'http://localhost:5000'
 
-// export const getProfile = async (id: string) => {
-//   // TODO
-// }
+export const getProfile = async (id?: string) => {
+  // The backend only needs the JWT to return the current user, so we ignore
+  // the id parameter.  This call is used by the profile page to load the
+  // logged-in user's information.
+  const resp = await fetch(`${BASE_URL}/user/`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json();
+}
+
+// convenience wrapper for editing the current user record
+export const updateProfile = async (data: { name?: string }) => {
+  const resp = await fetch(`${BASE_URL}/user/`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json();
+}
 
 
 export const maybeHandleExpire = (response: Response) => {
