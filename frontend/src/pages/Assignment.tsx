@@ -37,7 +37,6 @@ export default function Assignment() {
   const [stuGroup, setStuGroup] = useState<StudentGroups[]>([]);
   const [classMembers, setClassMembers] = useState<User[]>([]);
   const [revieweeID, setRevieweeID] = useState(0);
-  const [stuID, setStuID] = useState(0);
   const [selectedCriteria, setSelectedCriteria] = useState<SelectedCriterion[]>([]);
   const [review, setReview] = useState<number[]>([]);
   const [assignment, setAssignment] = useState<AssignmentData | null>(null);
@@ -49,7 +48,6 @@ export default function Assignment() {
   useEffect(() => {
     (async () => {
       const fetchedID = await getUserId();
-      setStuID(fetchedID);
       const stus = await listStuGroup(Number(id), fetchedID);
       setStuGroup(stus);
 
@@ -62,12 +60,14 @@ export default function Assignment() {
         // Assignment unavailable
       }
 
-      try {
-        const reviewResponse = await getReview(Number(id), fetchedID, revieweeID);
-        const reviewData = await reviewResponse.json();
-        setReview(reviewData.grades);
-      } catch {
-        // No review yet — expected
+      if (revieweeID !== 0) {
+        try {
+          const reviewResponse = await getReview(Number(id), fetchedID, revieweeID);
+          const reviewData = await reviewResponse.json();
+          setReview(reviewData.grades);
+        } catch {
+          // No review yet — expected
+        }
       }
 
       try {
@@ -77,7 +77,7 @@ export default function Assignment() {
         // Members list unavailable
       }
     })();
-  }, [revieweeID, id, stuID]);
+  }, [revieweeID, id]);
 
   const nameFromId = (userId: number) => {
     return classMembers.find((m) => m.id === userId)?.name || `Student #${userId}`;
