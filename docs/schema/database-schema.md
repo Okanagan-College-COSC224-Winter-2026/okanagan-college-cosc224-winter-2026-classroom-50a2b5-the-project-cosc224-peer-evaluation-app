@@ -21,7 +21,7 @@ Field types, primary keys, and notable constraints are included for quick refere
 ### Users, Courses, and Enrollment
 
 - User
-  - id (PK, autoincrement), name (required), email (unique, indexed), hash_pass, role (`student|teacher|admin`, default `student` via DB check constraint)
+  - id (PK, autoincrement), name (required), email (unique, indexed), hash_pass, role (`student|teacher|admin`, default `student` via DB check constraint), must_change_password (BOOLEAN, default FALSE)
   - Relationships: `teaching_courses`, `user_courses`, `courses` (through `User_Courses`), `submissions`, `reviews_made`, `reviews_received`, `group_memberships`
 - Course
   - id (PK), teacherID (FK -> User.id, not null), name
@@ -33,8 +33,8 @@ Field types, primary keys, and notable constraints are included for quick refere
 ### Assignments and Grouping
 
 - Assignment
-  - id (PK), courseID (FK -> Course.id), name, `description` (nullable), `start_date` (nullable, timezone-aware), `rubric_text` column (stored as `rubric`), `due_date` (nullable, timezone-aware)
-  - Relationships: `course`, `rubrics`, `submissions`, `reviews`
+  - id (PK), courseID (FK -> Course.id), name, `description` (nullable), `start_date` (nullable, timezone-aware), `rubric_text` column (stored as `rubric`), `due_date` (nullable, timezone-aware), `is_anonymous` (BOOLEAN, default TRUE)
+  - Relationships: `course`, `rubrics`, `submissions`, `reviews`, `resources`
 - CourseGroup
   - id (PK), name, courseID (FK -> Course.id, not null)
   - Groups belong to **courses**, not assignments — students stay in the same group for all assignments in a course
@@ -42,6 +42,13 @@ Field types, primary keys, and notable constraints are included for quick refere
   - PK: (userID, groupID)
   - Columns: groupID (FK -> CourseGroup.id), userID (FK -> User.id)
   - Represents course-scoped group membership for users
+
+### Assignment Resources
+
+- AssignmentResource
+  - id (PK), assignmentID (FK -> Assignment.id, not null), uploaderID (FK -> User.id, not null), original_name (varchar, not null), path (varchar, not null), created_at (TIMESTAMP, auto-set)
+  - Teacher-uploaded supporting documents for an assignment (e.g., instructions, rubric PDFs)
+  - Relationships: `assignment`, `uploader`
 
 ### Submissions
 

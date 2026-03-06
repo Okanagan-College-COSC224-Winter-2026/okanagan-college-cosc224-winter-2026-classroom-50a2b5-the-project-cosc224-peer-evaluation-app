@@ -16,18 +16,18 @@ These notes help AI agents be productive quickly in this repo. Keep edits small,
 
 ## Role-based access control (RBAC)
 System uses three roles (`student`, `teacher`, `admin`) stored in `User.role` field:
-- **Students**: Can register via `/auth/register`, view own profile, submit work (planned)
-- **Teachers**: All student perms + create courses/assignments (planned), view any user profile
+- **Students**: Can register via `/auth/register`, view own profile, submit work, upload attachments
+- **Teachers**: All student perms + create courses/assignments, manage groups, upload resources, create rubrics, view any user profile
 - **Admins**: All perms + user management via `/admin/*` endpoints, cannot self-delete/demote
 
-Key files: `flask_backend/api/models/users_model.py` (role validation + helper methods `is_teacher()`, `is_admin()`, `has_role(*roles)`), `flask_backend/api/controllers/auth_controller.py` (decorators: `jwt_role_required`, `jwt_admin_required`, `jwt_teacher_required`).
+Key files: `flask_backend/api/models/user_model.py` (role validation + helper methods `is_teacher()`, `is_admin()`, `has_role(*roles)`), `flask_backend/api/controllers/auth_controller.py` (decorators: `jwt_role_required`, `jwt_admin_required`, `jwt_teacher_required`).
 
 ## Files to know (Flask backend only)
 - Entry point: `flask_backend/api/__init__.py` (Flask app factory, CORS, JWT cookie config, blueprint registration)
-- Controllers: `flask_backend/api/controllers/{auth_controller.py,user_controller.py,admin_controller.py,class_controller.py}`
-- Models: `flask_backend/api/models/{db.py,users_model.py}` — more models planned per `docs/schema/`
-- Tests (truth): `flask_backend/tests/{conftest.py,test_login.py,test_user.py,test_model.py}` — pytest with in-memory SQLite
-- CLI: `flask_backend/api/cli/database.py` — commands: `flask init_db`, `flask drop_db`, `flask add_users`, `flask add_sample_courses`, `flask create_admin`, `flask ensure_admin`, `flask migrate_assignment_columns`
+- Controllers: `flask_backend/api/controllers/{auth_controller.py,user_controller.py,admin_controller.py,class_controller.py,assignment_controller.py,assignment_resource_controller.py,group_controller.py,rubric_controller.py,submission_controller.py}`
+- Models: `flask_backend/api/models/{db.py,user_model.py,course_model.py,user_course_model.py,assignment_model.py,assignment_resource_model.py,group_model.py,group_members_model.py,submission_model.py,review_model.py,rubric_model.py,criteria_description_model.py,criterion_model.py,schemas.py}`
+- Tests (truth): `flask_backend/tests/{conftest.py,test_login.py,test_user.py,test_model.py,test_assignments.py,test_assignment_resources.py,test_assignment_schema.py,test_change_password.py,test_classes.py,test_course_schema.py,test_groups.py,test_review_schema.py,test_rubrics.py,test_submissions.py}` — pytest with in-memory SQLite
+- CLI: `flask_backend/api/cli/database.py` — commands: `flask init_db`, `flask drop_db`, `flask add_users`, `flask add_sample_courses`, `flask create_admin`, `flask ensure_admin`, `flask migrate_assignment_columns`, `flask migrate_assignment_resources`
 - Frontend contract: `frontend/src/util/api.ts` (all fetch calls include `credentials: 'include'` for cookies), `frontend/src/util/login.ts` (role helpers: `getUserRole()`, `isAdmin()`, `isTeacher()`)
 
 ## Dev workflows (local — Flask backend)
@@ -71,7 +71,7 @@ Note: Docker uses the legacy Node backend at port 8081, not Flask at 5000. For l
 ## Auth pattern (HTTPOnly cookies + JWT)
 **Critical security change (see `docs/HTTPONLY_COOKIES_MIGRATION.md`):**
 - Tokens stored in **HTTPOnly cookies** (not localStorage), preventing XSS theft
-- `/auth/login` returns `{ role, user_id, name }` (NO `access_token` in JSON)
+- `/auth/login` returns `UserSchema` dump: `{ id, name, email, role, must_change_password }` (NO `access_token` in JSON)
 - `/auth/logout` clears cookies via `unset_jwt_cookies()`
 - All frontend requests include `credentials: 'include'` (axios/fetch)
 - **Never** send `Authorization: Bearer` headers — cookies auto-attach
@@ -111,8 +111,8 @@ When adding new columns to a SQLAlchemy model, **always** provide a migration pa
 **Never** tell developers to drop and recreate the database as the first option. Always check `flask_backend/api/cli/database.py` for an existing migration command first (e.g., `flask migrate_assignment_columns`). Only use `flask drop_db` + `flask init_db` as a last resort.
 
 ## Known gaps and integration points
-- **Endpoints.json vs reality:** `docs/dev-guidelines/endpoints.json` is a legacy Node API spec (for reference only). Many routes (`/classes`, `/create_*`, groups, rubrics) exist in Node `backend/src/routes/` but NOT in Flask. When implementing missing endpoints, use Flask patterns (blueprints + Marshmallow) and add tests.
-- **Database schema mismatch:** Flask has minimal models (User, Class). Full schema in `docs/schema/database-schema.md` includes Group, Assignment, Review, Criteria — implement as needed.
+- **Endpoints.json vs reality:** `docs/dev-guidelines/endpoints.json` is a legacy Node API spec (for reference only). Many routes exist in Node `backend/src/routes/` but NOT in Flask. When implementing missing endpoints, use Flask patterns (blueprints + Marshmallow) and add tests.
+- **Review endpoints not yet built:** The Review model exists but there is no review controller yet. Frontend review submission calls will 404 until implemented.
 - **Frontend assumes Node backend shape:** Some frontend code may expect responses matching Node routes. Check `endpoints.json` for field names when implementing Flask equivalents.
 - **Port confusion:** Frontend `BASE_URL` points to 5000 (Flask), but Docker runs Node backend on 8081. Adjust per deployment.
 
