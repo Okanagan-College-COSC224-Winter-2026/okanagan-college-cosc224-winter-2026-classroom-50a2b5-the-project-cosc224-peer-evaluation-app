@@ -98,6 +98,12 @@ const response = await fetch(`${BASE_URL}/auth/login`, {
 - **Marshmallow schemas:** Use for JSON serialization (see `UserSchema(exclude=['password'])` in controllers)
 - **Never expose passwords:** Always exclude from schemas and responses
 - **Tests as contract:** Changes must pass existing tests (`test_login.py`, `test_user.py`, `test_model.py`) — no guessing
+- **Keep docs in sync:** When adding or modifying models, controllers, endpoints, or CLI commands, update the corresponding documentation:
+  - New/changed model → `docs/schema/database-schema.md`
+  - New/changed endpoint → `docs/dev-guidelines/ENDPOINT_SUMMARY.md`
+  - New/changed controller or model file → `Files to know` section in this file
+  - New CLI command → CLI list in this file
+  - Structural changes → `docs/ARCHITECTURE_OVERVIEW.md`
 - **Role checks:** Use decorators (`@jwt_role_required('admin')`) or model methods (`user.is_admin()`, `user.has_role('teacher', 'admin')`)
 - **Config hierarchy:** Defaults in `api/__init__.py`, overrides in `api/config.py` (not committed), env vars for secrets
 
