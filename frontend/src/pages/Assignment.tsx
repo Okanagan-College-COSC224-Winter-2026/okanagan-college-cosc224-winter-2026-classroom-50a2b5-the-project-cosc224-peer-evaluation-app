@@ -408,6 +408,8 @@ export default function Assignment() {
           {
             rubricId && (
               <div className='assignmentRubric'>
+                <h3>Rubric Preview</h3>
+                <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
                 <button className='deleteRubricBtn' onClick={async () => {
                   if (window.confirm('Are you sure you want to delete this rubric? All criteria will be removed.')) {
                     try {
@@ -440,12 +442,6 @@ export default function Assignment() {
             )
           }
         </>
-      )}
-
-      {teacherMode && !isManageTab && (
-        <div className='assignmentRubricDisplay'>
-          <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
-        </div>
       )}
 
       {teacherMode && !isManageTab && (

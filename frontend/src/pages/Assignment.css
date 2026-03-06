@@ -261,6 +261,12 @@
   gap: 12px;
 }
 
+.assignmentRubric h3 {
+  margin: 0 0 4px;
+  color: var(--text-primary, #333);
+  font-size: 18px;
+}
+
 /* RubricCreator already has its own card style; strip duplicate when nested */
 .assignmentRubric .RubricCreator {
   margin: 0;
