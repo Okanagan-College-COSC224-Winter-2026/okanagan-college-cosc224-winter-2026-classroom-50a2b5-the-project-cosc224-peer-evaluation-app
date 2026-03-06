@@ -1,5 +1,5 @@
-import { useEffect, useState, ChangeEvent } from "react";
-import { useParams } from "react-router-dom";
+import { useCallback, useEffect, useState, ChangeEvent } from "react";
+import { useLocation, useParams } from "react-router-dom";
 import "./Assignment.css";
 import RubricCreator from "../components/RubricCreator";
 import RubricDisplay from "../components/RubricDisplay";
@@ -17,6 +17,12 @@ import {
   deleteAssignment,
   getRubricForAssignment,
   deleteRubric,
+  getMySubmission,
+  uploadMySubmission,
+  deleteMySubmission,
+  listAssignmentResources,
+  uploadAssignmentResource,
+  deleteAssignmentResource,
 } from "../util/api";
 import StatusMessage from "../components/StatusMessage";
 
@@ -32,8 +38,26 @@ interface SelectedCriterion {
   column: number;
 }
 
+interface SubmissionAttachment {
+  id: number;
+  filename: string;
+  download_url: string;
+  studentID: number;
+  assignmentID: number;
+}
+
+interface AssignmentResourceItem {
+  id: number;
+  assignmentID: number;
+  uploaderID: number;
+  original_name: string;
+  download_url: string;
+  created_at?: string;
+}
+
 export default function Assignment() {
   const { id } = useParams();
+  const location = useLocation();
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [revieweeID, setRevieweeID] = useState<number>(0);
   const [stuID, setStuID] = useState<number>(0);
@@ -44,13 +68,21 @@ export default function Assignment() {
   const [editDescription, setEditDescription] = useState("");
   const [editStartDate, setEditStartDate] = useState("");
   const [editDueDate, setEditDueDate] = useState("");
+  const [editIsAnonymous, setEditIsAnonymous] = useState(true);
   const [statusMessage, setStatusMessage] = useState("");
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
   const [rubricId, setRubricId] = useState<number | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedMemberName, setSelectedMemberName] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [mySubmission, setMySubmission] = useState<SubmissionAttachment | null>(null);
+  const [resources, setResources] = useState<AssignmentResourceItem[]>([]);
+  const [resourceUpload, setResourceUpload] = useState<File | null>(null);
 
-  const loadRubric = async () => {
+  const teacherMode = isTeacher();
+  const isManageTab = teacherMode && location.pathname.endsWith('/manage');
+
+  const loadRubric = useCallback(async () => {
     try {
       const rubric = await getRubricForAssignment(Number(id));
       setRubricId(rubric ? rubric.id : null);
@@ -58,7 +90,35 @@ export default function Assignment() {
       console.error('Error fetching rubric:', error);
       setRubricId(null);
     }
-  };
+  }, [id]);
+
+  const loadMySubmission = useCallback(async () => {
+    if (teacherMode || !id) {
+      setMySubmission(null);
+      return;
+    }
+
+    try {
+      const submission = await getMySubmission(Number(id));
+      setMySubmission(submission || null);
+    } catch {
+      setMySubmission(null);
+    }
+  }, [teacherMode, id]);
+
+  const loadResources = useCallback(async () => {
+    if (!id) {
+      setResources([]);
+      return;
+    }
+
+    try {
+      const list = await listAssignmentResources(Number(id));
+      setResources(list || []);
+    } catch {
+      setResources([]);
+    }
+  }, [id]);
 
   const toDatetimeLocal = (value?: string) => {
     if (!value) {
@@ -84,6 +144,8 @@ export default function Assignment() {
 
         // Load rubric for this assignment
         await loadRubric();
+        await loadMySubmission();
+        await loadResources();
         
         // Get assignment to find its courseID, then fetch group members
         try {
@@ -93,6 +155,7 @@ export default function Assignment() {
           setEditDescription(assignmentResponse.description || "");
           setEditStartDate(toDatetimeLocal(assignmentResponse.start_date));
           setEditDueDate(toDatetimeLocal(assignmentResponse.due_date));
+          setEditIsAnonymous(assignmentResponse.is_anonymous ?? true);
 
           const myGroup = await listStuGroup(assignmentResponse.courseID);
           if (myGroup?.members) {
@@ -118,7 +181,7 @@ export default function Assignment() {
           }
         }
       })();
-  }, [revieweeID, id]);
+  }, [revieweeID, id, loadRubric, loadMySubmission, loadResources]);
 
   const handleCriterionSelect = (row: number, column: number) => {
     // Update the score for this criterion row (column = slider value)
@@ -138,51 +201,35 @@ export default function Assignment() {
 
   return (
     <>
-      <div className="AssignmentHeader">
-        <h2>{assignment?.name ? assignment.name : `Assignment ${id}`}</h2>
-      </div>
-
       <TabNavigation
         tabs={[
           {
-            label: "Home",
+            label: teacherMode ? "Review" : "Home",
             path: `/assignments/${id}`,
           },
+          ...(teacherMode
+            ? [
+                {
+                  label: "Management",
+                  path: `/assignments/${id}/manage`,
+                },
+              ]
+            : []),
           // Groups are now at course level - access via ClassHome > Groups tab
         ]}
       />
 
-      {isTeacher() && (
-        <div className='assignmentRubricDisplay'>
-          <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
-        </div>
-      )}
-      <StatusMessage message={statusMessage} type={statusType} />
-      {
-        isTeacher() && rubricId && (
-          <div className='assignmentRubric'>
-            <button className='deleteRubricBtn' onClick={async () => {
-              if (window.confirm('Are you sure you want to delete this rubric? All criteria will be removed.')) {
-                try {
-                  await deleteRubric(rubricId);
-                  setRubricId(null);
-                } catch (error) {
-                  console.error('Error deleting rubric:', error);
-                }
-              }
-            }}>Delete Rubric</button>
-          </div>
-        )
-      }
-      {
-        isTeacher() && !rubricId && (
-          <div className='assignmentRubric'>
-            <RubricCreator id={Number(id)} onRubricCreated={(newId) => setRubricId(newId)} />
-          </div>
-        )
-      }
+      <div className="AssignmentHeader">
+        <h2>{assignment?.name ? assignment.name : `Assignment ${id}`}</h2>
+      </div>
 
-      {isTeacher() && assignment && (
+      {assignment?.description && (
+        <p className="assignmentDescription">{assignment.description}</p>
+      )}
+
+      <StatusMessage message={statusMessage} type={statusType} />
+
+      {teacherMode && assignment && isManageTab && (
         <div className='assignmentManagement'>
           <h3>Manage Assignment</h3>
           <>
@@ -196,8 +243,7 @@ export default function Assignment() {
               </label>
               <label>
                 Description
-                <input
-                  type='text'
+                <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                 />
@@ -218,6 +264,14 @@ export default function Assignment() {
                   onChange={(e) => setEditDueDate(e.target.value)}
                 />
               </label>
+              <label className='checkboxLabel'>
+                <input
+                  type='checkbox'
+                  checked={editIsAnonymous}
+                  onChange={(e) => setEditIsAnonymous(e.target.checked)}
+                />
+                Anonymous submissions/reviews
+              </label>
               <div className='assignmentManagementButtons'>
                 <button
                   onClick={async () => {
@@ -228,9 +282,11 @@ export default function Assignment() {
                         description?: string;
                         start_date?: string;
                         due_date?: string;
+                        is_anonymous?: boolean;
                       } = {
                         name: editName,
                         description: editDescription,
+                        is_anonymous: editIsAnonymous,
                       };
 
                       if (editStartDate) {
@@ -257,6 +313,14 @@ export default function Assignment() {
                   onClick={async () => {
                     try {
                       setStatusMessage("");
+                      const confirmed = window.prompt(
+                        `Admin confirmation required: type DELETE to remove "${assignment.name}"`
+                      );
+                      if (confirmed !== 'DELETE') {
+                        setStatusType('error');
+                        setStatusMessage('Delete cancelled. Type DELETE to confirm assignment removal.');
+                        return;
+                      }
                       await deleteAssignment(Number(id));
                       window.location.href = `/classes/${assignment.courseID}/home`;
                     } catch (error) {
@@ -272,9 +336,214 @@ export default function Assignment() {
         </div>
       )}
 
+      {teacherMode && isManageTab && (
+        <div className='assignmentResources'>
+          <h3>Supporting Documents</h3>
+          {resources.length === 0 ? (
+            <p>No supporting documents uploaded yet.</p>
+          ) : (
+            <ul>
+              {resources.map((resource) => (
+                <li key={resource.id} className='resourceItem'>
+                  <a href={resource.download_url} target='_blank' rel='noreferrer'>
+                    {resource.original_name}
+                  </a>
+                  <button
+                    className='removeAttachmentButton'
+                    onClick={async () => {
+                      try {
+                        setStatusMessage('');
+                        await deleteAssignmentResource(resource.id);
+                        await loadResources();
+                        setStatusType('success');
+                        setStatusMessage('Supporting document deleted successfully.');
+                      } catch (error) {
+                        setStatusType('error');
+                        setStatusMessage(error instanceof Error ? error.message : 'Failed to delete supporting document.');
+                      }
+                    }}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <input
+            type='file'
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              setResourceUpload(file || null);
+            }}
+          />
+          <button
+            onClick={async () => {
+              if (!resourceUpload) {
+                setStatusType('error');
+                setStatusMessage('Please choose a supporting document first.');
+                return;
+              }
+
+              try {
+                setStatusMessage('');
+                await uploadAssignmentResource(Number(id), resourceUpload);
+                setResourceUpload(null);
+                await loadResources();
+                setStatusType('success');
+                setStatusMessage('Supporting document uploaded successfully.');
+              } catch (error) {
+                setStatusType('error');
+                setStatusMessage(error instanceof Error ? error.message : 'Failed to upload supporting document.');
+              }
+            }}
+          >
+            Upload Supporting Document
+          </button>
+        </div>
+      )}
+
+      {teacherMode && isManageTab && (
+        <>
+          {
+            rubricId && (
+              <div className='assignmentRubric'>
+                <button className='deleteRubricBtn' onClick={async () => {
+                  if (window.confirm('Are you sure you want to delete this rubric? All criteria will be removed.')) {
+                    try {
+                      await deleteRubric(rubricId);
+                      setRubricId(null);
+                      setStatusType('success');
+                      setStatusMessage('Rubric deleted successfully.');
+                    } catch (error) {
+                      console.error('Error deleting rubric:', error);
+                      setStatusType('error');
+                      setStatusMessage(error instanceof Error ? error.message : 'Failed to delete rubric.');
+                    }
+                  }
+                }}>Delete Rubric</button>
+              </div>
+            )
+          }
+          {
+            !rubricId && (
+              <div className='assignmentRubric'>
+                <RubricCreator
+                  id={Number(id)}
+                  onRubricCreated={(newId) => {
+                    setRubricId(newId);
+                    setStatusType('success');
+                    setStatusMessage('Rubric created successfully.');
+                  }}
+                />
+              </div>
+            )
+          }
+        </>
+      )}
+
+      {(!teacherMode || !isManageTab) && (
+        <div className='assignmentRubricDisplay'>
+          <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
+        </div>
+      )}
+
+      {teacherMode && !isManageTab && (
+        <div className='assignmentResources'>
+          <h3>Supporting Documents (Student Preview)</h3>
+          {resources.length === 0 ? (
+            <p>No supporting documents available.</p>
+          ) : (
+            <ul>
+              {resources.map((resource) => (
+                <li key={resource.id} className='resourceItem'>
+                  <a href={resource.download_url} target='_blank' rel='noreferrer'>
+                    {resource.original_name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
 {
       //List group members as radio buttons to select for given review
-      !isTeacher() && <div className='groupMembers'>
+      !teacherMode && <div className='groupMembers'>
+        <h3>Supporting Documents</h3>
+        {resources.length === 0 ? (
+          <p>No supporting documents available.</p>
+        ) : (
+          <ul>
+            {resources.map((resource) => (
+              <li key={resource.id} className='resourceItem'>
+                <a href={resource.download_url} target='_blank' rel='noreferrer'>
+                  {resource.original_name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <h3>My Attachment</h3>
+        {mySubmission ? (
+          <div className='attachmentSection'>
+            <a href={mySubmission.download_url} target='_blank' rel='noreferrer'>
+              {mySubmission.filename}
+            </a>
+            <button
+              className='removeAttachmentButton'
+              onClick={async () => {
+                try {
+                  setStatusMessage('');
+                  await deleteMySubmission(Number(id));
+                  setMySubmission(null);
+                  setSelectedFile(null);
+                  setStatusType('success');
+                  setStatusMessage('Attachment removed successfully.');
+                } catch (error) {
+                  setStatusType('error');
+                  setStatusMessage(error instanceof Error ? error.message : 'Failed to remove attachment.');
+                }
+              }}
+            >
+              Remove Attachment
+            </button>
+          </div>
+        ) : (
+          <p>No attachment uploaded yet.</p>
+        )}
+        <input
+          type='file'
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            setSelectedFile(file || null);
+          }}
+        />
+        <button
+          onClick={async () => {
+            if (!selectedFile) {
+              setStatusType('error');
+              setStatusMessage('Please choose a file first.');
+              return;
+            }
+
+            try {
+              setStatusMessage('');
+              const response = await uploadMySubmission(Number(id), selectedFile);
+              setMySubmission(response.submission);
+              setSelectedFile(null);
+              setStatusType('success');
+              setStatusMessage(mySubmission ? 'Attachment updated successfully.' : 'Attachment uploaded successfully.');
+            } catch (error) {
+              setStatusType('error');
+              setStatusMessage(error instanceof Error ? error.message : 'Failed to upload attachment.');
+            }
+          }}
+        >
+          {mySubmission ? 'Replace Attachment' : 'Upload Attachment'}
+        </button>
+
         <h3>Select a group member to review</h3>
           {groupMembers.length === 0 ? (
             <p>No group members found. You may not be assigned to a group yet.</p>
@@ -292,6 +561,24 @@ export default function Assignment() {
               </div>
             ))
           )}
+          <button className='submitReview' onClick={async () => {
+            console.log("Submitting review with selected criteria:", selectedCriteria);
+            try {
+              const reviewResponse = await createReview(Number(id), stuID, revieweeID);
+              const reviewData = await reviewResponse.json();
+              console.log("Review response:", reviewData);
+              for (const criterion of selectedCriteria) {
+                await createCriterion(reviewData.id, criterion.row, criterion.column, "");
+              }
+              console.log('Review submitted successfully');
+              setStatusType('success');
+              setStatusMessage('Review submitted successfully.');
+            } catch (error) {
+              console.error('Error submitting review:', error);
+              setStatusType('error');
+              setStatusMessage(error instanceof Error ? error.message : 'Failed to submit review.');
+            }
+          }}>Submit Review</button>
       </div>}
 
       {!isTeacher() && (

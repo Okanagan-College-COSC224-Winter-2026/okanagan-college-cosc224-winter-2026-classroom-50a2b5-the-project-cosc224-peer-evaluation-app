@@ -102,6 +102,16 @@
   padding: 12px;
 }
 
+.assignmentDescription {
+  margin: 0 12px 12px;
+  color: var(--text-primary);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-secondary);
+  border-radius: 8px;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+}
+
 .groupNameInput{
   width: 15%;
 }
@@ -129,6 +139,25 @@
   border-radius: 4px;
 }
 
+.assignmentManagement textarea {
+  padding: 8px;
+  border: 1px solid var(--background-secondary);
+  border-radius: 4px;
+  min-height: 120px;
+  resize: vertical;
+}
+
+.assignmentManagement .checkboxLabel {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.assignmentManagement .checkboxLabel input {
+  width: auto;
+  padding: 0;
+}
+
 .assignmentManagementButtons {
   display: flex;
   gap: 8px;
@@ -145,4 +174,41 @@
   padding-top: 12px;
   border-top: 1px solid #ddd;
   margin-top: 8px;
+.attachmentSection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.removeAttachmentButton {
+  background-color: var(--button-secondary) !important;
+}
+
+.assignmentResources {
+  margin: 12px;
+  padding: 12px;
+  border: 1px solid var(--background-secondary);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.assignmentResources ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resourceItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
 }
