@@ -442,7 +442,7 @@ export default function Assignment() {
         </>
       )}
 
-      {(!teacherMode || !isManageTab) && (
+      {teacherMode && !isManageTab && (
         <div className='assignmentRubricDisplay'>
           <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
         </div>
@@ -544,6 +544,9 @@ export default function Assignment() {
           {mySubmission ? 'Replace Attachment' : 'Upload Attachment'}
         </button>
 
+      </div>}
+
+      {!teacherMode && <div className='peerReview'>
         <h3>Select a group member to review</h3>
           {groupMembers.length === 0 ? (
             <p>No group members found. You may not be assigned to a group yet.</p>
