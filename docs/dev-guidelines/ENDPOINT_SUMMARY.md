@@ -173,14 +173,68 @@ Rubrics belong to **assignments** and contain multiple **criteria descriptions**
 
 ---
 
+## Review Endpoints
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| `POST` | `/review/submit` | JWT (any) | Submit a review with criteria (atomic) |
+| `GET` | `/review/lookup?assignmentID=X&revieweeID=Y` | JWT (any) | Look up an existing review (reviewer from JWT) |
+| `GET` | `/review/<id>` | JWT (any) | Get a single review with its criteria |
+| `GET` | `/review/assignment/<id>` | JWT (any) | List reviews for an assignment |
+
+**Authorization notes:**
+- `submit`: Reviewer is derived from the JWT token (prevents impersonation). Cannot review yourself. Duplicate reviews return 409.
+- `lookup`: Reviewer is derived from JWT. Returns 404 if no review exists.
+- `GET /<id>`: Students can only view reviews they authored or received. Teachers can view any.
+- `assignment/<id>`: Teachers see all reviews. Students only see reviews they received.
+- **Anonymous reviews (US3):** When `assignment.is_anonymous` is `true`, the reviewer identity is replaced with `{ id: null, name: "Anonymous", email: null }` for the reviewee. Teachers always see the real reviewer.
+
+### Review Request Shape
+
+**POST /review/submit:**
+```json
+{
+  "assignmentID": 1,
+  "revieweeID": 3,
+  "criteria": [
+    { "criterionRowID": 5, "grade": 4, "comments": "Good communication" },
+    { "criterionRowID": 6, "grade": 8, "comments": "" }
+  ]
+}
+```
+
+### Review Response Shapes
+
+**Review object (from GET endpoints):**
+```json
+{
+  "id": 1,
+  "assignmentID": 1,
+  "reviewer": { "id": 2, "name": "Alice", "email": "alice@test.com" },
+  "reviewee": { "id": 3, "name": "Bob", "email": "bob@test.com" },
+  "criteria": [
+    { "id": 1, "reviewID": 1, "criterionRowID": 5, "grade": 4, "comments": "Good" }
+  ]
+}
+```
+
+**Submit response (POST /review/submit):**
+```json
+{
+  "msg": "Review submitted",
+  "id": 1
+}
+```
+
+---
+
 ## Not Yet Implemented (Planned)
 
 These endpoints are planned based on the database schema but not yet implemented in Flask:
 
 | Feature | Endpoints | Notes |
 |---------|-----------|-------|
-| Reviews | `/review/*` | Peer review submissions |
-| Submissions | `/submission/*` | File uploads |
+| Grade calculation | On-the-fly averaging | No stored grade column; compute from criteria |
 
 ---
 

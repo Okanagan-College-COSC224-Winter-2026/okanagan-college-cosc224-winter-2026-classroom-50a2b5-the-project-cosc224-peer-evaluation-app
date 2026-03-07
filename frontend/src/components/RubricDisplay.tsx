@@ -59,7 +59,14 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
                 scoreMaxes={scoreMaxes}
                 canComment={rubricInfo?.canComment ?? false}
                 hasScores={hasScores}
-                onCriterionSelect={onCriterionSelect}
+                onCriterionSelect={(row: number, value: number) => {
+                    // Map the array index to the actual CriteriaDescription.id
+                    // so the backend receives the real DB ID, not a positional index
+                    const criterionId = criteria[row]?.id;
+                    if (criterionId !== undefined) {
+                        onCriterionSelect(criterionId, value);
+                    }
+                }}
                 grades={grades}
             />
         </div>

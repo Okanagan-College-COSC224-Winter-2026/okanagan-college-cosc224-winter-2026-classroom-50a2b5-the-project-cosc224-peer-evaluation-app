@@ -665,60 +665,66 @@ export const deleteAssignmentResource = async (resourceID: number) => {
   return await resp.json();
 }
 
-export const createReview = async (assignmentID: number, reviewerID: number, revieweeID: number) => {
-  const response = await fetch(`${BASE_URL}/create_review`, {
+// ── Review endpoints (Flask /review/*) ────────────────────────────────────
+
+/**
+ * Submit a review with all criteria scores in one atomic request.
+ * The reviewer is identified server-side from the JWT cookie.
+ */
+export const submitReview = async (
+  assignmentID: number,
+  revieweeID: number,
+  criteria: { criterionRowID: number; grade: number; comments: string }[]
+) => {
+  const response = await fetch(`${BASE_URL}/review/submit`, {
     method: 'POST',
-    body: JSON.stringify({
-      assignmentID,
-      reviewerID,
-      revieweeID,
-    }),
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    body: JSON.stringify({ assignmentID, revieweeID, criteria }),
+    headers: { 'Content-Type': 'application/json' },
     credentials: 'include'
   })
 
   maybeHandleExpire(response);
 
   if (!response.ok) {
-    throw new Error(`Response status: ${response.status}`);
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.msg || `Response status: ${response.status}`);
   }
-  return response
+  return await response.json()
 }
 
-export const createCriterion = async (reviewID: number, criterionRowID: number, grade: number, comments: string) => {
-  const response = await fetch(`${BASE_URL}/create_criterion`, {
-    method: 'POST',
-    body: JSON.stringify({
-      reviewID,
-      criterionRowID,
-      grade,
-      comments,
-    }),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include'
-  })
+/**
+ * Look up an existing review by assignment + reviewee.
+ * Reviewer is determined server-side from the JWT cookie.
+ */
+export const getReview = async (assignmentID: number, revieweeID: number) => {
+  const resp = await fetch(
+    `${BASE_URL}/review/lookup?assignmentID=${assignmentID}&revieweeID=${revieweeID}`,
+    { credentials: 'include' }
+  )
 
-  maybeHandleExpire(response);
+  maybeHandleExpire(resp);
 
-  if (!response.ok) {
-    throw new Error(`Response status: ${response.status}`);
-  }
-  return response
+  // Don't throw on 404 — no review yet is a normal state
+  return resp
 }
 
-export const getReview = async (assignmentID: number, reviewerID: number, revieweeID: number) => {
-  const resp = await fetch(`${BASE_URL}/review?assignmentID=${assignmentID}&reviewerID=${reviewerID}&revieweeID=${revieweeID}`, {
+/**
+ * Get all reviews for an assignment.
+ * Teachers see all; students see only reviews they received (anonymized when applicable).
+ */
+export const getReviewsForAssignment = async (assignmentID: number) => {
+  const resp = await fetch(`${BASE_URL}/review/assignment/${assignmentID}`, {
     credentials: 'include'
   })
 
   maybeHandleExpire(resp);
 
-  // Don't throw on 404 — review endpoint may not be implemented yet
-  return resp
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => null);
+    throw new Error(data?.msg || `Response status: ${resp.status}`);
+  }
+
+  return await resp.json()
 }
 
 export const createGroup = async (courseId: number, name: string) => {

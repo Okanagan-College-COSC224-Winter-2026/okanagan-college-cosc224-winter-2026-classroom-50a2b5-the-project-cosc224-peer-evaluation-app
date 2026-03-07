@@ -10,8 +10,7 @@ import { isTeacher, getUserId } from "../util/login";
 import { 
   getAssignment,
   listStuGroup,
-  createReview,
-  createCriterion,
+  submitReview,
   getReview,
   editAssignment,
   deleteAssignment,
@@ -60,7 +59,6 @@ export default function Assignment() {
   const location = useLocation();
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [revieweeID, setRevieweeID] = useState<number>(0);
-  const [stuID, setStuID] = useState<number>(0);
   const [selectedCriteria, setSelectedCriteria] = useState<SelectedCriterion[]>([]);
   const [review, setReview] = useState<number[]>([]);
   const [assignment, setAssignment] = useState<Assignment | null>(null);
@@ -78,6 +76,7 @@ export default function Assignment() {
   const [mySubmission, setMySubmission] = useState<SubmissionAttachment | null>(null);
   const [resources, setResources] = useState<AssignmentResourceItem[]>([]);
   const [resourceUpload, setResourceUpload] = useState<File | null>(null);
+  const [reviewedMembers, setReviewedMembers] = useState<Set<number>>(new Set());
 
   const teacherMode = isTeacher();
   const isManageTab = teacherMode && location.pathname.endsWith('/manage');
@@ -140,7 +139,6 @@ export default function Assignment() {
           console.error('User not logged in');
           return;
         }
-        setStuID(currentUserId);
 
         // Load rubric for this assignment
         await loadRubric();
@@ -160,7 +158,20 @@ export default function Assignment() {
           const myGroup = await listStuGroup(assignmentResponse.courseID);
           if (myGroup?.members) {
             // Filter out self from group members (can't review yourself)
-            setGroupMembers(myGroup.members.filter((m: GroupMember) => m.id !== currentUserId));
+            const others = myGroup.members.filter((m: GroupMember) => m.id !== currentUserId);
+            setGroupMembers(others);
+
+            // Check which members have already been reviewed
+            const reviewed = new Set<number>();
+            await Promise.all(
+              others.map(async (m: GroupMember) => {
+                try {
+                  const resp = await getReview(Number(id), m.id);
+                  if (resp.ok) reviewed.add(m.id);
+                } catch { /* no review yet — that's fine */ }
+              })
+            );
+            setReviewedMembers(reviewed);
           }
         } catch (err) {
           console.error("Failed to load assignment or group members:", err);
@@ -171,10 +182,13 @@ export default function Assignment() {
         // This will 404 until the review feature is migrated.
         if (revieweeID > 0) {
           try {
-            const reviewResponse = await getReview(Number(id), currentUserId, revieweeID);
+            const reviewResponse = await getReview(Number(id), revieweeID);
             if (reviewResponse.ok) {
               const reviewData = await reviewResponse.json();
-              setReview(reviewData.grades);
+              // Extract grades from criteria array returned by lookup endpoint
+              if (reviewData.criteria) {
+                setReview(reviewData.criteria.map((c: { grade: number }) => c.grade ?? 0));
+              }
             }
           } catch {
             // Review endpoint not yet implemented — silently ignore
@@ -548,28 +562,38 @@ export default function Assignment() {
             <p>No group members found. You may not be assigned to a group yet.</p>
           ) : (
             groupMembers.map((member) => (
-              <div key={member.id}>
+              <div key={member.id} className={reviewedMembers.has(member.id) ? 'reviewedMember' : ''}>
                 <input 
                   type='radio' 
                   id={member.id.toString()} 
                   value={member.id} 
                   name='groupMembers' 
                   onChange={handleRadioChange}
+                  disabled={reviewedMembers.has(member.id)}
                 />
                 <label htmlFor={member.id.toString()}>{member.name}</label>
+                {reviewedMembers.has(member.id) && (
+                  <span className='reviewedBadge'>✓ Reviewed</span>
+                )}
               </div>
             ))
           )}
           <button className='submitReview' onClick={async () => {
             console.log("Submitting review with selected criteria:", selectedCriteria);
             try {
-              const reviewResponse = await createReview(Number(id), stuID, revieweeID);
-              const reviewData = await reviewResponse.json();
-              console.log("Review response:", reviewData);
-              for (const criterion of selectedCriteria) {
-                await createCriterion(reviewData.id, criterion.row, criterion.column, "");
-              }
-              console.log('Review submitted successfully');
+              // criterion.row is now the actual CriteriaDescription.id (mapped in RubricDisplay)
+              // criterion.column is the slider score value
+              const result = await submitReview(
+                Number(id),
+                revieweeID,
+                selectedCriteria.map(c => ({
+                  criterionRowID: c.row,
+                  grade: c.column,
+                  comments: ""
+                }))
+              );
+              console.log('Review submitted successfully:', result);
+              setReviewedMembers(prev => new Set(prev).add(revieweeID));
               setStatusType('success');
               setStatusMessage('Review submitted successfully.');
             } catch (error) {
@@ -591,16 +615,24 @@ export default function Assignment() {
             <button className='submitReview' onClick={async () => {
               console.log("Submitting review with selected criteria:", selectedCriteria);
               try {
-                const reviewResponse = await createReview(Number(id), stuID, revieweeID);
-                const reviewData = await reviewResponse.json();
-                console.log("Review response:", reviewData);
-                for (const criterion of selectedCriteria) {
-                  await createCriterion(reviewData.id, criterion.row, criterion.column, "");
-                }
-                console.log('Review submitted successfully');
+                const result = await submitReview(
+                  Number(id),
+                  revieweeID,
+                  selectedCriteria.map(c => ({
+                    criterionRowID: c.row,
+                    grade: c.column,
+                    comments: ""
+                  }))
+                );
+                console.log('Review submitted successfully:', result);
+                setReviewedMembers(prev => new Set(prev).add(revieweeID));
                 setIsReviewModalOpen(false);
+                setStatusType('success');
+                setStatusMessage('Review submitted successfully.');
               } catch (error) {
                 console.error('Error submitting review:', error);
+                setStatusType('error');
+                setStatusMessage(error instanceof Error ? error.message : 'Failed to submit review.');
               }
             }}>Submit Review</button>
           </div>
