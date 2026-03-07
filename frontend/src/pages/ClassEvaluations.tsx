@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import "./ClassEvaluations.css";
 import TabNavigation from "../components/TabNavigation";
 import Modal from "../components/Modal";
-import { listAssignments, listClasses, getReviewsForAssignment } from "../util/api";
+import { listClasses, getReviewsForAssignment, getCourseGradeSummary } from "../util/api";
 
 // Shape of a single review returned by GET /review/assignment/<id>
 interface ReviewCriterion {
@@ -38,6 +38,8 @@ export default function ClassEvaluations() {
   const { id } = useParams();
   const [className, setClassName] = useState<string | null>(null);
   const [summaries, setSummaries] = useState<AssignmentSummary[]>([]);
+  const [courseAverage, setCourseAverage] = useState<number | null>(null);
+  const [courseMax, setCourseMax] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Modal state
@@ -45,66 +47,19 @@ export default function ClassEvaluations() {
   const [reviews, setReviews] = useState<ReviewData[]>([]);
   const [modalLoading, setModalLoading] = useState(false);
 
-  // Load assignments and compute review summaries
+  // Load grade summary from backend
   useEffect(() => {
     (async () => {
       try {
-        const [assignments, classes] = await Promise.all([
-          listAssignments(String(id)),
+        const [summary, classes] = await Promise.all([
+          getCourseGradeSummary(Number(id)),
           listClasses(),
         ]);
         const currentClass = classes.find((c: { id: number }) => c.id === Number(id));
         setClassName(currentClass?.name || null);
-
-        // For each assignment, fetch reviews and compute summary stats
-        const results: AssignmentSummary[] = await Promise.all(
-          assignments.map(async (assignment: Assignment) => {
-            try {
-              const reviewsData: ReviewData[] = await getReviewsForAssignment(assignment.id);
-
-              // Compute the total score per review, then average those totals
-              const reviewTotals = reviewsData
-                .map((r) => {
-                  const scored = r.criteria.filter((c) => c.grade !== null);
-                  if (scored.length === 0) return null;
-                  return scored.reduce((sum, c) => sum + (c.grade ?? 0), 0);
-                })
-                .filter((t): t is number => t !== null);
-
-              const avg =
-                reviewTotals.length > 0
-                  ? reviewTotals.reduce((sum, t) => sum + t, 0) / reviewTotals.length
-                  : null;
-
-              // Compute max possible score per review (sum of all score_max values)
-              // Use the first review's criteria as reference (all reviews share the same rubric)
-              const firstReview = reviewsData.find((r) => r.criteria.length > 0);
-              const maxScore = firstReview
-                ? firstReview.criteria
-                    .filter((c) => c.score_max !== null)
-                    .reduce((sum, c) => sum + (c.score_max ?? 0), 0)
-                : null;
-
-              return {
-                id: assignment.id,
-                name: assignment.name,
-                reviewCount: reviewsData.length,
-                averageScore: avg,
-                maxScore: maxScore && maxScore > 0 ? maxScore : null,
-              };
-            } catch {
-              return {
-                id: assignment.id,
-                name: assignment.name,
-                reviewCount: 0,
-                averageScore: null,
-                maxScore: null,
-              };
-            }
-          })
-        );
-
-        setSummaries(results);
+        setSummaries(summary.assignments);
+        setCourseAverage(summary.courseAverage);
+        setCourseMax(summary.courseMax);
       } catch (err) {
         console.error("Failed to load evaluations:", err);
       } finally {
@@ -181,24 +136,15 @@ export default function ClassEvaluations() {
               ))}
             </ul>
 
-            {/* Course total — average of all assignment averages */}
-            {(() => {
-              const scored = summaries.filter((s) => s.averageScore !== null);
-              if (scored.length === 0) return null;
-              const courseAvg =
-                scored.reduce((sum, s) => sum + (s.averageScore ?? 0), 0) / scored.length;
-              const courseMax = scored.some((s) => s.maxScore !== null)
-                ? scored.reduce((sum, s) => sum + (s.maxScore ?? 0), 0) / scored.length
-                : null;
-              return (
-                <div className="EvalCourseTotal">
-                  <span className="EvalCourseTotalLabel">Course Average:</span>
-                  <span className="EvalCourseTotalValue">
-                    {courseAvg.toFixed(1)}{courseMax !== null ? ` / ${courseMax.toFixed(1)}` : ""}
-                  </span>
-                </div>
-              );
-            })()}
+            {/* Course total — computed by backend */}
+            {courseAverage !== null && (
+              <div className="EvalCourseTotal">
+                <span className="EvalCourseTotalLabel">Course Average:</span>
+                <span className="EvalCourseTotalValue">
+                  {courseAverage.toFixed(1)}{courseMax !== null ? ` / ${courseMax.toFixed(1)}` : ""}
+                </span>
+              </div>
+            )}
           </>
         )}
       </div>

@@ -185,17 +185,20 @@ Each review contains:
 
 ### Analysis Phase
 ```
-System aggregates for Alice:
+System aggregates for Alice (via GET /review/course/<courseId>/summary):
   Reviews received from: Bob, Carol
-  Average scores:
-    Code Quality:    (4 + 5) / 2 = 4.5
-    Communication:   (5 + 4) / 2 = 4.5
-    Effort:          (3 + 5) / 2 = 4.0
 
-Teacher views:
-  ├── Individual scores
-  ├── Group averages
-  └── Outliers/concerns flagged
+  Per-review totals:
+    Bob's review:   4 + 5 + 3 = 12
+    Carol's review: 5 + 4 + 5 = 14
+  Assignment average: (12 + 14) / 2 = 13.0 / 15
+
+  Course average: mean of all assignment averages
+
+Teacher views (same endpoint, sees all students):
+  ├── Individual student scores (?studentID=X)
+  ├── Aggregate scores across all reviews
+  └── Per-assignment breakdowns
 ```
 
 ---

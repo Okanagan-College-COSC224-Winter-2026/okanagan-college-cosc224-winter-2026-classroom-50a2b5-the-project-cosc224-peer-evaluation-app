@@ -728,6 +728,30 @@ export const getReviewsForAssignment = async (assignmentID: number) => {
   return await resp.json()
 }
 
+/**
+ * Get grade summary for all assignments in a course.
+ * Returns per-assignment averages and a course-level average.
+ * Students see their own received-review averages; teachers see all.
+ */
+export const getCourseGradeSummary = async (courseID: number, studentID?: number) => {
+  const url = new URL(`${BASE_URL}/review/course/${courseID}/summary`);
+  if (studentID !== undefined) {
+    url.searchParams.set('studentID', String(studentID));
+  }
+  const resp = await fetch(url.toString(), {
+    credentials: 'include'
+  })
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => null);
+    throw new Error(data?.msg || `Response status: ${resp.status}`);
+  }
+
+  return await resp.json()
+}
+
 export const createGroup = async (courseId: number, name: string) => {
   const response = await fetch(`${BASE_URL}/groups/create`, {
     method: "POST",

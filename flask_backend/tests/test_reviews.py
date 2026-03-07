@@ -705,3 +705,212 @@ class TestAnonymousReview:
         reviews = resp.get_json()
         assert len(reviews) == 1
         assert reviews[0]["reviewer"]["name"] == "Anonymous"
+
+
+# ============================================================================
+# GET /review/course/<id>/summary — COURSE GRADE SUMMARY
+# ============================================================================
+
+
+class TestCourseGradeSummary:
+    """Tests for the backend grade-summary endpoint."""
+
+    def test_summary_returns_assignment_list(
+        self, auth_student_a, student_a, student_b, course, assignment, rubric_with_criteria
+    ):
+        """Summary includes all assignments even those with no reviews."""
+        resp = auth_student_a.get(f"/review/course/{course.id}/summary")
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert "assignments" in data
+        assert len(data["assignments"]) == 1
+        assert data["assignments"][0]["name"] == assignment.name
+        assert data["assignments"][0]["reviewCount"] == 0
+        assert data["assignments"][0]["averageScore"] is None
+
+    def test_summary_computes_average_correctly(
+        self, db, auth_student_a, student_a, student_b, course, assignment, rubric_with_criteria
+    ):
+        """Average is computed as mean of per-review totals."""
+        _, criteria = rubric_with_criteria
+
+        # Create a third student to submit a second review
+        student_c = User(
+            name="Charlie Student",
+            email="charlie@test.com",
+            hash_pass=generate_password_hash("password123"),
+            role="student",
+        )
+        db.session.add(student_c)
+        db.session.commit()
+
+        # Review 1: student_b reviews student_a → scores 5 + 8 = 13
+        r1 = Review(assignmentID=assignment.id, reviewerID=student_b.id, revieweeID=student_a.id)
+        db.session.add(r1)
+        db.session.flush()
+        db.session.add(Criterion(reviewID=r1.id, criterionRowID=criteria[0].id, grade=5))
+        db.session.add(Criterion(reviewID=r1.id, criterionRowID=criteria[1].id, grade=8))
+
+        # Review 2: student_c reviews student_a → scores 3 + 6 = 9
+        r2 = Review(assignmentID=assignment.id, reviewerID=student_c.id, revieweeID=student_a.id)
+        db.session.add(r2)
+        db.session.flush()
+        db.session.add(Criterion(reviewID=r2.id, criterionRowID=criteria[0].id, grade=3))
+        db.session.add(Criterion(reviewID=r2.id, criterionRowID=criteria[1].id, grade=6))
+        db.session.commit()
+
+        resp = auth_student_a.get(f"/review/course/{course.id}/summary")
+        data = resp.get_json()
+
+        a = data["assignments"][0]
+        assert a["reviewCount"] == 2
+        # Average: (13 + 9) / 2 = 11.0
+        assert a["averageScore"] == 11.0
+        # Max: 5 + 10 = 15
+        assert a["maxScore"] == 15
+
+    def test_summary_course_average_across_assignments(
+        self, db, auth_student_a, student_a, student_b, course, rubric_with_criteria
+    ):
+        """courseAverage is the mean of assignment averages."""
+        _, criteria = rubric_with_criteria
+        # rubric_with_criteria creates assignment via fixture; get it from criteria
+        assignment1 = criteria[0].rubric.assignment
+
+        # Create a second assignment with its own rubric
+        assignment2 = Assignment(courseID=course.id, name="Second HW", is_anonymous=False)
+        db.session.add(assignment2)
+        db.session.flush()
+        rubric2 = Rubric(assignmentID=assignment2.id, canComment=True)
+        db.session.add(rubric2)
+        db.session.flush()
+        c2_desc = CriteriaDescription(rubricID=rubric2.id, question="Effort", scoreMax=10, hasScore=True)
+        db.session.add(c2_desc)
+        db.session.flush()
+
+        # Review for assignment 1: total = 5 + 10 = 15
+        r1 = Review(assignmentID=assignment1.id, reviewerID=student_b.id, revieweeID=student_a.id)
+        db.session.add(r1)
+        db.session.flush()
+        db.session.add(Criterion(reviewID=r1.id, criterionRowID=criteria[0].id, grade=5))
+        db.session.add(Criterion(reviewID=r1.id, criterionRowID=criteria[1].id, grade=10))
+
+        # Review for assignment 2: total = 7
+        r2 = Review(assignmentID=assignment2.id, reviewerID=student_b.id, revieweeID=student_a.id)
+        db.session.add(r2)
+        db.session.flush()
+        db.session.add(Criterion(reviewID=r2.id, criterionRowID=c2_desc.id, grade=7))
+        db.session.commit()
+
+        resp = auth_student_a.get(f"/review/course/{course.id}/summary")
+        data = resp.get_json()
+
+        assert len(data["assignments"]) == 2
+        # Assignment 1 avg = 15.0, Assignment 2 avg = 7.0
+        # Course avg = (15 + 7) / 2 = 11.0
+        assert data["courseAverage"] == 11.0
+
+    def test_summary_max_score_from_rubric(
+        self, auth_student_a, student_a, course, assignment, rubric_with_criteria
+    ):
+        """maxScore is the sum of scoreMax from rubric criteria descriptions."""
+        resp = auth_student_a.get(f"/review/course/{course.id}/summary")
+        data = resp.get_json()
+
+        # criteria[0].scoreMax=5, criteria[1].scoreMax=10 → maxScore=15
+        assert data["assignments"][0]["maxScore"] == 15
+
+    def test_summary_student_sees_only_own_reviews(
+        self, db, auth_student_b, student_a, student_b, course, assignment, rubric_with_criteria
+    ):
+        """Students only see reviews where they are the reviewee."""
+        _, criteria = rubric_with_criteria
+
+        # Student A reviews Student B → total = 4
+        r1 = Review(assignmentID=assignment.id, reviewerID=student_a.id, revieweeID=student_b.id)
+        db.session.add(r1)
+        db.session.flush()
+        db.session.add(Criterion(reviewID=r1.id, criterionRowID=criteria[0].id, grade=4))
+
+        # Student B reviews Student A → total = 3 (student B should NOT see this)
+        r2 = Review(assignmentID=assignment.id, reviewerID=student_b.id, revieweeID=student_a.id)
+        db.session.add(r2)
+        db.session.flush()
+        db.session.add(Criterion(reviewID=r2.id, criterionRowID=criteria[0].id, grade=3))
+        db.session.commit()
+
+        resp = auth_student_b.get(f"/review/course/{course.id}/summary")
+        data = resp.get_json()
+
+        assert data["assignments"][0]["reviewCount"] == 1
+        assert data["assignments"][0]["averageScore"] == 4.0
+
+    def test_summary_teacher_sees_all_reviews(
+        self, db, auth_teacher, student_a, student_b, course, assignment, rubric_with_criteria
+    ):
+        """Teachers see aggregate across all reviews for an assignment."""
+        _, criteria = rubric_with_criteria
+
+        # Two reviews: A→B (score=5) and B→A (score=3)
+        r1 = Review(assignmentID=assignment.id, reviewerID=student_a.id, revieweeID=student_b.id)
+        db.session.add(r1)
+        db.session.flush()
+        db.session.add(Criterion(reviewID=r1.id, criterionRowID=criteria[0].id, grade=5))
+
+        r2 = Review(assignmentID=assignment.id, reviewerID=student_b.id, revieweeID=student_a.id)
+        db.session.add(r2)
+        db.session.flush()
+        db.session.add(Criterion(reviewID=r2.id, criterionRowID=criteria[0].id, grade=3))
+        db.session.commit()
+
+        resp = auth_teacher.get(f"/review/course/{course.id}/summary")
+        data = resp.get_json()
+
+        # Teacher sees both reviews: avg = (5 + 3) / 2 = 4.0
+        assert data["assignments"][0]["reviewCount"] == 2
+        assert data["assignments"][0]["averageScore"] == 4.0
+
+    def test_summary_teacher_filter_by_student(
+        self, db, auth_teacher, student_a, student_b, course, assignment, rubric_with_criteria
+    ):
+        """Teachers can filter summary to a specific student via ?studentID."""
+        _, criteria = rubric_with_criteria
+
+        # A→B (score=5), B→A (score=3)
+        r1 = Review(assignmentID=assignment.id, reviewerID=student_a.id, revieweeID=student_b.id)
+        db.session.add(r1)
+        db.session.flush()
+        db.session.add(Criterion(reviewID=r1.id, criterionRowID=criteria[0].id, grade=5))
+
+        r2 = Review(assignmentID=assignment.id, reviewerID=student_b.id, revieweeID=student_a.id)
+        db.session.add(r2)
+        db.session.flush()
+        db.session.add(Criterion(reviewID=r2.id, criterionRowID=criteria[0].id, grade=3))
+        db.session.commit()
+
+        # Filter to student_b → only review r1 (A→B, score=5)
+        resp = auth_teacher.get(
+            f"/review/course/{course.id}/summary?studentID={student_b.id}"
+        )
+        data = resp.get_json()
+
+        assert data["assignments"][0]["reviewCount"] == 1
+        assert data["assignments"][0]["averageScore"] == 5.0
+
+    def test_summary_course_not_found(self, auth_student_a):
+        """Returns 404 for a nonexistent course."""
+        resp = auth_student_a.get("/review/course/99999/summary")
+        assert resp.status_code == 404
+
+    def test_summary_no_assignments(self, db, auth_student_a, student_a):
+        """Returns empty assignments list for course with no assignments."""
+        empty_course = Course(teacherID=student_a.id, name="Empty Course")
+        db.session.add(empty_course)
+        db.session.commit()
+
+        resp = auth_student_a.get(f"/review/course/{empty_course.id}/summary")
+        data = resp.get_json()
+
+        assert data["assignments"] == []
+        assert data["courseAverage"] is None
+        assert data["courseMax"] is None

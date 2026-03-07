@@ -181,6 +181,7 @@ Rubrics belong to **assignments** and contain multiple **criteria descriptions**
 | `GET` | `/review/lookup?assignmentID=X&revieweeID=Y` | JWT (any) | Look up an existing review (reviewer from JWT) |
 | `GET` | `/review/<id>` | JWT (any) | Get a single review with its criteria |
 | `GET` | `/review/assignment/<id>` | JWT (any) | List reviews for an assignment |
+| `GET` | `/review/course/<id>/summary` | JWT (any) | Grade summary for all assignments in a course |
 
 **Authorization notes:**
 - `submit`: Reviewer is derived from the JWT token (prevents impersonation). Cannot review yourself. Duplicate reviews return 409.
@@ -188,6 +189,7 @@ Rubrics belong to **assignments** and contain multiple **criteria descriptions**
 - `GET /<id>`: Students can only view reviews they authored or received. Teachers can view any.
 - `assignment/<id>`: Teachers see all reviews. Students only see reviews they received.
 - **Anonymous reviews (US3):** When `assignment.is_anonymous` is `true`, the reviewer identity is replaced with `{ id: null, name: "Anonymous", email: null }` for the reviewee. Teachers always see the real reviewer.
+- `course/<id>/summary`: Students see averages based on reviews they received. Teachers see aggregate across all reviews. Teachers can pass `?studentID=X` to get a specific student's summary.
 
 ### Review Request Shape
 
@@ -231,6 +233,26 @@ Rubrics belong to **assignments** and contain multiple **criteria descriptions**
 }
 ```
 
+**Course grade summary (GET /review/course/<id>/summary):**
+```json
+{
+  "assignments": [
+    {
+      "id": 1,
+      "name": "Peer Review HW",
+      "reviewCount": 3,
+      "averageScore": 12.5,
+      "maxScore": 15
+    }
+  ],
+  "courseAverage": 12.5,
+  "courseMax": 15.0
+}
+```
+
+**Query parameters:**
+- `studentID` (optional, teacher/admin only): Scope the summary to a specific student's received reviews
+
 ---
 
 ## Not Yet Implemented (Planned)
@@ -239,7 +261,7 @@ These endpoints are planned based on the database schema but not yet implemented
 
 | Feature | Endpoints | Notes |
 |---------|-----------|-------|
-| Grade calculation | On-the-fly averaging | No stored grade column; compute from criteria |
+| *(none currently)* | — | — |
 
 ---
 
