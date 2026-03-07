@@ -674,11 +674,12 @@ export const deleteAssignmentResource = async (resourceID: number) => {
 export const submitReview = async (
   assignmentID: number,
   revieweeID: number,
-  criteria: { criterionRowID: number; grade: number; comments: string }[]
+  criteria: { criterionRowID: number; grade: number; comments: string }[],
+  comments: string = ""
 ) => {
   const response = await fetch(`${BASE_URL}/review/submit`, {
     method: 'POST',
-    body: JSON.stringify({ assignmentID, revieweeID, criteria }),
+    body: JSON.stringify({ assignmentID, revieweeID, comments, criteria }),
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include'
   })

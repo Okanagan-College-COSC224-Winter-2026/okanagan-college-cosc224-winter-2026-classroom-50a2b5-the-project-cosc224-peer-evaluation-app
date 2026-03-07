@@ -64,6 +64,7 @@ class Review {
   +assignmentID: Integer
   +reviewerID: Integer
   +revieweeID: Integer
+  +comments: String
 }
 
 class Criterion {

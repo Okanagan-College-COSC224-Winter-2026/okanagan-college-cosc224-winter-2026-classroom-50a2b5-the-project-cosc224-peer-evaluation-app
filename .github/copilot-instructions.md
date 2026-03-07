@@ -27,7 +27,7 @@ Key files: `flask_backend/api/models/users_model.py` (role validation + helper m
 - Controllers: `flask_backend/api/controllers/{auth_controller.py,user_controller.py,admin_controller.py,class_controller.py}`
 - Models: `flask_backend/api/models/{db.py,users_model.py}` — more models planned per `docs/schema/`
 - Tests (truth): `flask_backend/tests/{conftest.py,test_login.py,test_user.py,test_model.py}` — pytest with in-memory SQLite
-- CLI: `flask_backend/api/cli/database.py` — commands: `flask init_db`, `flask drop_db`, `flask add_users`, `flask add_sample_courses`, `flask create_admin`, `flask ensure_admin`, `flask migrate_assignment_columns`
+- CLI: `flask_backend/api/cli/database.py` — commands: `flask init_db`, `flask drop_db`, `flask add_users`, `flask add_sample_courses`, `flask create_admin`, `flask ensure_admin`, `flask migrate_assignment_columns`, `flask migrate_assignment_resources`, `flask migrate_review_comments`
 - Frontend contract: `frontend/src/util/api.ts` (all fetch calls include `credentials: 'include'` for cookies), `frontend/src/util/login.ts` (role helpers: `getUserRole()`, `isAdmin()`, `isTeacher()`)
 
 ## Dev workflows (local — Flask backend)
@@ -109,6 +109,19 @@ When adding new columns to a SQLAlchemy model, **always** provide a migration pa
 4. Mention the migration command in your PR description so other developers know to run it
 
 **Never** tell developers to drop and recreate the database as the first option. Always check `flask_backend/api/cli/database.py` for an existing migration command first (e.g., `flask migrate_assignment_columns`). Only use `flask drop_db` + `flask init_db` as a last resort.
+
+## Documentation updates (mandatory)
+When you change **models, endpoints, request/response shapes, or CLI commands**, you **must** update the matching documentation in the same set of edits — not as a follow-up. Treat this the same as writing tests: the feature is not done until the docs match the code.
+
+**Checklist — review every item on every change:**
+1. `docs/dev-guidelines/ENDPOINT_SUMMARY.md` — request/response examples, auth notes, endpoint tables
+2. `docs/schema/database-schema.md` — entity field lists and descriptions
+3. `docs/schema/schema.puml` — PlantUML ER diagram (entity fields + relationships)
+4. `docs/schema/database-schema.puml` — UML class diagram (class fields)
+5. `docs/ARCHITECTURE_OVERVIEW.md` — data flow examples, entity descriptions, workflow diagrams
+6. `.github/copilot-instructions.md` — CLI command list, "Files to know" paths, conventions
+
+**Not every file will need a change every time** — but you must check all six. If a file doesn't need updating, move on. If it does, update it in the same commit/PR as the code change.
 
 ## Known gaps and integration points
 - **Endpoints.json vs reality:** `docs/dev-guidelines/endpoints.json` is a legacy Node API spec (for reference only). Many routes (`/classes`, `/create_*`, groups, rubrics) exist in Node `backend/src/routes/` but NOT in Flask. When implementing missing endpoints, use Flask patterns (blueprints + Marshmallow) and add tests.

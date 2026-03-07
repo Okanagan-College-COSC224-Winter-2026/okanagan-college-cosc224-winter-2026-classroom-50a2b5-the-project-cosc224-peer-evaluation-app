@@ -186,6 +186,45 @@ class TestSubmitReview:
         stored_criteria = Criterion.query.filter_by(reviewID=review.id).all()
         assert len(stored_criteria) == 2
 
+    def test_submit_review_with_comments(
+        self, auth_student_a, student_b, assignment, rubric_with_criteria
+    ):
+        """Review-level comments are stored on the Review model."""
+        _, criteria = rubric_with_criteria
+
+        resp = auth_student_a.post(
+            "/review/submit",
+            json={
+                "assignmentID": assignment.id,
+                "revieweeID": student_b.id,
+                "comments": "Great teamwork overall!",
+                "criteria": [
+                    {"criterionRowID": criteria[0].id, "grade": 5, "comments": ""},
+                ],
+            },
+        )
+
+        assert resp.status_code == 201
+        review = Review.get_by_id(resp.get_json()["id"])
+        assert review.comments == "Great teamwork overall!"
+
+    def test_submit_review_without_comments_defaults_empty(
+        self, auth_student_a, student_b, assignment
+    ):
+        """Omitting comments defaults to empty string."""
+        resp = auth_student_a.post(
+            "/review/submit",
+            json={
+                "assignmentID": assignment.id,
+                "revieweeID": student_b.id,
+                "criteria": [],
+            },
+        )
+
+        assert resp.status_code == 201
+        review = Review.get_by_id(resp.get_json()["id"])
+        assert review.comments == ""
+
     def test_submit_review_without_criteria(
         self, auth_student_a, student_b, assignment
     ):
@@ -296,6 +335,7 @@ class TestLookupReview:
             json={
                 "assignmentID": assignment.id,
                 "revieweeID": student_b.id,
+                "comments": "Nice work",
                 "criteria": [
                     {"criterionRowID": criteria[0].id, "grade": 3, "comments": "OK"},
                 ],
@@ -312,6 +352,7 @@ class TestLookupReview:
         assert "criteria" in data
         assert len(data["criteria"]) == 1
         assert data["criteria"][0]["grade"] == 3
+        assert data["review"]["comments"] == "Nice work"
 
     def test_lookup_nonexistent_review(
         self, auth_student_a, student_b, assignment
@@ -345,6 +386,7 @@ class TestGetReview:
             json={
                 "assignmentID": assignment.id,
                 "revieweeID": student_b.id,
+                "comments": "Overall solid effort",
                 "criteria": [],
             },
         )
@@ -352,6 +394,7 @@ class TestGetReview:
 
         resp = auth_student_a.get(f"/review/{review_id}")
         assert resp.status_code == 200
+        assert resp.get_json()["comments"] == "Overall solid effort"
 
     def test_reviewee_can_view_received_review(
         self, test_client, db, student_a, student_b, assignment

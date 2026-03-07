@@ -60,6 +60,7 @@ export default function Assignment() {
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [revieweeID, setRevieweeID] = useState<number>(0);
   const [selectedCriteria, setSelectedCriteria] = useState<SelectedCriterion[]>([]);
+  const [reviewComment, setReviewComment] = useState("");
   const [review, setReview] = useState<number[]>([]);
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [editName, setEditName] = useState("");
@@ -586,11 +587,12 @@ export default function Assignment() {
               const result = await submitReview(
                 Number(id),
                 revieweeID,
-                selectedCriteria.map(c => ({
+                selectedCriteria.map((c) => ({
                   criterionRowID: c.row,
                   grade: c.column,
                   comments: ""
-                }))
+                })),
+                reviewComment
               );
               console.log('Review submitted successfully:', result);
               setReviewedMembers(prev => new Set(prev).add(revieweeID));
@@ -610,7 +612,7 @@ export default function Assignment() {
           onClose={() => setIsReviewModalOpen(false)}
           title={`Review: ${selectedMemberName}`}
         >
-          <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
+          <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} onCommentChange={setReviewComment} grades={review} />
           <div className='modalReviewActions'>
             <button className='submitReview' onClick={async () => {
               console.log("Submitting review with selected criteria:", selectedCriteria);
@@ -618,11 +620,12 @@ export default function Assignment() {
                 const result = await submitReview(
                   Number(id),
                   revieweeID,
-                  selectedCriteria.map(c => ({
+                  selectedCriteria.map((c) => ({
                     criterionRowID: c.row,
                     grade: c.column,
                     comments: ""
-                  }))
+                  })),
+                  reviewComment
                 );
                 console.log('Review submitted successfully:', result);
                 setReviewedMembers(prev => new Set(prev).add(revieweeID));

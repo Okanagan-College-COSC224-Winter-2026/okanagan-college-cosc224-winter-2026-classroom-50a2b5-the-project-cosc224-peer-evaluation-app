@@ -11,6 +11,7 @@ import ClassHome from "./pages/ClassHome";
 import ClassMembers from "./pages/ClassMembers";
 import Assignment from "./pages/Assignment";
 import Group from "./pages/Group";
+import ClassEvaluations from "./pages/ClassEvaluations";
 import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
@@ -67,6 +68,12 @@ function AppContent() {
           <Route path="/classes/:id/groups" element={
             <ProtectedRoute>
               <Group />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/classes/:id/evaluations" element={
+            <ProtectedRoute>
+              <ClassEvaluations />
             </ProtectedRoute>
           } />
 

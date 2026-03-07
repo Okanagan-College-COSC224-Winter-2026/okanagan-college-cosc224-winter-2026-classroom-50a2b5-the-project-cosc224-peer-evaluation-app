@@ -82,7 +82,7 @@ The system has three role types with hierarchical permissions:
 - Anonymous to protect reviewer identity
 - Scoped to specific assignments
 - Structured by rubric criteria
-- Include both scores and qualitative comments
+- Include scores per criterion and an overall qualitative comment
 
 ---
 
@@ -177,9 +177,10 @@ Teacher assigns reviews:
     Carol reviews → Alice & Bob
 
 Each review contains:
-  ├── Criterion 1 (Code Quality):     Score: 4/5, Comments: "..."
-  ├── Criterion 2 (Communication):    Score: 5/5, Comments: "..."
-  └── Criterion 3 (Effort):           Score: 3/5, Comments: "..."
+  ├── Overall Comment: "Great team player, very collaborative"
+  ├── Criterion 1 (Code Quality):     Score: 4/5
+  ├── Criterion 2 (Communication):    Score: 5/5
+  └── Criterion 3 (Effort):           Score: 3/5
 ```
 
 ### Analysis Phase

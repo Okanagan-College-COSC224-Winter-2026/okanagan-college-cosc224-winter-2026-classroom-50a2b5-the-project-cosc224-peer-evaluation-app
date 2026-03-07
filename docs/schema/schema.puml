@@ -64,6 +64,7 @@ entity "Review" as R {
   assignmentID : INT <<FK Assignment.id>>
   reviewerID   : INT <<FK User.id>>
   revieweeID   : INT <<FK User.id>>
+  comments     : VARCHAR(500)
 }
 
 entity "Criterion" as CR {

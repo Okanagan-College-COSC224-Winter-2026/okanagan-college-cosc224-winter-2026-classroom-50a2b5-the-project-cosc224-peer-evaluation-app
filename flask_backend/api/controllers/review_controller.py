@@ -43,6 +43,7 @@ def submit_review():
         {
             "assignmentID": int,
             "revieweeID": int,
+            "comments": str (optional — overall review comment),
             "criteria": [
                 { "criterionRowID": int, "grade": int, "comments": str (optional) },
                 ...
@@ -57,6 +58,7 @@ def submit_review():
     # --- validate required fields ---
     assignment_id = data.get("assignmentID")
     reviewee_id = data.get("revieweeID")
+    review_comments = data.get("comments", "")
     criteria_data = data.get("criteria", [])
 
     if not assignment_id or not reviewee_id:
@@ -100,6 +102,7 @@ def submit_review():
             assignmentID=assignment_id,
             reviewerID=reviewer.id,
             revieweeID=reviewee_id,
+            comments=review_comments,
         )
         db.session.add(review)
         db.session.flush()  # assigns review.id without committing

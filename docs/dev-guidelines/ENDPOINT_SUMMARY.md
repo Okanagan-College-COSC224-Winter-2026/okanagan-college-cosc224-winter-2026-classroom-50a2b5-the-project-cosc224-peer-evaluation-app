@@ -196,11 +196,15 @@ Rubrics belong to **assignments** and contain multiple **criteria descriptions**
 {
   "assignmentID": 1,
   "revieweeID": 3,
+  "comments": "Great teamwork overall!",
   "criteria": [
-    { "criterionRowID": 5, "grade": 4, "comments": "Good communication" },
+    { "criterionRowID": 5, "grade": 4, "comments": "" },
     { "criterionRowID": 6, "grade": 8, "comments": "" }
   ]
 }
+```
+
+> **Note:** The `comments` field at the top level is the overall review comment (stored on the Review model). Per-criterion `comments` fields exist in the schema but are not currently used by the frontend.
 ```
 
 ### Review Response Shapes
@@ -210,10 +214,11 @@ Rubrics belong to **assignments** and contain multiple **criteria descriptions**
 {
   "id": 1,
   "assignmentID": 1,
+  "comments": "Great teamwork overall!",
   "reviewer": { "id": 2, "name": "Alice", "email": "alice@test.com" },
   "reviewee": { "id": 3, "name": "Bob", "email": "bob@test.com" },
   "criteria": [
-    { "id": 1, "reviewID": 1, "criterionRowID": 5, "grade": 4, "comments": "Good" }
+    { "id": 1, "reviewID": 1, "criterionRowID": 5, "criterion_name": "Communication", "score_max": 5, "grade": 4, "comments": "" }
   ]
 }
 ```

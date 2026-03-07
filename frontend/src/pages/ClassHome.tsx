@@ -99,6 +99,10 @@ export default function ClassHome() {
             label: "Groups",
             path: `/classes/${id}/groups`,
           },
+          {
+            label: "Evaluations",
+            path: `/classes/${id}/evaluations`,
+          },
         ]}
       />
 

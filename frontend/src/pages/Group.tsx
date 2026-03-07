@@ -212,7 +212,11 @@ export default function Group() {
           {
             label: "Groups",
             path: `/classes/${id}/groups`,
-          }
+          },
+          {
+            label: "Evaluations",
+            path: `/classes/${id}/evaluations`,
+          },
         ]}
       />
 
