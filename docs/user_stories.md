@@ -509,3 +509,6 @@
 - [ ] Student can see their group assignments  
 - [ ] Groups are scoped to specific assignments  
 - [ ] Student can view group members for their assignments
+- [ ] Students can see their group assignments  
+- [ ] Groups are scoped to specific assignments  
+- [ ] System prevents invalid group assignments (e.g., student in multiple groups for same assignment)
