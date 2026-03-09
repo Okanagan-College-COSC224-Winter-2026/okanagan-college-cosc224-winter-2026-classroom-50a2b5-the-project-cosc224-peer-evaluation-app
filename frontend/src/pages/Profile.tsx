@@ -1,12 +1,9 @@
 // import { useParams } from 'react-router-dom'
-import { useNavigate } from "react-router-dom";
-import Button from "../components/Button";
 import './Profile.css'
 // import { useEffect, useState } from 'react'
 // import { getProfile } from '../util/api'
 
 export default function Profile() {
-  const navigate = useNavigate();
 
   // const { id } = useParams()
 
