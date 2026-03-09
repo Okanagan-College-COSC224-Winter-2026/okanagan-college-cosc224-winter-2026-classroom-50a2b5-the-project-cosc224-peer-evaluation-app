@@ -4,6 +4,7 @@ import './Profile.css'
 // import { getProfile } from '../util/api'
 
 export default function Profile() {
+
   // const { id } = useParams()
 
   // const [profile, setProfile] = useState({})

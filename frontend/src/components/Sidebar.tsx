@@ -24,6 +24,10 @@ export default function Sidebar() {
           Home
         </SidebarRow>
         
+        <SidebarRow selected={location === '/dashboard'} href="/dashboard">
+          Dashboard
+        </SidebarRow>
+        
         { /* TODO: make this ID match who is logged in */ }
         <SidebarRow selected={location.includes('/profile')} href="/profile/1">
           My Info
