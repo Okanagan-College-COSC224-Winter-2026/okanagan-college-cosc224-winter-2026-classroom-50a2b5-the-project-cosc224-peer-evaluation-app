@@ -199,13 +199,25 @@ Teacher-uploaded supporting documents for assignments (e.g., instructions, rubri
 
 ---
 
+## Review Endpoints
+
+Peer review submission and retrieval for assignment reviews.
+
+| Method | Path | Body | Response | Notes |
+|--------|------|------|----------|-------|
+| POST | `/create_review` | `{ assignmentID, reviewerID, revieweeID }` | `{ id, msg }` | ✅ Create review (or return existing) |
+| POST | `/create_criterion` | `{ reviewID, criterionRowID, grade?, comments? }` | `{ msg, criterion }` | ✅ Create/update review criterion grade/comment |
+| GET | `/review?assignmentID=<id>&reviewerID=<id>&revieweeID=<id>` | — | `{ id, assignmentID, reviewerID, revieweeID, grades, criteria }` | ✅ Get submitted review for pair |
+
+---
+
 ## Not Yet Implemented (Planned)
 
 These endpoints are planned based on the database schema but not yet implemented in Flask:
 
 | Feature | Endpoints | Notes |
 |---------|-----------|-------|
-| Reviews | `/review/*` | Peer review submissions |
+| Advanced Review Workflows | TBD | Additional review analytics / moderation features |
 
 ---
 

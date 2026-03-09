@@ -18,6 +18,7 @@ venv/
 .env.local
 .env.*.local
 instance/config.py
+instance/uploads/
 
 # Coverage reports
 .coverage
