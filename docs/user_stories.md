@@ -503,3 +503,12 @@
 - [ ] Admin can deactivate or delete a user, with safeguards against self-deletion  
 - [ ] Admin receives success or error feedback for each action  
 - [ ] All actions go through the frontend admin page and persist to the backend
+
+## US27 – Individual Student Enrollment – **Backlog**
+
+**As a teacher, I want to add an individual student so that I can update the class list if a csv file has already been uploaded**
+
+### Capabilities and Acceptance Criteria
+
+- [ ] Role-based access (only a teacher can add a student)
+- [ ] Class list updates to display new student
