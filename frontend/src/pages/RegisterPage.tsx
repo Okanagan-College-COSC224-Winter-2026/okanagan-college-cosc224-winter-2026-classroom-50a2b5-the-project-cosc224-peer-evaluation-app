@@ -17,15 +17,21 @@ export default function RegisterPage() {
 
   
   const attemptRegister = async () => {
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+  setError("");
 
-    if (await tryRegister(name, email, password)) {
-      navigate('/');
-    }
+  if (password !== confirmPassword) {
+    setError("Passwords do not match");
+    return;
   }
+
+  const result = await tryRegister(name, email, password);
+
+  if (result.ok) {
+    navigate("/");
+  } else {
+    setError(result.msg || "Registration failed");
+  }
+};
 
   return (
     <div className="RegisterPage">

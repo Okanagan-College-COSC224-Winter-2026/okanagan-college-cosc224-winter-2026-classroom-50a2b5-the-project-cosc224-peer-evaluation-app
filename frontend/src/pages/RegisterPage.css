@@ -64,3 +64,9 @@
 
   margin: 12px;
 }
+
+.ErrorMessage {
+  color: red;
+  margin-bottom: 10px;
+  font-weight: 500;
+}

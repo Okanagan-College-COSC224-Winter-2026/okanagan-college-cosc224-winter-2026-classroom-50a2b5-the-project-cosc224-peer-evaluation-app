@@ -131,10 +131,6 @@ def change_password():
     if not user:
         return jsonify({"msg": "User not found"}), 404
 
-    # Security: Only allow password changes if must_change_password is True
-    if not user.must_change_password:
-        return jsonify({"msg": "Password change not required for this account"}), 403
-
     # Verify current password
     if not check_password_hash(user.hash_pass, current_password):
         return jsonify({"msg": "Current password is incorrect"}), 401
