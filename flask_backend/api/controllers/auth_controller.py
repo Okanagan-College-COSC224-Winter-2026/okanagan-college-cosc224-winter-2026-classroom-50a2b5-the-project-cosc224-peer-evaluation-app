@@ -127,6 +127,42 @@ def jwt_role_required(*roles):
     return decorator
 
 
+@bp.route("/change_password", methods=["POST"])
+@jwt_required()
+def change_password():
+    """
+    Allows a logged-in user (teacher/admin/student) to change their password
+    by providing the current password and a new password.
+    """
+
+    if not request.is_json:
+        return jsonify({"msg": "Missing JSON in request"}), 400
+
+    data = request.get_json()
+
+    current_password = data.get("current_password")
+    new_password = data.get("new_password")
+
+    if not current_password or not new_password:
+        return jsonify({"msg": "Current password and new password are required"}), 400
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    # Verify current password
+    if not check_password_hash(user.hash_pass, current_password):
+        return jsonify({"msg": "Current password is incorrect"}), 400
+
+    # Update password
+    user.hash_pass = generate_password_hash(new_password)
+    user.update()
+
+    return jsonify({"msg": "Password changed successfully"}), 200
+
+
 def jwt_admin_required(view):
     """Decorator to require admin role for JWT-protected endpoints"""
     return jwt_role_required("admin")(view)
