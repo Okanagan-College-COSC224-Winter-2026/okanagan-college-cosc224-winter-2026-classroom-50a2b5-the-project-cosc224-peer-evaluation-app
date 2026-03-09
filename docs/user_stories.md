@@ -368,7 +368,7 @@
 
 ---
 
-## US19 – Student Access Registered Courses — **In-Progress**
+## US19 – Student Access Registered Courses — **Complete**
 
 **As a student, I want to view courses I am registered for so that I can access course content.**
 
@@ -380,7 +380,7 @@
 
 - ✅ Given the student is registered for courses, their dashboard lists those courses after login  
 - ✅ Each course link opens the associated content  
-- ⚠️ If no courses exist, the student sees a helpful empty state
+- ✅ If no courses exist, the student sees a helpful empty state
 
 ---
 

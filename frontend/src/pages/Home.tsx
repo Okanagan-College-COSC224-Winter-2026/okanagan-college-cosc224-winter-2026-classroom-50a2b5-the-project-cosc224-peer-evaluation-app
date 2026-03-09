@@ -3,7 +3,12 @@ import ClassCard from "../components/ClassCard";
 
 import './Home.css'
 import { listClasses, listAssignments } from "../util/api";
-import { isTeacher, isAdmin } from "../util/login";
+import { isTeacher, isAdmin, isStudent } from "../util/login";
+
+// US19 handoff note for Tailwind migration:
+// - This dashboard lists registered courses after login.
+// - Backend contracts used here: GET /class/classes and GET /assignment/<class_id>.
+// - Empty-state copy is intentionally explicit for students with zero registered courses.
 
 export default function Home() {
   const [courses, setCourses] = useState<CourseWithAssignments[]>([]);
@@ -58,6 +63,17 @@ export default function Home() {
       <h1>Peer Review Dashboard</h1>
 
       <div className="Classes">
+        {courses.length === 0 && (
+          <div className="CoursesEmptyState" role="status">
+            <h2>No courses available</h2>
+            <p>
+              {isStudent()
+                ? "You are not registered in any courses yet. Please contact your teacher to be added."
+                : "No courses found yet. Create a class to get started."}
+            </p>
+          </div>
+        )}
+
         {
           courses.map((course) => {
             const assignmentText = `${course.assignmentCount || 0} assignments`;

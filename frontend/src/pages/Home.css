@@ -15,6 +15,31 @@
   gap: 1rem;
 }
 
+/* US19 handoff note: these empty-state styles can be replaced by Tailwind utility classes. */
+.CoursesEmptyState {
+  width: 360px;
+  min-height: 240px;
+  padding: 1rem;
+
+  border-radius: 6px;
+  border: 1px dashed var(--text-secondary);
+  background: var(--background-secondary);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.CoursesEmptyState h2,
+.CoursesEmptyState p {
+  margin: 0;
+}
+
+.CoursesEmptyState p {
+  color: var(--text-secondary);
+}
+
 .ClassCreateButton {
   display: flex;
   flex-direction: column;
