@@ -31,12 +31,6 @@ export default function Profile() {
         <span>Place Holder</span>
         <h1>Email</h1>
         <span>placeholder@email.com</span>
-
-        <div style={{ marginTop: "20px" }}>
-          <Button onClick={() => navigate("/change-password")}>
-            Change Password
-          </Button>
-        </div>
       </div>
     </div>
   )
