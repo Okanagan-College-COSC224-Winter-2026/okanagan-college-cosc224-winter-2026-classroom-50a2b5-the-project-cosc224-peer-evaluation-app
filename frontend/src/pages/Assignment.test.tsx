@@ -89,7 +89,7 @@ describe('Assignment US9 UI', () => {
 
     expect(tabNav).not.toBeNull();
     expect(header).not.toBeNull();
-    expect(tabNav?.compareDocumentPosition(header as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect((tabNav?.compareDocumentPosition(header as Node) ?? 0) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText('Anonymous submissions/reviews')).toBeInTheDocument();
   });
 

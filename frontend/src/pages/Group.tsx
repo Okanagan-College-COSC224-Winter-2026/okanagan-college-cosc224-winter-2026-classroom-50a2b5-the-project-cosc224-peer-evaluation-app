@@ -11,7 +11,6 @@ import {
   listClasses,
 } from "../util/api";
 import { useParams } from "react-router-dom";
-import "./Group.css";
 import TabNavigation from "../components/TabNavigation";
 import StatusMessage from "../components/StatusMessage";
 import { isTeacher } from "../util/login";
@@ -25,9 +24,9 @@ interface GroupMember {
 }
 
 export default function Group() {
-  const { id } = useParams(); // This is now courseId
+  const { id } = useParams();
   const courseId = Number(id);
-  
+
   const [className, setClassName] = useState<string>("");
   const [groups, setGroups] = useState<CourseGroup[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<number>(-1);
@@ -42,18 +41,15 @@ export default function Group() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // Get course name
+
       const classes = await listClasses();
       const currentClass = classes.find((c: { id: number }) => c.id === courseId);
       setClassName(currentClass?.name || "");
 
       if (isTeacher()) {
-        // Teacher view: load groups, members, and unassigned
         const groupsData = await listGroups(courseId);
         setGroups(groupsData);
 
-        // Load members for each group
         const membersData: { [key: number]: GroupMember[] } = {};
         for (const group of groupsData) {
           const members = await listGroupMembers(group.id);
@@ -61,11 +57,9 @@ export default function Group() {
         }
         setGroupMembers(membersData);
 
-        // Load unassigned students
         const unassigned = await listUnassignedStudents(courseId);
         setUnassignedStudents(unassigned);
       } else {
-        // Student view: load their group
         const myGroupData = await listStuGroup(courseId);
         setMyGroup(myGroupData);
       }
@@ -78,7 +72,6 @@ export default function Group() {
     }
   }, [courseId]);
 
-  // Load data on mount and when courseId changes
   useEffect(() => {
     loadData();
   }, [loadData]);
@@ -113,19 +106,17 @@ export default function Group() {
 
     try {
       await deleteGroup(selectedGroup);
-      
-      // Update local state
+
       setGroups(groups.filter(g => g.id !== selectedGroup));
       const newMembers = { ...groupMembers };
-      
-      // Move members back to unassigned
+
       const removedMembers = newMembers[selectedGroup] || [];
       setUnassignedStudents([...unassignedStudents, ...removedMembers]);
-      
+
       delete newMembers[selectedGroup];
       setGroupMembers(newMembers);
       setSelectedGroup(-1);
-      
+
       setStatusType('success');
       setStatusMessage('Group deleted!');
     } catch (error) {
@@ -144,8 +135,7 @@ export default function Group() {
 
     try {
       await addGroupMember(selectedGroup, userId);
-      
-      // Update local state
+
       const student = unassignedStudents.find(s => s.id === userId);
       if (student) {
         setUnassignedStudents(unassignedStudents.filter(s => s.id !== userId));
@@ -154,7 +144,7 @@ export default function Group() {
           [selectedGroup]: [...(groupMembers[selectedGroup] || []), student]
         });
       }
-      
+
       setStatusType('success');
       setStatusMessage('Student added to group!');
     } catch (error) {
@@ -167,8 +157,7 @@ export default function Group() {
   const handleRemoveFromGroup = async (userId: number, groupId: number) => {
     try {
       await removeGroupMember(groupId, userId);
-      
-      // Update local state
+
       const student = groupMembers[groupId]?.find(s => s.id === userId);
       if (student) {
         setGroupMembers({
@@ -177,7 +166,7 @@ export default function Group() {
         });
         setUnassignedStudents([...unassignedStudents, student]);
       }
-      
+
       setStatusType('success');
       setStatusMessage('Student removed from group!');
     } catch (error) {
@@ -191,39 +180,34 @@ export default function Group() {
     return <div>Loading...</div>;
   }
 
+  const tableClasses = "w-1/2 h-full flex flex-col items-center border border-bg-secondary mx-2.5"
+  const trClasses = "w-full flex flex-row items-center justify-between transition-all duration-100"
+  const actionBtnClasses = "p-2 border-none bg-btn-primary text-white text-base cursor-pointer transition-all duration-100 hover:brightness-90 mx-2.5 ml-5"
+
   return (
     <>
-      <div className="ClassHeader">
-        <div className="ClassHeaderLeft">
+      <div className="flex flex-row justify-between items-center p-3">
+        <div className="flex flex-row justify-between items-center p-3">
           <h2>{className}</h2>
         </div>
       </div>
 
       <TabNavigation
         tabs={[
-          {
-            label: "Home",
-            path: `/classes/${id}/home`,
-          },
-          {
-            label: "Members",
-            path: `/classes/${id}/members`,
-          },
-          {
-            label: "Groups",
-            path: `/classes/${id}/groups`,
-          }
+          { label: "Home", path: `/classes/${id}/home` },
+          { label: "Members", path: `/classes/${id}/members` },
+          { label: "Groups", path: `/classes/${id}/groups` },
         ]}
       />
 
       <StatusMessage message={statusMessage} type={statusType} />
 
-      <div className="AssignmentPage">
+      <div>
         {isTeacher() ? (
           <>
-            <div className="assignmentTables">
+            <div className="flex flex-row items-start">
               {/* Unassigned Students Table */}
-              <table className="table">
+              <table className={tableClasses}>
                 <thead>
                   <tr>
                     <th>Unassigned Students</th>
@@ -234,10 +218,10 @@ export default function Group() {
                     <tr><td>No unassigned students</td></tr>
                   ) : (
                     unassignedStudents.map((student) => (
-                      <tr key={student.id}>
+                      <tr key={student.id} className={`${trClasses} hover:bg-bg-secondary`}>
                         <td>
-                          <span className="StudentName">{student.name}</span>
-                          <button onClick={() => handleAddToGroup(student.id)}>
+                          <span className="mx-2.5 ml-5">{student.name}</span>
+                          <button className={actionBtnClasses} onClick={() => handleAddToGroup(student.id)}>
                             Add to Group
                           </button>
                         </td>
@@ -248,7 +232,7 @@ export default function Group() {
               </table>
 
               {/* Groups Table */}
-              <table className="table">
+              <table className={tableClasses}>
                 <thead>
                   <tr>
                     <th>Groups</th>
@@ -262,15 +246,12 @@ export default function Group() {
                       <>
                         <tr
                           key={group.id}
-                          className={
-                            "groupNames " +
-                            (group.id === selectedGroup ? "selected" : "")
-                          }
+                          className={`flex flex-row items-center justify-center w-full relative items-center justify-center bg-[#eee] py-1 cursor-pointer ${group.id === selectedGroup ? '' : ''}`}
                           onClick={() => setSelectedGroup(group.id)}
                         >
                           <td>
-                            <div className="GroupArrow">
-                              <img src="/icons/arrow.svg" alt="arrow" />
+                            <div className={`absolute top-1 left-5 w-5 h-5 ${group.id === selectedGroup ? 'rotate-90' : ''}`}>
+                              <img src="/icons/arrow.svg" alt="arrow" className="w-full h-full" />
                             </div>
                             {group.name} ({groupMembers[group.id]?.length || 0} members)
                           </td>
@@ -278,10 +259,10 @@ export default function Group() {
 
                         {selectedGroup === group.id && (
                           groupMembers[group.id]?.map((member) => (
-                            <tr key={member.id} className="groupMember">
+                            <tr key={member.id} className={`${trClasses} hover:bg-bg-secondary`}>
                               <td>
-                                <span className="StudentName">{member.name}</span>
-                                <button onClick={() => handleRemoveFromGroup(member.id, group.id)}>
+                                <span className="mx-2.5 ml-5">{member.name}</span>
+                                <button className={actionBtnClasses} onClick={() => handleRemoveFromGroup(member.id, group.id)}>
                                   Remove
                                 </button>
                               </td>
@@ -296,31 +277,35 @@ export default function Group() {
             </div>
 
             {/* Action Buttons */}
-            <div className="groupActions">
-              <button onClick={handleDeleteGroup} disabled={selectedGroup === -1}>
+            <div className="p-2">
+              <button
+                className={`${actionBtnClasses} disabled:bg-btn-disabled disabled:cursor-not-allowed`}
+                onClick={handleDeleteGroup}
+                disabled={selectedGroup === -1}
+              >
                 Delete Selected Group
               </button>
             </div>
 
             {/* Create Group Form */}
-            <div className="createGroupForm">
+            <div className="p-2 flex gap-2 items-center">
               <Textbox
                 placeholder="New group name..."
                 onInput={setGroupName}
-                className="groupNameInput"
+                className="w-[15%]"
               />
-              <button onClick={handleCreateGroup}>
+              <button className={actionBtnClasses} onClick={handleCreateGroup}>
                 Create New Group
               </button>
             </div>
           </>
         ) : (
           /* Student View */
-          <div className="studentGroupView">
+          <div className="p-4">
             {myGroup ? (
               <>
                 <h3>My Group: {myGroup.name}</h3>
-                <table className="studentTable">
+                <table>
                   <thead>
                     <tr>
                       <th>Group Members</th>

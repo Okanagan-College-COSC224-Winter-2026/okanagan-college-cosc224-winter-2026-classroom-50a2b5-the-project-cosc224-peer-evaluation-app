@@ -62,6 +62,8 @@ export const tryRegister = async (name: string, email: string, password: string)
       },
     });
     if (!response.ok) {
+      debugger;
+      console.error('Registration failed:', response);
       throw new Error(`Response status: ${response.status}`);
     }
     return await response.json();

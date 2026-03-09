@@ -1,5 +1,3 @@
-import './Checkbox.css';
-
 interface Props {
   id?: string;
   name?: string;
@@ -11,9 +9,16 @@ interface Props {
 
 export default function Checkbox(props: Props) {
   return (
-    <label className={'Checkbox ' + (props.className || '')}>
-      <input id={props.id} name={props.name} type="checkbox" checked={props.checked} onChange={props.onChange} />
-      <span className="CheckboxLabel">{props.label}</span>
+    <label className={`inline-flex items-center gap-2 cursor-pointer select-none text-[0.95rem] ${props.className || ''}`}>
+      <input
+        id={props.id}
+        name={props.name}
+        type="checkbox"
+        checked={props.checked}
+        onChange={props.onChange}
+        className="w-4 h-4 cursor-pointer"
+      />
+      <span>{props.label}</span>
     </label>
   );
 }

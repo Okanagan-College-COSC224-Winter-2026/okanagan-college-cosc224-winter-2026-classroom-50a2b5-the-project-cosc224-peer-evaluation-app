@@ -4,7 +4,7 @@ import Button from '../components/Button';
 import Textbox from '../components/Textbox';
 import StatusMessage from '../components/StatusMessage';
 import { changePassword } from '../util/api';
-import './LoginPage.css';
+import { pageClasses, blockClasses, innerClasses, inputsClasses, inputChunkClasses } from './LoginPage';
 
 export default function ChangePassword() {
   const navigate = useNavigate();
@@ -36,8 +36,7 @@ export default function ChangePassword() {
 
       await changePassword(currentPassword, newPassword);
       setSuccess(true);
-      
-      // Redirect to home after 2 seconds
+
       setTimeout(() => {
         navigate('/home');
       }, 2000);
@@ -51,60 +50,42 @@ export default function ChangePassword() {
   };
 
   return (
-    <div className="LoginPage">
-      <div className="LoginBlock">
-        <h1>Change Password</h1>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+    <div className={pageClasses}>
+      <div className={blockClasses}>
+        <h1 className="m-4">Change Password</h1>
+        <p className="text-text-secondary mb-4">
           You must change your temporary password before continuing.
         </p>
 
         <StatusMessage message={error} type="error" />
         {success && (
-          <StatusMessage 
-            message="Password changed successfully! Redirecting..." 
-            type="success" 
+          <StatusMessage
+            message="Password changed successfully! Redirecting..."
+            type="success"
           />
         )}
 
-        <div className="LoginInner">
-          <div className="LoginInputs">
-            <div className="LoginInputChunk">
+        <div className={innerClasses}>
+          <div className={inputsClasses}>
+            <div className={inputChunkClasses}>
               <span>Current Password</span>
-              <Textbox
-                type='password'
-                placeholder='Current password...'
-                onInput={setCurrentPassword}
-                className='LoginInput'
-              />
+              <Textbox type='password' placeholder='Current password...' onInput={setCurrentPassword} />
             </div>
 
-            <div className="LoginInputChunk">
+            <div className={inputChunkClasses}>
               <span>New Password</span>
-              <Textbox
-                type='password'
-                placeholder='New password...'
-                onInput={setNewPassword}
-                className='LoginInput'
-              />
+              <Textbox type='password' placeholder='New password...' onInput={setNewPassword} />
             </div>
 
-            <div className="LoginInputChunk">
+            <div className={inputChunkClasses}>
               <span>Confirm New Password</span>
-              <Textbox
-                type='password'
-                placeholder='Confirm new password...'
-                onInput={setConfirmPassword}
-                className='LoginInput'
-              />
+              <Textbox type='password' placeholder='Confirm new password...' onInput={setConfirmPassword} />
             </div>
           </div>
         </div>
 
         <div>
-          <Button
-            onClick={handleChangePassword}
-            disabled={success}
-          >
+          <Button onClick={handleChangePassword} disabled={success}>
             Change Password
           </Button>
         </div>

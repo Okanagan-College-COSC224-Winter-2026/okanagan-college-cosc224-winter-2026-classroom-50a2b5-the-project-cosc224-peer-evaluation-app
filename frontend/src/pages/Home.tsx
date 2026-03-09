@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import ClassCard from "../components/ClassCard";
-
-import './Home.css'
 import { listClasses, listAssignments } from "../util/api";
 import { isTeacher, isAdmin } from "../util/login";
 
@@ -13,8 +11,7 @@ export default function Home() {
     ;(async () => {
       try {
         const coursesResp = await listClasses();
-        
-        // Fetch assignments for each course
+
         const coursesWithAssignments = await Promise.all(
           coursesResp.map(async (course: Course) => {
             try {
@@ -34,7 +31,7 @@ export default function Home() {
             }
           })
         );
-        
+
         setCourses(coursesWithAssignments);
       } catch (error) {
         console.error("Error fetching courses:", error);
@@ -46,43 +43,53 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="Home">
-        <h1>Peer Review Dashboard</h1>
-        <p>Loading courses...</p>
+      <div className="p-6 md:p-8 w-full">
+        <h1 className="text-2xl font-bold text-text-primary border-b border-border pb-3 mb-6">Peer Review Dashboard</h1>
+        <p className="text-text-secondary">Loading courses...</p>
       </div>
     );
   }
 
   return (
-    <div className="Home">
-      <h1>Peer Review Dashboard</h1>
+    <div className="p-6 md:p-8 w-full">
+      <h1 className="text-2xl font-bold text-text-primary border-b border-border pb-3 mb-6">Peer Review Dashboard</h1>
 
-      <div className="Classes">
-        {
-          courses.map((course) => {
-            const assignmentText = `${course.assignmentCount || 0} assignments`;
-            
-            return (
-              <ClassCard
-                key={course.id}
-                image="https://crc.losrios.edu//shared/img/social-1200-630/programs/general-science-social.jpg"
-                name={course.name}
-                subtitle={assignmentText}
-                onclick={() => {
-                  window.location.href = `/classes/${course.id}/home`
-                }}
-              />
-            )
-          })
-        }
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        {courses.map((course) => {
+          const assignmentText = `${course.assignmentCount || 0} assignment${course.assignmentCount !== 1 ? 's' : ''}`;
 
-        {isTeacher() && <div className="ClassCreateButton" onClick={() => window.location.href = '/classes/create'}>
-          <h2>Create Class</h2>
-        </div>}
-        
-        {isAdmin() && <div className="ClassCreateButton" onClick={() => window.location.href = '/admin/create-teacher'}>
-          <h2>Create Teacher</h2>
-        </div>}
+          return (
+            <ClassCard
+              key={course.id}
+              image="https://crc.losrios.edu//shared/img/social-1200-630/programs/general-science-social.jpg"
+              name={course.name}
+              subtitle={assignmentText}
+              onclick={() => {
+                window.location.href = `/classes/${course.id}/home`
+              }}
+            />
+          )
+        })}
+
+        {isTeacher() && (
+          <div
+            className="w-full h-52 flex flex-col items-center justify-center gap-2 bg-bg-secondary text-text-secondary rounded-xl border-2 border-dashed border-bg-tertiary transition-all duration-150 hover:border-btn-primary hover:text-btn-primary hover:bg-emerald-50 cursor-pointer"
+            onClick={() => window.location.href = '/classes/create'}
+          >
+            <span className="text-2xl font-light">+</span>
+            <span className="text-sm font-medium">Create Class</span>
+          </div>
+        )}
+
+        {isAdmin() && (
+          <div
+            className="w-full h-52 flex flex-col items-center justify-center gap-2 bg-bg-secondary text-text-secondary rounded-xl border-2 border-dashed border-bg-tertiary transition-all duration-150 hover:border-btn-secondary hover:text-btn-secondary hover:bg-slate-200 cursor-pointer"
+            onClick={() => window.location.href = '/admin/create-teacher'}
+          >
+            <span className="text-2xl font-light">+</span>
+            <span className="text-sm font-medium">Create Teacher</span>
+          </div>
+        )}
       </div>
     </div>
   )
