@@ -16,7 +16,6 @@ from .controllers import (
     assignment_resource_controller,
     group_controller,
     rubric_controller,
-    review_controller,
     submission_controller,
 )
 from .models.db import db, ma
@@ -115,7 +114,6 @@ def create_app(test_config=None):
     app.register_blueprint(assignment_resource_controller.bp)
     app.register_blueprint(group_controller.bp)
     app.register_blueprint(rubric_controller.bp)
-    app.register_blueprint(review_controller.bp)
     app.register_blueprint(submission_controller.bp)
     app.register_blueprint(fake_api_controller.fake)
 

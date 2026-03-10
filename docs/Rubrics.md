@@ -144,7 +144,8 @@ Rubric     (1) ──→ (0..*) CriteriaDescription
 
 ## Known Limitations
 
-- Review endpoints are now available in Flask (`POST /create_review`, `POST /create_criterion`, `GET /review`).
+- **Review submission is not yet implemented.** The student-facing "Submit Review" button on the Assignment page calls `POST /create_review` and `POST /create_criterion`, which are **legacy Node backend routes** that have not been migrated to Flask. Clicking "Submit Review" will produce console errors (404 / failed to fetch). This is expected — review submission is tracked under US1/US2/US23, not US11.
+- Similarly, `GET /review` (used to load a previously submitted review) does not exist in Flask yet. The frontend silently handles this 404.
 
 ## Related Documentation
 
