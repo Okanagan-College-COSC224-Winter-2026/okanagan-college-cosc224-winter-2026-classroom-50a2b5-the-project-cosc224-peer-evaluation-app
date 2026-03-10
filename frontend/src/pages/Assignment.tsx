@@ -30,9 +30,11 @@ export default function Assignment() {
   useEffect(() => {
       (async () => {
         const stuID = await getUserId();
-      setStuID(stuID);
-      const stus = await listStuGroup(Number(id), stuID);
-      setStuGroup(stus);
+        setStuID(stuID);
+
+        const stus = await listStuGroup(Number(id), stuID);
+        setStuGroup(stus);
+
         try {
           const reviewResponse = await getReview(Number(id), stuID, revieweeID);
           const reviewData = await reviewResponse.json();
@@ -45,22 +47,17 @@ export default function Assignment() {
   }, [revieweeID, id, stuID]);
 
   const handleCriterionSelect = (row: number, column: number) => {
-    // Check if this criterion is already selected
     const existingIndex = selectedCriteria.findIndex(
       criterion => criterion.row === row && criterion.column === column
     );
     
     if (existingIndex >= 0) {
-      // If already selected, remove it (toggle off)
       setSelectedCriteria(prev => 
         prev.filter((_, index) => index !== existingIndex)
       );
     } else {
-      // Add the new criterion, removing any other selection in the same row
       setSelectedCriteria(prev => {
-        // Remove any existing selection for this row
         const filteredCriteria = prev.filter(criterion => criterion.row !== row);
-        // Add the new selection
         return [...filteredCriteria, { row, column }];
       });
     }
@@ -87,51 +84,77 @@ export default function Assignment() {
           {
             label: "Group",
             path: `/assignment/${id}/group`,
-          }
+          },
+          ...(isTeacher()
+            ? [
+                {
+                  label: "Reviews",
+                  path: `/assignments/${id}/reviews`,
+                },
+              ]
+            : []),
         ]}
       />
 
       <div className='assignmentRubricDisplay'>
-        <RubricDisplay rubricId={Number(id)} onCriterionSelect={handleCriterionSelect} grades={review} />
+        <RubricDisplay 
+          rubricId={Number(id)} 
+          onCriterionSelect={handleCriterionSelect} 
+          grades={review} 
+        />
       </div>
-      {
-        isTeacher() && 
-          <div className='assignmentRubric'>
-            <RubricCreator id={Number(id)}/>
-          </div>
+
+      {isTeacher() && 
+        <div className='assignmentRubric'>
+          <RubricCreator id={Number(id)}/>
+        </div>
       }
 
-{
-      //List group members as radio buttons to select for given review
-      !isTeacher() && <div className='groupMembers'>
-        <h3>Select a group member to review</h3>
+      {!isTeacher() && 
+        <div className='groupMembers'>
+          <h3>Select a group member to review</h3>
+
           {stuGroup.map((stus) => {
-                return (
-                  <>
-                  <input type='radio' id={stus.userID.toString()} value={stus.userID} name='groupMembers' onChange={handleRadioChange}></input>
-                  <label htmlFor={stus.userID.toString()}>{stus.userID}</label>
-                  <br></br>
-                  </>
-                )
+            return (
+              <>
+                <input
+                  type='radio'
+                  id={stus.userID.toString()}
+                  value={stus.userID}
+                  name='groupMembers'
+                  onChange={handleRadioChange}
+                />
+                <label htmlFor={stus.userID.toString()}>
+                  {stus.userID}
+                </label>
+                <br />
+              </>
+            );
+          })}
+
+          <button
+            className='submitReview'
+            onClick={async () => {
+              console.log("Submitting review with selected criteria:", selectedCriteria);
+              try {
+                const reviewResponse = await createReview(Number(id), stuID, revieweeID);
+                const reviewData = await reviewResponse.json();
+                console.log("Review response:", reviewData);
+
+                for (const criterion of selectedCriteria) {
+                  await createCriterion(reviewData.id, criterion.row, criterion.column, "");
+                }
+
+                console.log('Review submitted successfully');
+              } catch (error) {
+                console.error('Error submitting review:', error);
               }
-            )
-          }
-          <button className='submitReview' onClick={async () => {
-            console.log("Submitting review with selected criteria:", selectedCriteria);
-            try {
-              const reviewResponse = await createReview(Number(id), stuID, revieweeID);
-              const reviewData = await reviewResponse.json();
-              console.log("Review response:", reviewData);
-              for (const criterion of selectedCriteria) {
-                await createCriterion(reviewData.id, criterion.row, criterion.column, "");
-              }
-              console.log('Review submitted successfully');
-            } catch (error) {
-              console.error('Error submitting review:', error);
-            }
-          }}>Submit Review</button>
-      </div>}
+            }}
+          >
+            Submit Review
+          </button>
+        </div>
+      }
     </>
   );
 }
-

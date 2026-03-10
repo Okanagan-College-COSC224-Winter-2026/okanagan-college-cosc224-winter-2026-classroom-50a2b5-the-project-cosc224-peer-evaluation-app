@@ -520,3 +520,89 @@ export const changePassword = async (currentPassword: string, newPassword: strin
 
   return await response.json();
 }
+
+export interface TeacherReviewRow {
+  review_id: number;
+  reviewer_id: number;
+  reviewee_id: number;
+  total_score: number;
+  has_conclusion: boolean;
+}
+
+export interface TeacherReviewCriterion {
+  criterion_id: number | null;
+  criterion_name: string;
+  score: number | null;
+  score_max: number | null;
+  comment: string;
+}
+
+export interface TeacherConclusion {
+  id?: number;
+  review_id?: number;
+  teacher_id?: number;
+  note: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface TeacherReviewDetail {
+  review_id: number;
+  reviewer_id: number;
+  reviewee_id: number;
+  criteria: TeacherReviewCriterion[];
+  conclusion: TeacherConclusion | null;
+}
+
+export const teacherListReviews = async (
+  assignmentId: number,
+  groupId = "",
+  sort = "id"
+): Promise<TeacherReviewRow[]> => {
+  const resp = await fetch(
+    `${BASE_URL}/teacher/assignments/${assignmentId}/reviews?group_id=${groupId}&sort=${sort}`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
+  maybeHandleExpire(resp);
+  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
+  return await resp.json();
+};
+
+export const teacherGetReviewDetail = async (
+  assignmentId: number,
+  reviewId: number
+): Promise<TeacherReviewDetail> => {
+  const resp = await fetch(
+    `${BASE_URL}/teacher/assignments/${assignmentId}/reviews/${reviewId}`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
+  maybeHandleExpire(resp);
+  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
+  return await resp.json();
+};
+
+export const teacherSaveConclusion = async (
+  reviewId: number,
+  note: string
+): Promise<TeacherConclusion> => {
+  const resp = await fetch(`${BASE_URL}/teacher/reviews/${reviewId}/conclusion`, {
+    method: "POST",
+    body: JSON.stringify({ note }),
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  });
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => ({}));
+    throw new Error(data.error || `Response status: ${resp.status}`);
+  }
+
+  return await resp.json();
+};
