@@ -14,18 +14,18 @@ class Assignment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     courseID = db.Column(db.Integer, db.ForeignKey("Course.id"), index=True)
     name = db.Column(db.String(255), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    start_date = db.Column(db.DateTime, nullable=True, index=True)
     rubric_text = db.Column("rubric", db.String(255), nullable=True)
 
     # NEW: due date field (acceptance criteria: edit/delete allowed before due date)
     due_date = db.Column(db.DateTime, nullable=True, index=True)
+    is_anonymous = db.Column(db.Boolean, nullable=True, default=True)
 
     # relationships
     course = db.relationship("Course", back_populates="assignments", lazy="joined")
     rubrics = db.relationship(
         "Rubric", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
-    )
-    groups = db.relationship(
-        "CourseGroup", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
     )
     submissions = db.relationship(
         "Submission", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
@@ -33,15 +33,24 @@ class Assignment(db.Model):
     reviews = db.relationship(
         "Review", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
     )
-    group_members = db.relationship(
-        "Group_Members", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
-    )
 
-    def __init__(self, courseID, name, rubric_text, due_date=None):
+    def __init__(
+        self,
+        courseID,
+        name,
+        rubric_text=None,
+        due_date=None,
+        description=None,
+        start_date=None,
+        is_anonymous=True,
+    ):
         self.courseID = courseID
         self.name = name
+        self.description = description
+        self.start_date = start_date
         self.rubric_text = rubric_text
         self.due_date = due_date
+        self.is_anonymous = is_anonymous
 
     def __repr__(self):
         return f"<Assignment id={self.id} name={self.name}>"

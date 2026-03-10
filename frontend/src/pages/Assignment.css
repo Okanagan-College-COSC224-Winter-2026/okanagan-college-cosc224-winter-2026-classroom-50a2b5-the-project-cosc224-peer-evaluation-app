@@ -102,6 +102,226 @@
   padding: 12px;
 }
 
+.assignmentDescription {
+  margin: 0 12px 12px;
+  color: var(--text-primary);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-secondary);
+  border-radius: 8px;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+}
+
 .groupNameInput{
   width: 15%;
+}
+
+.assignmentManagement {
+  margin: 20px 12px;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.assignmentManagement h3 {
+  margin: 0 0 4px;
+  color: var(--text-primary, #333);
+  font-size: 18px;
+}
+
+.assignmentManagement label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
+.assignmentManagement input,
+.assignmentManagement textarea {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  background-color: #fff;
+  color: var(--text-primary, #333);
+  font-family: inherit;
+}
+
+.assignmentManagement input:focus,
+.assignmentManagement textarea:focus {
+  outline: none;
+  border-color: #4a90d9;
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+}
+
+.assignmentManagement textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.assignmentManagement .checkboxLabel {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+}
+
+.assignmentManagement .checkboxLabel input {
+  width: auto;
+  padding: 0;
+  box-shadow: none;
+}
+
+.assignmentManagementButtons {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.assignmentManagementButtons button {
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-weight: 600;
+}
+
+.deleteAssignmentButton {
+  background-color: var(--button-secondary) !important;
+}
+
+.modalReviewActions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+  margin-top: 8px;
+}
+
+.attachmentSection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.removeAttachmentButton {
+  background-color: var(--button-secondary) !important;
+}
+
+.assignmentResources {
+  margin: 20px 12px;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.assignmentResources h3 {
+  margin: 0 0 4px;
+  color: var(--text-primary, #333);
+  font-size: 18px;
+}
+
+.assignmentResources ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resourceItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Rubric management card (manage tab) */
+.assignmentRubric {
+  margin: 20px 12px;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.assignmentRubric h3 {
+  margin: 0 0 4px;
+  color: var(--text-primary, #333);
+  font-size: 18px;
+}
+
+/* RubricCreator already has its own card style; strip duplicate when nested */
+.assignmentRubric .RubricCreator {
+  margin: 0;
+  box-shadow: none;
+  background-color: transparent;
+  padding: 0;
+}
+
+.deleteRubricBtn {
+  background-color: var(--button-secondary) !important;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-weight: 600;
+}
+
+/* Student view card */
+.groupMembers {
+  margin: 20px 12px;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.groupMembers h3 {
+  margin: 0 0 4px;
+  color: var(--text-primary, #333);
+  font-size: 18px;
+}
+
+/* Peer review card (student view) */
+.peerReview {
+  margin: 20px 12px;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.peerReview h3 {
+  margin: 0 0 4px;
+  color: var(--text-primary, #333);
+  font-size: 18px;
+}
+
+.submitReview {
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-weight: 600;
+  margin-top: 4px;
+  align-self: flex-start;
 }
