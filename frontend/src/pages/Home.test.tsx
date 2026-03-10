@@ -1,8 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import Home from './Home';
 
-// US19 handoff note: these tests protect dashboard behavior while UI styling is migrated to Tailwind.
-
 const listClassesMock = vi.fn();
 const listAssignmentsMock = vi.fn();
 const isTeacherMock = vi.fn();

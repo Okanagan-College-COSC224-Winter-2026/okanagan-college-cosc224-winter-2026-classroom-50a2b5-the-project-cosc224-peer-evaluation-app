@@ -5,11 +5,6 @@ import './Home.css'
 import { listClasses, listAssignments } from "../util/api";
 import { isTeacher, isAdmin, isStudent } from "../util/login";
 
-// US19 handoff note for Tailwind migration:
-// - This dashboard lists registered courses after login.
-// - Backend contracts used here: GET /class/classes and GET /assignment/<class_id>.
-// - Empty-state copy is intentionally explicit for students with zero registered courses.
-
 export default function Home() {
   const [courses, setCourses] = useState<CourseWithAssignments[]>([]);
   const [loading, setLoading] = useState(true);
