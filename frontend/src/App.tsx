@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./components/Sidebar";
+
 import "./App.css";
 import Profile from "./pages/Profile";
 import CreateClass from "./pages/CreateClass";
@@ -13,9 +14,7 @@ import Group from "./pages/Group";
 import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
-import ChangePasswordForm from "./pages/ChangePasswordForm";
-import ReviewSubmission from "./pages/ReviewSubmission";
-import FeedbackView from "./pages/FeedbackView";
+import TeacherReviewsPage from "./pages/TeacherReviewsPage";
 
 function AppContent() {
   const location = useLocation();
@@ -30,70 +29,86 @@ function AppContent() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/change-password" element={<ChangePassword />} />
 
-          <Route path="/home" element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/admin/create-teacher" element={
-            <ProtectedRoute>
-              <CreateTeacher />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/admin/create-teacher"
+            element={
+              <ProtectedRoute>
+                <CreateTeacher />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/classes/create" element={
-            <ProtectedRoute>
-              <CreateClass />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/classes/create"
+            element={
+              <ProtectedRoute>
+                <CreateClass />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/profile/:id" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/profile/:id"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/classes/:id/home" element={
-            <ProtectedRoute>
-              <ClassHome />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/classes/:id/home"
+            element={
+              <ProtectedRoute>
+                <ClassHome />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/classes/:id/members" element={
-            <ProtectedRoute>
-              <ClassMembers />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/classes/:id/members"
+            element={
+              <ProtectedRoute>
+                <ClassMembers />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/assignments/:id" element={
-            <ProtectedRoute>
-              <Assignment />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/assignments/:id"
+            element={
+              <ProtectedRoute>
+                <Assignment />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/assignments/:id/review/:revieweeId" element={
-            <ProtectedRoute>
-              <ReviewSubmission />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/assignments/:id/group"
+            element={
+              <ProtectedRoute>
+                <Group />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/assignments/:id/group" element={
-            <ProtectedRoute>
-              <Group />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/assignments/:id/feedback" element={
-            <ProtectedRoute>
-              <FeedbackView />
-            </ProtectedRoute>
-          } />
-          <Route path="/change-password-form" element={
-            <ProtectedRoute>
-              <ChangePasswordForm />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/assignments/:id/reviews"
+            element={
+              <ProtectedRoute>
+                <TeacherReviewsPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
     </div>
