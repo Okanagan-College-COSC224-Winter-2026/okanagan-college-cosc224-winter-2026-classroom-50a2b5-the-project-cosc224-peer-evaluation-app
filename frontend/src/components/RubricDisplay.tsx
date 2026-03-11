@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import Criteria from './Criteria';
 import { getCriteria, getRubric } from '../util/api';
-import './RubricDisplay.css';
 
 interface RubricDisplayProps {
     rubricId: number | null;
@@ -45,15 +44,15 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
 
     if (!rubricId || criteria.length === 0) {
         return (
-            <div className="RubricDisplay">
+            <div className="p-5 bg-white rounded-[8px] shadow-[0_2px_4px_rgba(0,0,0,0.1)] my-5">
                 <p>No rubric available yet</p>
             </div>
         );
     }
 
     return (
-        <div className="RubricDisplay">
-            <h2>Rubric</h2>
+        <div className="p-5 bg-white rounded-[8px] shadow-[0_2px_4px_rgba(0,0,0,0.1)] my-5">
+            <h2 className="mb-5 text-[#333]">Rubric</h2>
             <Criteria
                 questions={questions}
                 scoreMaxes={scoreMaxes}
@@ -64,4 +63,4 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
             />
         </div>
     );
-} 
+}

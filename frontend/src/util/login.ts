@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:5000';
+const BASE_URL = 'http://localhost:5001';
 // Token is now stored in httponly cookie, so we don't need getToken anymore
 // But we keep user info (role, name, user_id) in localStorage for UI purposes
 export const getToken = () => {
@@ -30,6 +30,11 @@ export const isAdmin = () => {
 
 export const isStudent = () => {
   return getUserRole() === "student";
+}
+
+export const getUserId = (): number | null => {
+  const user = JSON.parse(localStorage.getItem("user") || '{}');
+  return user.id || null;
 }
 
 export const hasRole = (...roles: string[]) => {

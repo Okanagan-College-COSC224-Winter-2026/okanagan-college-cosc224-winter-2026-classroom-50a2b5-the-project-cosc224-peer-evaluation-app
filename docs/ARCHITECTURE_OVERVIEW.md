@@ -63,7 +63,8 @@ The system has three role types with hierarchical permissions:
 
 ### 4. **Groups**
 
-- Assignment-specific student groupings
+- Course-level student groupings
+- Students remain in the same group for all assignments in a course
 - Enable peer evaluation within teams
 - Can be created manually or via roster upload
 - Students see only their group members' work
@@ -218,6 +219,10 @@ Teacher views:
 │  │  ├── /user  (profile management)      │  │
 │  │  ├── /class (course management)       │  │
 │  │  ├── /assignment (CRUD operations)    │  │
+│  │  ├── /assignment-resource (file mgmt) │  │
+│  │  ├── /groups (course-level groups)    │  │
+│  │  ├── /rubric (evaluation criteria)    │  │
+│  │  ├── /submission (student uploads)    │  │
 │  │  └── /admin (user administration)     │  │
 │  └─────────────────┬──────────────────────┘  │
 │                    │                          │
@@ -231,11 +236,13 @@ Teacher views:
 │  ┌─────────────────▼──────────────────────┐  │
 │  │  Data Access Layer (SQLAlchemy ORM)   │  │
 │  │  ├── User Model                       │  │
-│  │  ├── Course Model                     │  │
+│  │  ├── Course / User_Course Models      │  │
 │  │  ├── Assignment Model                 │  │
-│  │  ├── Group Models                     │  │
-│  │  ├── Rubric/Criterion Models          │  │
-│  │  └── Review Model                     │  │
+│  │  ├── AssignmentResource Model         │  │
+│  │  ├── Submission Model                 │  │
+│  │  ├── Group Models (CourseGroup, etc.) │  │
+│  │  ├── Rubric/CriteriaDescription       │  │
+│  │  └── Review/Criterion Models          │  │
 │  └─────────────────┬──────────────────────┘  │
 └────────────────────┼────────────────────────┘
                      │ SQL Queries
@@ -327,7 +334,9 @@ Course ────────┼──── Assignment
                │
                └──── User_Course (enrollments)
 
-Assignment ────┼──── CourseGroup (groups)
+Assignment ────┼──── CourseGroup (groups are course-level)
+               │
+               ├──── AssignmentResource (teacher uploads)
                │
                ├──── Submission (student work)
                │
@@ -378,10 +387,10 @@ Current implementation supports core workflows. Planned features:
 
 - **Advanced Analytics**: Teacher dashboards with visualization
 - **Notification System**: Email alerts for deadlines and reviews
-- **File Uploads**: Support PDF/document submissions
 - **Rubric Templates**: Reusable evaluation criteria
 - **Peer Assignment Algorithms**: Automated fair distribution
 - **Grade Calculation**: Weighted scoring formulas
+- **Review Endpoints**: Peer review submission and retrieval
 - **Mobile Responsive UI**: Improved mobile experience
 
 See [user_stories.md](user_stories.md) for complete feature roadmap.

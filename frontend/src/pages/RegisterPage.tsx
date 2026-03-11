@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import './RegisterPage.css';
 import Textbox from '../components/Textbox';
 import Button from '../components/Button';
 import StatusMessage from '../components/StatusMessage';
 import { tryRegister } from '../util/api';
 import { useNavigate } from 'react-router-dom';
+import { pageClasses, blockClasses, innerClasses, inputsClasses, inputChunkClasses } from './LoginPage';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -14,7 +14,6 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [error, setError] = useState('');
 
-  
   const attemptRegister = async () => {
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -27,61 +26,36 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="RegisterPage">
-      {error && <StatusMessage message={error} type="error" className="RegisterError" />}
-      <div className="RegisterBlock">
-        <h1>Register</h1>
+    <div className={pageClasses}>
+      {error && <StatusMessage message={error} type="error" />}
+      <div className={blockClasses}>
+        <h1 className="m-4">Register</h1>
 
-        <div className="RegisterInner">
-          <div className="RegisterInputs">
-            <div className="RegisterInputChunk">
+        <div className={innerClasses}>
+          <div className={inputsClasses}>
+            <div className={inputChunkClasses}>
               <span>Name</span>
-              <Textbox
-                placeholder='Name...'
-                onInput={setName}
-                className='RegisterInput'
-              />
+              <Textbox placeholder='Name...' onInput={setName} />
             </div>
 
-            <div className="RegisterInputChunk">
+            <div className={inputChunkClasses}>
               <span>Email</span>
-              <Textbox
-                type='email'
-                placeholder='Email...'
-                onInput={setEmail}
-                className='RegisterInput'
-              />
+              <Textbox type='email' placeholder='Email...' onInput={setEmail} />
             </div>
 
-            <div className="RegisterInputChunk">
+            <div className={inputChunkClasses}>
               <span>Password</span>
-              <Textbox
-                type='password'
-                placeholder='Password...'
-                onInput={setPassword}
-                className='RegisterInput'
-              />
+              <Textbox type='password' placeholder='Password...' onInput={setPassword} />
             </div>
 
-            <div className="RegisterInputChunk">
+            <div className={inputChunkClasses}>
               <span>Confirm Password</span>
-              <Textbox
-                type='password'
-                placeholder='Confirm Password...'
-                onInput={setConfirmPassword}
-                className='RegisterInput'
-              />
+              <Textbox type='password' placeholder='Confirm Password...' onInput={setConfirmPassword} />
             </div>
-
           </div>
-
         </div>
 
-        <Button
-          onClick={()=> attemptRegister()}
-          children="Register"
-        />
-
+        <Button onClick={() => attemptRegister()} children="Register" />
       </div>
     </div>
   );

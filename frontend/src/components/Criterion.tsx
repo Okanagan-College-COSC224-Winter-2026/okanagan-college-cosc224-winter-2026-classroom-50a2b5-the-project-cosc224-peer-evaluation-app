@@ -1,7 +1,6 @@
-import './Criterion.css';
 import { useState } from 'react';
 
-//Component for a single row of the criteria table
+// Component for a single criterion displayed as a card with a slider
 interface props {
     question: string;
     scoreMax: number;
@@ -12,45 +11,38 @@ interface props {
 }
 
 export default function Criterion(props: props) {
-    const [clickedCell, setClickedCell] = useState<number | null>(null);
-    
-    const handleCellClick = (columnIndex: number) => {
-        const column = columnIndex + 1; 
-        
-        // Toggle selection: if same cell is clicked again, deselect it
-        if (clickedCell === column) {
-            setClickedCell(null);
-            // Inform parent component about deselection
-            props.onCriterionSelect(props.questionIndex, column);
-        } else {
-            setClickedCell(column);
-            // Inform parent component about new selection
-            props.onCriterionSelect(props.questionIndex, column);
-        }
-    }
+    const [sliderValue, setSliderValue] = useState<number>(props.grade || 0);
+
+    const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = Number(e.target.value);
+        setSliderValue(value);
+        props.onCriterionSelect(props.questionIndex, value);
+    };
 
     return (
-        <tr className='criterionRow'>
-            <th className='criterionHead'>{props.question}</th>
+        <div className="bg-white border border-border rounded-xl px-5 py-4 shadow-sm">
+            <p className="font-semibold text-text-primary text-sm mb-3 m-0">{props.question}</p>
+
             {props.hasScore ? (
-                Array.from({ length: props.scoreMax }, (_, i) => {
-                    const cellValue = i + 1; 
-                    const isReviewed = cellValue === props.grade; 
-                    return (
-                        <td 
-                            key={i} 
-                            onClick={() => handleCellClick(i)}
-                            className={isReviewed ? 'reviewedCell' : (clickedCell === cellValue ? 'clickedCell' : '')}
-                        >
-                            {cellValue}
-                        </td>
-                    );
-                })
+                <div className="flex items-center gap-4">
+                    <input
+                        type="range"
+                        min={0}
+                        max={props.scoreMax}
+                        value={sliderValue}
+                        onChange={handleSliderChange}
+                        className="flex-1 h-2 rounded-lg appearance-none cursor-pointer accent-btn-primary"
+                    />
+                    <span className="text-sm font-semibold text-btn-primary whitespace-nowrap min-w-[3.5rem] text-right">
+                        {sliderValue} / {props.scoreMax}
+                    </span>
+                </div>
             ) : (
-                <td className='criterionData'>
-                    <textarea className='comment' placeholder='Comment here'/>
-                </td>
+                <textarea
+                    className="w-full min-h-[80px] px-3 py-2 border border-border rounded-lg bg-bg-secondary text-text-primary text-sm font-[inherit] resize-y focus:outline-none focus:ring-2 focus:ring-btn-primary focus:border-btn-primary transition-colors"
+                    placeholder="Write your comment here..."
+                />
             )}
-        </tr>
-    )
+        </div>
+    );
 }

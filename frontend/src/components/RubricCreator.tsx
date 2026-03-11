@@ -2,7 +2,6 @@ import { useState } from 'react';
 import Button from './Button';
 import StatusMessage from './StatusMessage';
 import { createCriteria, createRubric } from '../util/api';
-import './RubricCreator.css';
 
 interface RubricCreatorProps {
     onRubricCreated?: (rubricId: number) => void;
@@ -18,14 +17,13 @@ export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProp
     const handleCreate = async () => {
         try {
             setStatusMessage('');
-            const rubricResponse = await createRubric(id, id, canComment);
+            const rubricResponse = await createRubric(id, canComment);
             const newRubricID = rubricResponse.id;
-            await Promise.all(newCriteria.map(({ question, scoreMax, hasScore }) => 
+            await Promise.all(newCriteria.map(({ question, scoreMax, hasScore }) =>
                 createCriteria(newRubricID, question, scoreMax, canComment, hasScore)
             ));
             setStatusType('success');
             setStatusMessage('Rubric created successfully!');
-            setTimeout(() => window.location.reload(), 2000);
             if (onRubricCreated) {
                 onRubricCreated(newRubricID);
             }
@@ -62,12 +60,12 @@ export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProp
     const handleRemoveSection = (index: number) => setNewCriteria(prev => prev.filter((_, i) => i !== index));
 
     return (
-        <div className="RubricCreator">
-            <h2>Create New Criteria</h2>
+        <div className="p-5 bg-[#f5f5f5] rounded-[8px] my-5">
+            <h2 className="mb-5 text-[#333]">Create New Criteria</h2>
 
             <StatusMessage message={statusMessage} type={statusType} />
 
-            <label className="comment-checkbox">
+            <label className="block mb-5">
                 Reviewer can comment:
                 <input
                     type="checkbox"
@@ -77,12 +75,13 @@ export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProp
             </label>
 
             {newCriteria.map((item, index) => (
-                <div key={index} className="criteria-input-section">
+                <div key={index} className="flex gap-2.5 items-center mb-[15px] p-2.5 bg-white rounded shadow-[0_1px_3px_rgba(0,0,0,0.1)]">
                     <input
                         type="text"
                         value={item.question}
                         onChange={(e) => handleQuestionChange(index, e.target.value)}
                         placeholder="Enter question"
+                        className="flex-1 p-2 border border-[#ddd] rounded"
                     />
                     <label>
                         Has score:
@@ -99,16 +98,17 @@ export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProp
                             value={item.scoreMax}
                             onChange={(e) => handleScoreMaxChange(index, Number(e.target.value))}
                             placeholder="Enter score max"
+                            className="w-[100px] p-2 border border-[#ddd] rounded"
                         />
                     )}
                     <Button onClick={() => handleRemoveSection(index)}>Remove Criterion</Button>
                 </div>
             ))}
 
-            <div className="button-group">
+            <div className="flex gap-2.5 mt-5">
                 <Button onClick={handleAddNewSection}>Add New Criterion</Button>
                 <Button onClick={handleCreate}>Create</Button>
             </div>
         </div>
     );
-} 
+}

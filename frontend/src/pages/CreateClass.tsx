@@ -2,7 +2,6 @@ import { useState } from 'react'
 import Button from '../components/Button'
 import Textbox from '../components/Textbox'
 import StatusMessage from '../components/StatusMessage'
-import './CreateClass.css'
 import { createClass } from '../util/api'
 
 export default function CreateClass() {
@@ -14,14 +13,14 @@ export default function CreateClass() {
     try {
       setStatusMessage('');
       const response = await createClass(name);
-      
+
       if (!response.ok) {
         throw new Error('Failed to create class');
       }
 
       setStatusType('success');
       setStatusMessage('Class created successfully!');
-      setName(''); // Clear the input
+      setName('');
     } catch (error) {
       console.error('Error creating class:', error);
       setStatusType('error');
@@ -30,16 +29,15 @@ export default function CreateClass() {
   };
 
   return (
-    <div className="CreateClass">
+    <div className="p-16 w-3/5">
       <h1>Create Class</h1>
 
       <StatusMessage message={statusMessage} type={statusType} />
 
       <h2>Class Name</h2>
       <Textbox onInput={setName} />
-      
+
       <Button onClick={() => {
-        // Send API req
         attemptCreateClass()
       }}>
         Submit
@@ -47,4 +45,3 @@ export default function CreateClass() {
     </div>
   )
 }
-
