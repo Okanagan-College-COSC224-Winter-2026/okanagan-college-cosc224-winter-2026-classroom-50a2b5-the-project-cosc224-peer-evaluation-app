@@ -13,6 +13,11 @@ from .controllers import (
     fake_api_controller,
     user_controller,
     assignment_controller,
+    student_controller,
+    review_controller,
+    group_controller,
+    file_controller,
+    review_file_controller,
 )
 from .models.db import db, ma
 
@@ -76,6 +81,16 @@ def create_app(test_config=None):
     ma.init_app(app)
 
     jwt = JWTManager()
+
+    @jwt.unauthorized_loader
+    def unauthorized_callback(reason):
+        return jsonify({"msg": f"Unauthorized: {reason}"}), 401
+
+    @jwt.invalid_token_loader  
+    def invalid_token_callback(reason):
+        return jsonify({"msg": f"Invalid token: {reason}"}), 422
+
+
     jwt.init_app(app)
 
     # Configure CORS to allow credentials (cookies)
@@ -108,5 +123,10 @@ def create_app(test_config=None):
     app.register_blueprint(class_controller.bp)
     app.register_blueprint(assignment_controller.bp)
     app.register_blueprint(fake_api_controller.fake)
+    app.register_blueprint(student_controller.student_bp)
+    app.register_blueprint(review_controller.review_bp)
+    app.register_blueprint(group_controller.group_bp)
+    app.register_blueprint(file_controller.file_bp)
+    app.register_blueprint(review_file_controller.review_file_bp)
 
     return app

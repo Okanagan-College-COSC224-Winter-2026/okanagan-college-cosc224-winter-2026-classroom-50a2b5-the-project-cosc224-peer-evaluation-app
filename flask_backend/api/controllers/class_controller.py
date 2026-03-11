@@ -68,6 +68,33 @@ def get_user_classes():
 
     return jsonify([{"id": c.id, "name": c.name} for c in courses]), 200
 
+@bp.route("/classes/members", methods=["POST"])
+@jwt_required()
+def get_class_members():
+    """
+    POST /class/classes/members
+    Returns all enrolled members for a given course.
+    Request body: { "id": course_id }
+    Response: [{ "id": int, "name": str, "email": str, "role": str }]
+    """
+    data = request.get_json()
+    class_id = data.get("id")
+    if not class_id:
+        return jsonify({"msg": "Class ID is required"}), 400
+
+    course = Course.get_by_id(class_id)
+    if not course:
+        return jsonify({"msg": "Class not found"}), 404
+
+    members = User_Course.query.filter_by(courseID=class_id).all()
+    result = [
+        {"id": m.user.id, "name": m.user.name, "email": m.user.email, "role": m.user.role}
+        for m in members
+        if m.user is not None
+    ]
+    return jsonify(result), 200
+
+
 REQUIRED_HEADERS = {"id", "name", "email"}
 def csv_to_list(csv_text):
     """Convert CSV text to a list of emails"""
@@ -130,6 +157,8 @@ def enroll_students():
     # check if the authenticated user is the teacher of the class
     email = get_jwt_identity()
     user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
     if course.teacherID != user.id:
         return jsonify({"msg": "You are not authorized to enroll students in this class"}), 403
 
