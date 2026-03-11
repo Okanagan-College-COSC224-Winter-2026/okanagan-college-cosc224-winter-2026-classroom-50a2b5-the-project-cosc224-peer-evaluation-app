@@ -444,6 +444,22 @@ export const updateAssignment = async (assignmentId: number, name: string, descr
   return await response.json()
 }
 
+// Admin - Create Teacher Account
+export const createTeacherAccount = async (name: string, email: string, password: string) => {
+  const response = await fetch(`${BASE_URL}/admin/users/create`, {
+    method: 'POST',
+    body: JSON.stringify({ 
+      name, 
+      email, 
+      password,
+      role: 'teacher',
+      must_change_password: true
+    }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include'
+  });
 // Feature B - Review File Upload
 
 export const uploadReviewFiles = async (reviewID: number, files: File[]) => {

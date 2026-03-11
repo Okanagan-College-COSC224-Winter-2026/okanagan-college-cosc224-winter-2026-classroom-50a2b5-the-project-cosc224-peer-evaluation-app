@@ -27,25 +27,18 @@ export default function ChangePasswordForm() {
 
   const allValid = Object.values(validation).every(Boolean) && currentPassword !== ""
 
-  const handleSubmit = async () => {
+   const handleSubmit = async () => {
     setLoading(true)
     setStatus(null)
     try {
-      const response = await changePassword(currentPassword, newPassword)
-      const data = await response.json()
-      if (response.ok) {
-        setStatus({ message: "Password changed successfully!", type: "success" })
-        setCurrentPassword("")
-        setNewPassword("")
-        setConfirmPassword("")
-      } else {
-        const errorMsg = data.failures
-          ? data.failures.join(", ")
-          : data.error ?? "Something went wrong."
-        setStatus({ message: errorMsg, type: "error" })
-      }
-    } catch {
-      setStatus({ message: "Network error. Please try again.", type: "error" })
+      await changePassword(currentPassword, newPassword)
+      setStatus({ message: "Password changed successfully!", type: "success" })
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong."
+      setStatus({ message, type: "error" })
     } finally {
       setLoading(false)
     }

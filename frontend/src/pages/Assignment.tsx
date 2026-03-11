@@ -30,6 +30,8 @@ interface AssignmentData {
   id: number;
   name: string;
   description_html?: string;
+  courseID?: number;
+}
 }
 
 export default function Assignment() {
@@ -50,12 +52,16 @@ export default function Assignment() {
       const fetchedID = await getUserId();
       const stus = await listStuGroup(Number(id), fetchedID);
       setStuGroup(stus);
-
       try {
         const data = await getAssignment(Number(id));
         setAssignment(data);
         setEditName(data.name ?? "");
         setEditDescription(data.description_html ?? "");
+        // Use courseID to fetch members, not assignment id
+        if (data.courseID) {
+          const members = await listCourseMembers(String(data.courseID));
+          setClassMembers(members);
+        }
       } catch {
         // Assignment unavailable
       }
