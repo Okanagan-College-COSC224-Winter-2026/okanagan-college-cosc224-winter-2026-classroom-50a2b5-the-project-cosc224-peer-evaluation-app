@@ -1,19 +1,19 @@
 import { logout } from '../util/login'
 import './Sidebar.css'
+import AvatarInitials from './AvatarInitials'
 
-function getLoggedInUserId(): number {
+function getLoggedInUser() {
   try {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    return user.id || 0;
+    return JSON.parse(localStorage.getItem('user') || '{}');
   } catch {
-    return 0;
+    return {};
   }
 }
 
 export default function Sidebar() {
   // Check which page we are on
   const location = window.location.pathname
-  const userId = getLoggedInUserId();
+  const user = getLoggedInUser();
 
   return (
     <div className="Sidebar">
@@ -22,19 +22,24 @@ export default function Sidebar() {
       </div>
 
       <div className="SidebarTop">
-        <SidebarRow
-          onClick={() => logout()}
-          href='#'
-          selected={false}
-        >
+         <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}>
+          <AvatarInitials
+            firstName={user.first_name || ''}
+            lastName={user.last_name || ''}
+            userId={user.id || 0}
+            size={36}
+          />
+        </div>
+        <SidebarRow onClick={() => logout()} href='#' selected={false}>
           Logout
+        
         </SidebarRow>
 
         <SidebarRow selected={location === '/home'} href="/home">
           Home
         </SidebarRow>
         
-        <SidebarRow selected={location.includes('/profile')} href={`/profile/${userId}`}>
+        <SidebarRow selected={location.includes('/profile')} href={`/profile/${user.id || 0}`}>
           My Info
         </SidebarRow>
       </div>
