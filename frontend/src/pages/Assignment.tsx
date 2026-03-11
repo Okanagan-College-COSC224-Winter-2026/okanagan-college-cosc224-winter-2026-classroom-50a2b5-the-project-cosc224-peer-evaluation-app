@@ -19,6 +19,16 @@ interface SelectedCriterion {
   column: number;
 }
 
+<<<<<<< Updated upstream
+=======
+interface AssignmentData {
+  id: number;
+  name: string;
+  description_html?: string;
+  courseID?: number;
+}
+
+>>>>>>> Stashed changes
 export default function Assignment() {
   const { id } = useParams();
   const [stuGroup, setStuGroup] = useState<StudentGroups[]>([]);
@@ -33,6 +43,26 @@ export default function Assignment() {
       setStuID(stuID);
       const stus = await listStuGroup(Number(id), stuID);
       setStuGroup(stus);
+<<<<<<< Updated upstream
+=======
+
+      try {
+        const data = await getAssignment(Number(id));
+        setAssignment(data);
+        setEditName(data.name ?? "");
+        setEditDescription(data.description_html ?? "");
+
+        // Use courseID to fetch members, not assignment id
+        if (data.courseID) {
+          const members = await listCourseMembers(String(data.courseID));
+          setClassMembers(members);
+        }
+      } catch {
+        // Assignment unavailable
+      }
+
+      if (revieweeID !== 0) {
+>>>>>>> Stashed changes
         try {
           const reviewResponse = await getReview(Number(id), stuID, revieweeID);
           const reviewData = await reviewResponse.json();

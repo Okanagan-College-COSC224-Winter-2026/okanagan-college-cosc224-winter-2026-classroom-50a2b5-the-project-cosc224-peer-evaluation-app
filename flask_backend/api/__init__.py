@@ -76,6 +76,16 @@ def create_app(test_config=None):
     ma.init_app(app)
 
     jwt = JWTManager()
+
+    @jwt.unauthorized_loader
+    def unauthorized_callback(reason):
+        return jsonify({"msg": f"Unauthorized: {reason}"}), 401
+
+    @jwt.invalid_token_loader  
+    def invalid_token_callback(reason):
+        return jsonify({"msg": f"Invalid token: {reason}"}), 422
+
+
     jwt.init_app(app)
 
     # Configure CORS to allow credentials (cookies)

@@ -39,6 +39,7 @@ export default function ClassHome() {
           throw new Error('Failed to create assignment');
         }
 
+<<<<<<< Updated upstream
         setAssignments((prev) => [...prev, createdAssignment]);
         setNewAssignmentName("");
         setStatusType('success');
@@ -63,6 +64,27 @@ export default function ClassHome() {
               Add Students via CSV
             </Button>
           ) : null}
+=======
+  return (
+    <div>
+      <TabNavigation tabs={[{ label: "Home", path: `/class/${id}` }, { label: "Members", path: `/classes/${id}/members` }]} />
+      <h2>{className}</h2>
+      {isTeacher() && (
+        <Button onClick={() => importCSV(id as string)}>Add Students via CSV</Button>
+      )}
+      {assignments.map((assignment) => (
+        <AssignmentCard key={assignment.id} id={assignment.id}>{assignment.name}</AssignmentCard>
+      ))}
+      {isTeacher() && (
+        <div>
+          <h3>New Assignment</h3>
+          <label>Name:</label>
+          <Textbox onInput={(val) => setNewAssignmentName(val)} placeholder="Assignment name" />
+          <label>Description:</label>
+          <RichTextEditor value={newAssignmentDescription} onChange={setNewAssignmentDescription} placeholder="Write assignment instructions..." />
+          <Button onClick={() => tryCreateAssingment()}>Add</Button>
+          <StatusMessage message={statusMessage} type={statusType} />
+>>>>>>> Stashed changes
         </div>
       </div>
 

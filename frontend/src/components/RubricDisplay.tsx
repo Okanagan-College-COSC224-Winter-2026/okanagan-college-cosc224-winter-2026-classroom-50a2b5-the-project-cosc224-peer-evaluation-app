@@ -23,6 +23,7 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
     const scoreMaxes: number[] = [];
     const hasScores: boolean[] = [];
 
+<<<<<<< Updated upstream
     useEffect(() => {
         const loadData = async () => {
             if (rubricId) {
@@ -50,6 +51,12 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
             </div>
         );
     }
+=======
+    getRubricByAssignment(rubricId)
+      .then((data) => setRubric(data as RubricResponse))
+      .catch(() => setRubric(null));
+  }, [rubricId]);
+>>>>>>> Stashed changes
 
     return (
         <div className="RubricDisplay">
@@ -64,4 +71,38 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
             />
         </div>
     );
+<<<<<<< Updated upstream
 } 
+=======
+  }
+
+  if (!rubric || !rubric.criteria) {
+    return <div className="RubricDisplay"><p>No rubric assigned yet.</p></div>;
+  }
+
+  return (
+    <div className="RubricDisplay">
+      <h3 className="RubricDisplay__title">{rubric.title}</h3>
+      <table className="RubricDisplay__table">
+        <tbody>
+          {rubric.criteria.map((criterion) => (
+            <tr key={criterion.id}>
+              <td className="RubricDisplay__criterion-title">{(criterion as any).title || (criterion as any).question}</td>
+              {criterion.levels ? criterion.levels.map((level) => (
+                <td key={level.id} className="RubricDisplay__level">
+                  <div className="RubricDisplay__level-score">{level.score}</div>
+                  <div className="RubricDisplay__level-desc">{level.description}</div>
+                </td>
+              )) : (
+                <td className="RubricDisplay__level">
+                  <div className="RubricDisplay__level-score">{(criterion as any).score_max || (criterion as any).scoreMax}</div>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+>>>>>>> Stashed changes

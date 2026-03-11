@@ -470,6 +470,7 @@ export const createGroup = async(assignmentID: number, name: string, id: number)
   return await response.json();
 }
 
+<<<<<<< Updated upstream
 // Admin - Create Teacher Account
 export const createTeacherAccount = async (name: string, email: string, password: string) => {
   const response = await fetch(`${BASE_URL}/admin/users/create`, {
@@ -486,6 +487,20 @@ export const createTeacherAccount = async (name: string, email: string, password
     },
     credentials: 'include'
   });
+=======
+export const downloadConclusionFile = async (
+  assignmentId: number,
+  fileId: number,
+  filename: string = "conclusion.pdf"
+): Promise<void> => {
+  const response = await fetch(
+    `${BASE_URL}/assignment/${assignmentId}/conclusion/file/${fileId}`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
+>>>>>>> Stashed changes
 
   maybeHandleExpire(response);
 
