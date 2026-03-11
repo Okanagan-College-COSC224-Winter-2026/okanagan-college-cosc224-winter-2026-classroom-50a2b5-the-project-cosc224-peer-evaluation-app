@@ -566,3 +566,14 @@ export const downloadConclusionFile = async (
   document.body.removeChild(a);
   window.URL.revokeObjectURL(url);
 };
+
+export const getUserProfile = () =>
+  fetch(`${BASE_URL}/user/profile`, { credentials: 'include' }).then(maybeHandleExpire);
+
+export const updateUserProfile = (data: { first_name?: string; last_name?: string }) =>
+  fetch(`${BASE_URL}/user/profile`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).then(maybeHandleExpire);
