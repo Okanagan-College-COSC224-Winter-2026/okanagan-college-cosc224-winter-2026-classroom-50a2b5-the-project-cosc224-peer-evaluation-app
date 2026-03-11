@@ -1,4 +1,3 @@
-import './Criteria.css';
 import Criterion from '../components/Criterion';
 import { useState } from 'react';
 
@@ -12,7 +11,6 @@ interface props {
 }
 
 export default function Criteria(props: props) {
-    // Track each criterion's current score for total calculation
     const [scores, setScores] = useState<number[]>(
         props.grades.length > 0 ? [...props.grades] : new Array(props.questions.length).fill(0)
     );
@@ -26,18 +24,17 @@ export default function Criteria(props: props) {
         props.onCriterionSelect(row, value);
     };
 
-    // Sum only criteria that have scores (not comment-only)
     const currentTotal = scores.reduce((sum, score, i) => props.hasScores[i] ? sum + score : sum, 0);
     const maxTotal = props.scoreMaxes.reduce((sum, max, i) => props.hasScores[i] ? sum + max : sum, 0);
 
     return (
-        <div className="Criteria">
-            <div className='criteriaList'>
+        <div className="flex flex-col items-center w-full">
+            <div className="flex flex-col gap-3 w-full max-w-2xl">
                 {props.questions.map((question, i) => (
-                    <Criterion 
+                    <Criterion
                         key={i}
-                        question={question} 
-                        scoreMax={props.scoreMaxes[i]} 
+                        question={question}
+                        scoreMax={props.scoreMaxes[i]}
                         hasScore={props.hasScores[i]}
                         onCriterionSelect={handleSelect}
                         questionIndex={i}
@@ -45,13 +42,19 @@ export default function Criteria(props: props) {
                     />
                 ))}
             </div>
+
             {maxTotal > 0 && (
-                <div className="criteriaTotal">
-                    Total: <span className="criteriaTotalScore">{currentTotal}</span> / {maxTotal}
+                <div className="mt-4 text-right w-full max-w-2xl text-sm font-medium text-text-primary">
+                    Total: <span className="text-btn-primary font-bold">{currentTotal}</span> / {maxTotal}
                 </div>
             )}
-            {props.canComment && 
-            <textarea className="criteriaText" placeholder="Additional comments..." />}
+
+            {props.canComment && (
+                <textarea
+                    className="mt-4 w-full max-w-2xl min-h-[80px] px-3 py-2 border border-border rounded-lg bg-bg-secondary text-text-primary text-sm font-[inherit] resize-y focus:outline-none focus:ring-2 focus:ring-btn-primary focus:border-btn-primary transition-colors"
+                    placeholder="Additional comments..."
+                />
+            )}
         </div>
-    )
+    );
 }

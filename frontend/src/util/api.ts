@@ -1,6 +1,6 @@
 import { didExpire, removeToken } from "./login";
 
-const BASE_URL = 'http://localhost:5000'
+const BASE_URL = 'http://localhost:5001'
 
 // export const getProfile = async (id: string) => {
 //   // TODO
@@ -794,3 +794,56 @@ export const changePassword = async (currentPassword: string, newPassword: strin
 
   return await response.json();
 }
+
+// ─── Profile / User endpoints ──────────────────────────────────────────────
+
+export const getUser = async () => {
+  const response = await fetch(`${BASE_URL}/user/`, {
+    credentials: 'include',
+  });
+  maybeHandleExpire(response);
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.msg || `Response status: ${response.status}`);
+  }
+  return response.json();
+};
+
+export const updateUserProfile = async (data: { name?: string; email?: string }) => {
+  const response = await fetch(`${BASE_URL}/user/`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  maybeHandleExpire(response);
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.msg || `Response status: ${response.status}`);
+  }
+  const updated = await response.json();
+  // Keep localStorage in sync so role/id helpers remain accurate
+  localStorage.setItem('user', JSON.stringify(updated));
+  return updated;
+};
+
+export const uploadUserAvatar = async (file: File) => {
+  const formData = new FormData();
+  formData.append('avatar', file);
+  const response = await fetch(`${BASE_URL}/user/avatar`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+  maybeHandleExpire(response);
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.msg || `Response status: ${response.status}`);
+  }
+  const updated = await response.json();
+  localStorage.setItem('user', JSON.stringify(updated));
+  return updated;
+};
+
+export const getUserAvatarUrl = (userId: number) =>
+  `${BASE_URL}/user/avatar/${userId}`;

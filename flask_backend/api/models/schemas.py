@@ -36,6 +36,10 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
         dump_default="student", validate=validate.OneOf(["student", "teacher", "admin"])
     )
     must_change_password = fields.Bool(dump_default=False)
+    avatar_url = fields.Method("get_avatar_url", dump_only=True)
+
+    def get_avatar_url(self, obj):
+        return f"/user/avatar/{obj.id}" if getattr(obj, "avatar_path", None) else None
 
 
 class UserRegistrationSchema(ma.Schema):

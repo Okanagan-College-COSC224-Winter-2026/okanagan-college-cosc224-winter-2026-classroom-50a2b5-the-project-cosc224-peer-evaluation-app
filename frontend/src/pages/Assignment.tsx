@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useState, ChangeEvent } from "react";
 import { useLocation, useParams } from "react-router-dom";
-import "./Assignment.css";
 import RubricCreator from "../components/RubricCreator";
 import RubricDisplay from "../components/RubricDisplay";
 import TabNavigation from "../components/TabNavigation";
 import Modal from "../components/Modal";
 import { isTeacher, getUserId } from "../util/login";
 
-import { 
+import {
   getAssignment,
   listStuGroup,
   createReview,
@@ -55,6 +54,15 @@ interface AssignmentResourceItem {
   created_at?: string;
 }
 
+// Reusable style tokens
+const cardClass = "mx-4 md:mx-6 my-4 p-5 bg-white rounded-xl border border-border shadow-sm"
+const btnPrimary = "inline-flex items-center px-4 py-2 rounded-lg bg-btn-primary text-white text-sm font-semibold hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer border-none"
+const btnSecondary = "inline-flex items-center px-4 py-2 rounded-lg bg-btn-secondary text-white text-sm font-medium hover:brightness-110 transition-all cursor-pointer border-none"
+const btnDanger = "inline-flex items-center px-4 py-2 rounded-lg border border-red-200 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer bg-transparent"
+const btnOutline = "inline-flex items-center px-3 py-1.5 rounded-lg border border-border text-sm font-medium text-text-secondary hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors cursor-pointer bg-transparent"
+const inputClass = "px-3 py-2 border border-border rounded-lg bg-bg-secondary text-text-primary text-sm font-[inherit] w-full focus:outline-none focus:ring-2 focus:ring-btn-primary focus:border-btn-primary transition-colors"
+const labelClass = "flex flex-col gap-1.5 text-sm font-medium text-text-primary"
+
 export default function Assignment() {
   const { id } = useParams();
   const location = useLocation();
@@ -97,7 +105,6 @@ export default function Assignment() {
       setMySubmission(null);
       return;
     }
-
     try {
       const submission = await getMySubmission(Number(id));
       setMySubmission(submission || null);
@@ -111,7 +118,6 @@ export default function Assignment() {
       setResources([]);
       return;
     }
-
     try {
       const list = await listAssignmentResources(Number(id));
       setResources(list || []);
@@ -121,70 +127,60 @@ export default function Assignment() {
   }, [id]);
 
   const toDatetimeLocal = (value?: string) => {
-    if (!value) {
-      return "";
-    }
+    if (!value) return "";
     const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-      return "";
-    }
+    if (Number.isNaN(parsed.getTime())) return "";
     return new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60000)
       .toISOString()
       .slice(0, 16);
   };
 
   useEffect(() => {
-      (async () => {
-        const currentUserId = getUserId();
-        if (currentUserId === null) {
-          console.error('User not logged in');
-          return;
-        }
-        setStuID(currentUserId);
+    (async () => {
+      const currentUserId = getUserId();
+      if (currentUserId === null) {
+        console.error('User not logged in');
+        return;
+      }
+      setStuID(currentUserId);
 
-        // Load rubric for this assignment
-        await loadRubric();
-        await loadMySubmission();
-        await loadResources();
-        
-        // Get assignment to find its courseID, then fetch group members
+      await loadRubric();
+      await loadMySubmission();
+      await loadResources();
+
+      try {
+        const assignmentResponse = await getAssignment(Number(id));
+        setAssignment(assignmentResponse);
+        setEditName(assignmentResponse.name || "");
+        setEditDescription(assignmentResponse.description || "");
+        setEditStartDate(toDatetimeLocal(assignmentResponse.start_date));
+        setEditDueDate(toDatetimeLocal(assignmentResponse.due_date));
+        setEditIsAnonymous(assignmentResponse.is_anonymous ?? true);
+
+        const myGroup = await listStuGroup(assignmentResponse.courseID);
+        if (myGroup?.members) {
+          setGroupMembers(myGroup.members.filter((m: GroupMember) => m.id !== currentUserId));
+        }
+      } catch (err) {
+        console.error("Failed to load assignment or group members:", err);
+      }
+
+      // NOTE: Review endpoints not yet implemented in Flask backend.
+      if (revieweeID > 0) {
         try {
-          const assignmentResponse = await getAssignment(Number(id));
-          setAssignment(assignmentResponse);
-          setEditName(assignmentResponse.name || "");
-          setEditDescription(assignmentResponse.description || "");
-          setEditStartDate(toDatetimeLocal(assignmentResponse.start_date));
-          setEditDueDate(toDatetimeLocal(assignmentResponse.due_date));
-          setEditIsAnonymous(assignmentResponse.is_anonymous ?? true);
-
-          const myGroup = await listStuGroup(assignmentResponse.courseID);
-          if (myGroup?.members) {
-            // Filter out self from group members (can't review yourself)
-            setGroupMembers(myGroup.members.filter((m: GroupMember) => m.id !== currentUserId));
+          const reviewResponse = await getReview(Number(id), currentUserId, revieweeID);
+          if (reviewResponse.ok) {
+            const reviewData = await reviewResponse.json();
+            setReview(reviewData.grades);
           }
-        } catch (err) {
-          console.error("Failed to load assignment or group members:", err);
+        } catch {
+          // Review endpoint not yet implemented — silently ignore
         }
-
-        // Only fetch review if a reviewee has been selected
-        // NOTE: Review endpoints not yet implemented in Flask backend.
-        // This will 404 until the review feature is migrated.
-        if (revieweeID > 0) {
-          try {
-            const reviewResponse = await getReview(Number(id), currentUserId, revieweeID);
-            if (reviewResponse.ok) {
-              const reviewData = await reviewResponse.json();
-              setReview(reviewData.grades);
-            }
-          } catch {
-            // Review endpoint not yet implemented — silently ignore
-          }
-        }
-      })();
+      }
+    })();
   }, [revieweeID, id, loadRubric, loadMySubmission, loadResources]);
 
   const handleCriterionSelect = (row: number, column: number) => {
-    // Update the score for this criterion row (column = slider value)
     setSelectedCriteria(prev => {
       const filteredCriteria = prev.filter(criterion => criterion.row !== row);
       return [...filteredCriteria, { row, column }];
@@ -203,153 +199,158 @@ export default function Assignment() {
     <>
       <TabNavigation
         tabs={[
-          {
-            label: teacherMode ? "Review" : "Home",
-            path: `/assignments/${id}`,
-          },
-          ...(teacherMode
-            ? [
-                {
-                  label: "Management",
-                  path: `/assignments/${id}/manage`,
-                },
-              ]
-            : []),
-          // Groups are now at course level - access via ClassHome > Groups tab
+          { label: teacherMode ? "Review" : "Home", path: `/assignments/${id}` },
+          ...(teacherMode ? [{ label: "Management", path: `/assignments/${id}/manage` }] : []),
         ]}
       />
 
-      <div className="AssignmentHeader">
-        <h2>{assignment?.name ? assignment.name : `Assignment ${id}`}</h2>
+      {/* Assignment header */}
+      <div className="flex flex-row justify-between items-center px-4 md:px-6 py-3 border-b border-border bg-white">
+        <h2 className="text-xl font-semibold text-text-primary m-0">
+          {assignment?.name ? assignment.name : `Assignment ${id}`}
+        </h2>
       </div>
 
       {assignment?.description && (
-        <p className="assignmentDescription">{assignment.description}</p>
+        <p className="mx-4 md:mx-6 my-3 px-4 py-3 bg-bg-secondary rounded-lg text-sm whitespace-pre-wrap border border-border text-text-primary m-0">
+          {assignment.description}
+        </p>
       )}
 
       <StatusMessage message={statusMessage} type={statusType} />
 
+      {/* Teacher: Manage Assignment */}
       {teacherMode && assignment && isManageTab && (
-        <div className='assignmentManagement'>
-          <h3>Manage Assignment</h3>
-          <>
-              <label>
-                Name
-                <input
-                  type='text'
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                />
-              </label>
-              <label>
-                Description
-                <textarea
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                />
-              </label>
-              <label>
-                Start date
-                <input
-                  type='datetime-local'
-                  value={editStartDate}
-                  onChange={(e) => setEditStartDate(e.target.value)}
-                />
-              </label>
-              <label>
-                Due date
-                <input
-                  type='datetime-local'
-                  value={editDueDate}
-                  onChange={(e) => setEditDueDate(e.target.value)}
-                />
-              </label>
-              <label className='checkboxLabel'>
-                <input
-                  type='checkbox'
-                  checked={editIsAnonymous}
-                  onChange={(e) => setEditIsAnonymous(e.target.checked)}
-                />
-                Anonymous submissions/reviews
-              </label>
-              <div className='assignmentManagementButtons'>
-                <button
-                  onClick={async () => {
-                    try {
-                      setStatusMessage("");
-                      const payload: {
-                        name?: string;
-                        description?: string;
-                        start_date?: string;
-                        due_date?: string;
-                        is_anonymous?: boolean;
-                      } = {
-                        name: editName,
-                        description: editDescription,
-                        is_anonymous: editIsAnonymous,
-                      };
+        <div className={cardClass}>
+          <h3 className="text-base font-semibold text-text-primary mt-0 mb-4">Manage Assignment</h3>
 
-                      if (editStartDate) {
-                        payload.start_date = new Date(editStartDate).toISOString();
-                      }
-                      if (editDueDate) {
-                        payload.due_date = new Date(editDueDate).toISOString();
-                      }
+          <div className="flex flex-col gap-4">
+            <label className={labelClass}>
+              Name
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className={inputClass}
+              />
+            </label>
 
-                      const updated = await editAssignment(Number(id), payload);
-                      setAssignment(updated.assignment);
-                      setStatusType('success');
-                      setStatusMessage('Assignment updated successfully.');
-                    } catch (error) {
+            <label className={labelClass}>
+              Description
+              <textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                className={`${inputClass} min-h-[90px] resize-y`}
+              />
+            </label>
+
+            <label className={labelClass}>
+              Start date
+              <input
+                type="datetime-local"
+                value={editStartDate}
+                onChange={(e) => setEditStartDate(e.target.value)}
+                className={inputClass}
+              />
+            </label>
+
+            <label className={labelClass}>
+              Due date
+              <input
+                type="datetime-local"
+                value={editDueDate}
+                onChange={(e) => setEditDueDate(e.target.value)}
+                className={inputClass}
+              />
+            </label>
+
+            <label className="flex flex-row items-center gap-2 cursor-pointer text-sm text-text-primary">
+              <input
+                type="checkbox"
+                checked={editIsAnonymous}
+                onChange={(e) => setEditIsAnonymous(e.target.checked)}
+                className="w-4 h-4"
+              />
+              Anonymous submissions/reviews
+            </label>
+
+            <div className="flex gap-3 flex-wrap pt-2 border-t border-border">
+              <button
+                className={btnPrimary}
+                onClick={async () => {
+                  try {
+                    setStatusMessage("");
+                    const payload: {
+                      name?: string;
+                      description?: string;
+                      start_date?: string;
+                      due_date?: string;
+                      is_anonymous?: boolean;
+                    } = {
+                      name: editName,
+                      description: editDescription,
+                      is_anonymous: editIsAnonymous,
+                    };
+                    if (editStartDate) payload.start_date = new Date(editStartDate).toISOString();
+                    if (editDueDate) payload.due_date = new Date(editDueDate).toISOString();
+
+                    const updated = await editAssignment(Number(id), payload);
+                    setAssignment(updated.assignment);
+                    setStatusType('success');
+                    setStatusMessage('Assignment updated successfully.');
+                  } catch (error) {
+                    setStatusType('error');
+                    setStatusMessage(error instanceof Error ? error.message : 'Failed to update assignment.');
+                  }
+                }}
+              >
+                Save Changes
+              </button>
+
+              <button
+                className={btnDanger}
+                onClick={async () => {
+                  try {
+                    setStatusMessage("");
+                    const confirmed = window.prompt(
+                      `Admin confirmation required: type DELETE to remove "${assignment.name}"`
+                    );
+                    if (confirmed !== 'DELETE') {
                       setStatusType('error');
-                      setStatusMessage(error instanceof Error ? error.message : 'Failed to update assignment.');
+                      setStatusMessage('Delete cancelled. Type DELETE to confirm assignment removal.');
+                      return;
                     }
-                  }}
-                >
-                  Save Changes
-                </button>
-                <button
-                  className='deleteAssignmentButton'
-                  onClick={async () => {
-                    try {
-                      setStatusMessage("");
-                      const confirmed = window.prompt(
-                        `Admin confirmation required: type DELETE to remove "${assignment.name}"`
-                      );
-                      if (confirmed !== 'DELETE') {
-                        setStatusType('error');
-                        setStatusMessage('Delete cancelled. Type DELETE to confirm assignment removal.');
-                        return;
-                      }
-                      await deleteAssignment(Number(id));
-                      window.location.href = `/classes/${assignment.courseID}/home`;
-                    } catch (error) {
-                      setStatusType('error');
-                      setStatusMessage(error instanceof Error ? error.message : 'Failed to delete assignment.');
-                    }
-                  }}
-                >
-                  Delete Assignment
-                </button>
-              </div>
-            </>
+                    await deleteAssignment(Number(id));
+                    window.location.href = `/classes/${assignment.courseID}/home`;
+                  } catch (error) {
+                    setStatusType('error');
+                    setStatusMessage(error instanceof Error ? error.message : 'Failed to delete assignment.');
+                  }
+                }}
+              >
+                Delete Assignment
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Teacher: Manage Supporting Documents */}
       {teacherMode && isManageTab && (
-        <div className='assignmentResources'>
-          <h3>Supporting Documents</h3>
+        <div className={cardClass}>
+          <h3 className="text-base font-semibold text-text-primary mt-0 mb-3">Supporting Documents</h3>
+
           {resources.length === 0 ? (
-            <p>No supporting documents uploaded yet.</p>
+            <p className="text-text-secondary text-sm m-0 mb-3">No supporting documents uploaded yet.</p>
           ) : (
-            <ul>
+            <ul className="m-0 p-0 list-none flex flex-col gap-2 mb-3">
               {resources.map((resource) => (
-                <li key={resource.id} className='resourceItem'>
-                  <a href={resource.download_url} target='_blank' rel='noreferrer'>
+                <li key={resource.id} className="flex items-center justify-between gap-2 py-2 border-b border-border last:border-0">
+                  <a href={resource.download_url} target="_blank" rel="noreferrer" className="text-btn-primary text-sm hover:underline truncate">
                     {resource.original_name}
                   </a>
                   <button
-                    className='removeAttachmentButton'
+                    className={btnOutline}
                     onClick={async () => {
                       try {
                         setStatusMessage('');
@@ -370,90 +371,99 @@ export default function Assignment() {
             </ul>
           )}
 
-          <input
-            type='file'
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              setResourceUpload(file || null);
-            }}
-          />
-          <button
-            onClick={async () => {
-              if (!resourceUpload) {
-                setStatusType('error');
-                setStatusMessage('Please choose a supporting document first.');
-                return;
-              }
-
-              try {
-                setStatusMessage('');
-                await uploadAssignmentResource(Number(id), resourceUpload);
-                setResourceUpload(null);
-                await loadResources();
-                setStatusType('success');
-                setStatusMessage('Supporting document uploaded successfully.');
-              } catch (error) {
-                setStatusType('error');
-                setStatusMessage(error instanceof Error ? error.message : 'Failed to upload supporting document.');
-              }
-            }}
-          >
-            Upload Supporting Document
-          </button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-3 border-t border-border">
+            <input
+              type="file"
+              className="text-sm text-text-secondary file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border file:border-border file:text-sm file:font-medium file:bg-bg-secondary file:text-text-primary file:cursor-pointer"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                setResourceUpload(file || null);
+              }}
+            />
+            <button
+              className={btnSecondary}
+              onClick={async () => {
+                if (!resourceUpload) {
+                  setStatusType('error');
+                  setStatusMessage('Please choose a supporting document first.');
+                  return;
+                }
+                try {
+                  setStatusMessage('');
+                  await uploadAssignmentResource(Number(id), resourceUpload);
+                  setResourceUpload(null);
+                  await loadResources();
+                  setStatusType('success');
+                  setStatusMessage('Supporting document uploaded successfully.');
+                } catch (error) {
+                  setStatusType('error');
+                  setStatusMessage(error instanceof Error ? error.message : 'Failed to upload supporting document.');
+                }
+              }}
+            >
+              Upload Document
+            </button>
+          </div>
         </div>
       )}
 
+      {/* Teacher: Rubric (Manage tab) */}
       {teacherMode && isManageTab && (
         <>
-          {
-            rubricId && (
-              <div className='assignmentRubric'>
-                <h3>Rubric Preview</h3>
-                <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
-                <button className='deleteRubricBtn' onClick={async () => {
-                  if (window.confirm('Are you sure you want to delete this rubric? All criteria will be removed.')) {
-                    try {
-                      await deleteRubric(rubricId);
-                      setRubricId(null);
-                      setStatusType('success');
-                      setStatusMessage('Rubric deleted successfully.');
-                    } catch (error) {
-                      console.error('Error deleting rubric:', error);
-                      setStatusType('error');
-                      setStatusMessage(error instanceof Error ? error.message : 'Failed to delete rubric.');
+          {rubricId && (
+            <div className={cardClass}>
+              <h3 className="text-base font-semibold text-text-primary mt-0 mb-3">Rubric Preview</h3>
+              <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
+              <div className="mt-4 pt-3 border-t border-border">
+                <button
+                  className={btnDanger}
+                  onClick={async () => {
+                    if (window.confirm('Are you sure you want to delete this rubric? All criteria will be removed.')) {
+                      try {
+                        await deleteRubric(rubricId);
+                        setRubricId(null);
+                        setStatusType('success');
+                        setStatusMessage('Rubric deleted successfully.');
+                      } catch (error) {
+                        console.error('Error deleting rubric:', error);
+                        setStatusType('error');
+                        setStatusMessage(error instanceof Error ? error.message : 'Failed to delete rubric.');
+                      }
                     }
-                  }
-                }}>Delete Rubric</button>
-              </div>
-            )
-          }
-          {
-            !rubricId && (
-              <div className='assignmentRubric'>
-                <RubricCreator
-                  id={Number(id)}
-                  onRubricCreated={(newId) => {
-                    setRubricId(newId);
-                    setStatusType('success');
-                    setStatusMessage('Rubric created successfully.');
                   }}
-                />
+                >
+                  Delete Rubric
+                </button>
               </div>
-            )
-          }
+            </div>
+          )}
+
+          {!rubricId && (
+            <div className={cardClass}>
+              <RubricCreator
+                id={Number(id)}
+                onRubricCreated={(newId) => {
+                  setRubricId(newId);
+                  setStatusType('success');
+                  setStatusMessage('Rubric created successfully.');
+                }}
+              />
+            </div>
+          )}
         </>
       )}
 
+      {/* Teacher: Student Preview of resources (Review tab) */}
       {teacherMode && !isManageTab && (
-        <div className='assignmentResources'>
-          <h3>Supporting Documents (Student Preview)</h3>
+        <div className={cardClass}>
+          <h3 className="text-base font-semibold text-text-primary mt-0 mb-3">Supporting Documents (Student Preview)</h3>
           {resources.length === 0 ? (
-            <p>No supporting documents available.</p>
+            <p className="text-text-secondary text-sm m-0">No supporting documents available.</p>
           ) : (
-            <ul>
+            <ul className="m-0 p-0 list-none flex flex-col gap-2">
               {resources.map((resource) => (
-                <li key={resource.id} className='resourceItem'>
-                  <a href={resource.download_url} target='_blank' rel='noreferrer'>
+                <li key={resource.id} className="py-1.5 border-b border-border last:border-0">
+                  <a href={resource.download_url} target="_blank" rel="noreferrer" className="text-btn-primary text-sm hover:underline">
                     {resource.original_name}
                   </a>
                 </li>
@@ -463,132 +473,116 @@ export default function Assignment() {
         </div>
       )}
 
-{
-      //List group members as radio buttons to select for given review
-      !teacherMode && <div className='groupMembers'>
-        <h3>Supporting Documents</h3>
-        {resources.length === 0 ? (
-          <p>No supporting documents available.</p>
-        ) : (
-          <ul>
-            {resources.map((resource) => (
-              <li key={resource.id} className='resourceItem'>
-                <a href={resource.download_url} target='_blank' rel='noreferrer'>
-                  {resource.original_name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
+      {/* Student: Resources + Submission */}
+      {!teacherMode && (
+        <div className={cardClass}>
+          <h3 className="text-base font-semibold text-text-primary mt-0 mb-3">Supporting Documents</h3>
+          {resources.length === 0 ? (
+            <p className="text-text-secondary text-sm m-0 mb-4">No supporting documents available.</p>
+          ) : (
+            <ul className="m-0 p-0 list-none flex flex-col gap-2 mb-4">
+              {resources.map((resource) => (
+                <li key={resource.id} className="py-1.5 border-b border-border last:border-0">
+                  <a href={resource.download_url} target="_blank" rel="noreferrer" className="text-btn-primary text-sm hover:underline">
+                    {resource.original_name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
 
-        <h3>My Attachment</h3>
-        {mySubmission ? (
-          <div className='attachmentSection'>
-            <a href={mySubmission.download_url} target='_blank' rel='noreferrer'>
-              {mySubmission.filename}
-            </a>
+          <h3 className="text-base font-semibold text-text-primary mb-3 mt-4">My Attachment</h3>
+          {mySubmission ? (
+            <div className="flex items-center gap-3 mb-3">
+              <a href={mySubmission.download_url} target="_blank" rel="noreferrer" className="text-btn-primary text-sm hover:underline">
+                {mySubmission.filename}
+              </a>
+              <button
+                className={btnOutline}
+                onClick={async () => {
+                  try {
+                    setStatusMessage('');
+                    await deleteMySubmission(Number(id));
+                    setMySubmission(null);
+                    setSelectedFile(null);
+                    setStatusType('success');
+                    setStatusMessage('Attachment removed successfully.');
+                  } catch (error) {
+                    setStatusType('error');
+                    setStatusMessage(error instanceof Error ? error.message : 'Failed to remove attachment.');
+                  }
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <p className="text-text-secondary text-sm m-0 mb-3">No attachment uploaded yet.</p>
+          )}
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-3 border-t border-border">
+            <input
+              type="file"
+              className="text-sm text-text-secondary file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border file:border-border file:text-sm file:font-medium file:bg-bg-secondary file:text-text-primary file:cursor-pointer"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                setSelectedFile(file || null);
+              }}
+            />
             <button
-              className='removeAttachmentButton'
+              className={btnSecondary}
               onClick={async () => {
+                if (!selectedFile) {
+                  setStatusType('error');
+                  setStatusMessage('Please choose a file first.');
+                  return;
+                }
                 try {
                   setStatusMessage('');
-                  await deleteMySubmission(Number(id));
-                  setMySubmission(null);
+                  const response = await uploadMySubmission(Number(id), selectedFile);
+                  setMySubmission(response.submission);
                   setSelectedFile(null);
                   setStatusType('success');
-                  setStatusMessage('Attachment removed successfully.');
+                  setStatusMessage(mySubmission ? 'Attachment updated successfully.' : 'Attachment uploaded successfully.');
                 } catch (error) {
                   setStatusType('error');
-                  setStatusMessage(error instanceof Error ? error.message : 'Failed to remove attachment.');
+                  setStatusMessage(error instanceof Error ? error.message : 'Failed to upload attachment.');
                 }
               }}
             >
-              Remove Attachment
+              {mySubmission ? 'Replace Attachment' : 'Upload Attachment'}
             </button>
           </div>
-        ) : (
-          <p>No attachment uploaded yet.</p>
-        )}
-        <input
-          type='file'
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            setSelectedFile(file || null);
-          }}
-        />
-        <button
-          onClick={async () => {
-            if (!selectedFile) {
-              setStatusType('error');
-              setStatusMessage('Please choose a file first.');
-              return;
-            }
+        </div>
+      )}
 
-            try {
-              setStatusMessage('');
-              const response = await uploadMySubmission(Number(id), selectedFile);
-              setMySubmission(response.submission);
-              setSelectedFile(null);
-              setStatusType('success');
-              setStatusMessage(mySubmission ? 'Attachment updated successfully.' : 'Attachment uploaded successfully.');
-            } catch (error) {
-              setStatusType('error');
-              setStatusMessage(error instanceof Error ? error.message : 'Failed to upload attachment.');
-            }
-          }}
-        >
-          {mySubmission ? 'Replace Attachment' : 'Upload Attachment'}
-        </button>
-
-      </div>}
-
-      {!teacherMode && <div className='peerReview'>
-        <h3>Select a group member to review</h3>
+      {/* Student: Peer Review */}
+      {!teacherMode && (
+        <div className={cardClass}>
+          <h3 className="text-base font-semibold text-text-primary mt-0 mb-3">Select a group member to review</h3>
           {groupMembers.length === 0 ? (
-            <p>No group members found. You may not be assigned to a group yet.</p>
+            <p className="text-text-secondary text-sm m-0">No group members found. You may not be assigned to a group yet.</p>
           ) : (
-            groupMembers.map((member) => (
-              <div key={member.id}>
-                <input 
-                  type='radio' 
-                  id={member.id.toString()} 
-                  value={member.id} 
-                  name='groupMembers' 
-                  onChange={handleRadioChange}
-                />
-                <label htmlFor={member.id.toString()}>{member.name}</label>
-              </div>
-            ))
+            <div className="flex flex-col gap-2 mb-4">
+              {groupMembers.map((member) => (
+                <label key={member.id} className="flex items-center gap-2.5 cursor-pointer text-sm text-text-primary">
+                  <input
+                    type="radio"
+                    id={member.id.toString()}
+                    value={member.id}
+                    name="groupMembers"
+                    onChange={handleRadioChange}
+                    className="w-4 h-4 accent-btn-primary"
+                  />
+                  {member.name}
+                </label>
+              ))}
+            </div>
           )}
-          <button className='submitReview' onClick={async () => {
-            console.log("Submitting review with selected criteria:", selectedCriteria);
-            try {
-              const reviewResponse = await createReview(Number(id), stuID, revieweeID);
-              const reviewData = await reviewResponse.json();
-              console.log("Review response:", reviewData);
-              for (const criterion of selectedCriteria) {
-                await createCriterion(reviewData.id, criterion.row, criterion.column, "");
-              }
-              console.log('Review submitted successfully');
-              setStatusType('success');
-              setStatusMessage('Review submitted successfully.');
-            } catch (error) {
-              console.error('Error submitting review:', error);
-              setStatusType('error');
-              setStatusMessage(error instanceof Error ? error.message : 'Failed to submit review.');
-            }
-          }}>Submit Review</button>
-      </div>}
 
-      {!isTeacher() && (
-        <Modal
-          isOpen={isReviewModalOpen}
-          onClose={() => setIsReviewModalOpen(false)}
-          title={`Review: ${selectedMemberName}`}
-        >
-          <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
-          <div className='modalReviewActions'>
-            <button className='submitReview' onClick={async () => {
+          <button
+            className={btnPrimary}
+            onClick={async () => {
               console.log("Submitting review with selected criteria:", selectedCriteria);
               try {
                 const reviewResponse = await createReview(Number(id), stuID, revieweeID);
@@ -598,15 +592,52 @@ export default function Assignment() {
                   await createCriterion(reviewData.id, criterion.row, criterion.column, "");
                 }
                 console.log('Review submitted successfully');
-                setIsReviewModalOpen(false);
+                setStatusType('success');
+                setStatusMessage('Review submitted successfully.');
               } catch (error) {
                 console.error('Error submitting review:', error);
+                setStatusType('error');
+                setStatusMessage(error instanceof Error ? error.message : 'Failed to submit review.');
               }
-            }}>Submit Review</button>
+            }}
+          >
+            Submit Review
+          </button>
+        </div>
+      )}
+
+      {/* Student: Review Modal */}
+      {!isTeacher() && (
+        <Modal
+          isOpen={isReviewModalOpen}
+          onClose={() => setIsReviewModalOpen(false)}
+          title={`Review: ${selectedMemberName}`}
+        >
+          <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} grades={review} />
+          <div className="flex justify-end pt-4 mt-2 border-t border-border">
+            <button
+              className={btnPrimary}
+              onClick={async () => {
+                console.log("Submitting review with selected criteria:", selectedCriteria);
+                try {
+                  const reviewResponse = await createReview(Number(id), stuID, revieweeID);
+                  const reviewData = await reviewResponse.json();
+                  console.log("Review response:", reviewData);
+                  for (const criterion of selectedCriteria) {
+                    await createCriterion(reviewData.id, criterion.row, criterion.column, "");
+                  }
+                  console.log('Review submitted successfully');
+                  setIsReviewModalOpen(false);
+                } catch (error) {
+                  console.error('Error submitting review:', error);
+                }
+              }}
+            >
+              Submit Review
+            </button>
           </div>
         </Modal>
       )}
     </>
   );
 }
-

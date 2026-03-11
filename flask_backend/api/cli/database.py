@@ -225,7 +225,28 @@ def init_app(app):
     app.cli.add_command(drop_db_command)
     app.cli.add_command(migrate_assignment_columns_command)
     app.cli.add_command(migrate_assignment_resources_command)
+    app.cli.add_command(migrate_user_avatar_command)
     app.cli.add_command(add_users_command)
     app.cli.add_command(create_admin_command)
     app.cli.add_command(ensure_admin_command)
     app.cli.add_command(add_sample_courses_command)
+
+
+@click.command("migrate_user_avatar")
+@with_appcontext
+def migrate_user_avatar_command():
+    """Add avatar_path column to User table for existing databases (idempotent)."""
+
+    inspector = inspect(db.engine)
+    if not inspector.has_table("User"):
+        click.echo("User table does not exist. Run 'flask init_db' first.", err=True)
+        return
+
+    existing_columns = {col["name"] for col in inspector.get_columns("User")}
+    if "avatar_path" in existing_columns:
+        click.echo("Column 'avatar_path' already exists on User — no changes needed.")
+        return
+
+    db.session.execute(text('ALTER TABLE "User" ADD COLUMN avatar_path VARCHAR(255)'))
+    db.session.commit()
+    click.echo("Added column 'avatar_path' to User table.")

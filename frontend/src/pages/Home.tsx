@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import ClassCard from "../components/ClassCard";
 import { listClasses, listAssignments } from "../util/api";
-import { isTeacher, isAdmin } from "../util/login";
+import { isTeacher, isAdmin, isStudent } from "../util/login";
 
 export default function Home() {
   const [courses, setCourses] = useState<CourseWithAssignments[]>([]);
@@ -55,21 +55,23 @@ export default function Home() {
       <h1 className="text-2xl font-bold text-text-primary border-b border-border pb-3 mb-6">Peer Review Dashboard</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {courses.map((course) => {
-          const assignmentText = `${course.assignmentCount || 0} assignment${course.assignmentCount !== 1 ? 's' : ''}`;
-
-          return (
-            <ClassCard
-              key={course.id}
-              image="https://crc.losrios.edu//shared/img/social-1200-630/programs/general-science-social.jpg"
-              name={course.name}
-              subtitle={assignmentText}
-              onclick={() => {
-                window.location.href = `/classes/${course.id}/home`
-              }}
-            />
-          )
-        })}
+        {
+          courses.map((course) => {
+            const assignmentText = `${course.assignmentCount || 0} assignments`;
+            
+            return (
+              <ClassCard
+                key={course.id}
+                image="https://crc.losrios.edu//shared/img/social-1200-630/programs/general-science-social.jpg"
+                name={course.name}
+                subtitle={assignmentText}
+                onclick={() => {
+                  window.location.href = `/classes/${course.id}/home`
+                }}
+              />
+            )
+          })
+        }
 
         {isTeacher() && (
           <div
