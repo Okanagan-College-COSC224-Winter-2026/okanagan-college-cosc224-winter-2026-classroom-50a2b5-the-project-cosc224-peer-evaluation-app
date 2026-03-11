@@ -108,6 +108,54 @@ def delete_user(user_id):
     return jsonify({"msg": "User deleted successfully"}), 200
 
 
+@bp.route("/password", methods=["PUT"])
+@jwt_required()
+def change_password_v2():
+    """Change current user's password with full validation criteria.
+
+    Any authenticated user can change their password by providing
+    the correct current password and a new password that meets
+    all security criteria.
+    """
+    if not request.is_json:
+        return jsonify({"msg": "Missing JSON in request"}), 400
+
+    from ..services.password_validator import validate_password
+
+    current_password = request.json.get("current_password", None)
+    new_password = request.json.get("new_password", None)
+
+    if not current_password:
+        return jsonify({"error": "Current password is required"}), 400
+    if not new_password:
+        return jsonify({"error": "New password is required"}), 400
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    # Verify current password
+    if not check_password_hash(user.hash_pass, current_password):
+        return jsonify({"error": "Current password is incorrect"}), 400
+
+    # Validate new password against criteria
+    failures = validate_password(new_password)
+    if failures:
+        return jsonify({
+            "error": "Password validation failed",
+            "failures": failures,
+        }), 400
+
+    # Update password
+    user.hash_pass = generate_password_hash(new_password)
+    user.must_change_password = False
+    user.update()
+
+    return jsonify({"message": "Password changed successfully"}), 200
+
+
 @bp.route("/password", methods=["PATCH"])
 @jwt_required()
 def change_password():

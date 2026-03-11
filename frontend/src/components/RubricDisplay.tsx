@@ -1,29 +1,26 @@
 import { useEffect, useState } from 'react';
-import Criteria from './Criteria';
-import { getCriteria, getRubric } from '../util/api';
+import { getRubricByAssignment } from '../util/api';
 import './RubricDisplay.css';
 
-interface RubricDisplayProps {
-    rubricId: number | null;
-    onCriterionSelect: (row: number, column: number) => void;
-    grades: number[];
+interface RubricCriterion {
+  id: number;
+  title: string;
+  description: string;
+  levels: RubricLevel[];
 }
 
-interface RubricInfo {
-    id: number;
-    assignmentID: number;
-    canComment: boolean;
-    grades: number[];
+interface RubricLevel {
+  id: number;
+  score: number;
+  description: string;
 }
 
-export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: RubricDisplayProps) {
-    const [criteria, setCriteria] = useState<Criterion[]>([]);
-    const [rubricInfo, setRubricInfo] = useState<RubricInfo | null>(null);
-    const questions: string[] = [];
-    const scoreMaxes: number[] = [];
-    const hasScores: boolean[] = [];
+interface RubricResponse {
+  id: number;
+  title: string;
+  criteria: RubricCriterion[];
+}
 
-<<<<<<< Updated upstream
     useEffect(() => {
         const loadData = async () => {
             if (rubricId) {
@@ -38,11 +35,8 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
         loadData();
     }, [rubricId]);
 
-    criteria.forEach((crit) => {
-        questions.push(crit.question);
-        scoreMaxes.push(crit.scoreMax);
-        hasScores.push(crit.hasScore);
-    });
+export default function RubricDisplay({ rubricId }: RubricDisplayProps) {
+  const [rubric, setRubric] = useState<RubricResponse | null>(null);
 
     if (!rubricId || criteria.length === 0) {
         return (
@@ -51,33 +45,21 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
             </div>
         );
     }
-=======
+  useEffect(() => {
+    if (!rubricId) return;
+
     getRubricByAssignment(rubricId)
-      .then((data) => setRubric(data as RubricResponse))
-      .catch(() => setRubric(null));
+    .then((data) => setRubric(data as RubricResponse))
+    .catch(() => setRubric(null));
   }, [rubricId]);
->>>>>>> Stashed changes
 
+  if (!rubric || rubric.criteria.length === 0) {
     return (
-        <div className="RubricDisplay">
-            <h2>Rubric</h2>
-            <Criteria
-                questions={questions}
-                scoreMaxes={scoreMaxes}
-                canComment={rubricInfo?.canComment ?? false}
-                hasScores={hasScores}
-                onCriterionSelect={onCriterionSelect}
-                grades={grades}
-            />
-        </div>
+      <div className="RubricDisplay">
+        <p className="RubricDisplay__empty">No rubric assigned yet.</p>
+      </div>
     );
-<<<<<<< Updated upstream
 } 
-=======
-  }
-
-  if (!rubric || !rubric.criteria) {
-    return <div className="RubricDisplay"><p>No rubric assigned yet.</p></div>;
   }
 
   return (
@@ -105,4 +87,3 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
     </div>
   );
 }
->>>>>>> Stashed changes
