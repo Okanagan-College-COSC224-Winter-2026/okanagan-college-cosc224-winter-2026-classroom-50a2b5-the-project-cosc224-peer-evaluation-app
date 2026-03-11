@@ -49,9 +49,30 @@ export default function ClassHome() {
     }
   }
 
-  return (
-    <div>
-      <TabNavigation tabs={[{ label: "Home", path: `/class/${id}` }, { label: "Members", path: `/class/${id}/members` }]} />
+        setAssignments((prev) => [...prev, createdAssignment]);
+        setNewAssignmentName("");
+        setStatusType('success');
+        setStatusMessage('Assignment created successfully!');
+      } catch (error) {
+        console.error('Error creating assignment:', error);
+        setStatusType('error');
+        setStatusMessage('Error creating assignment.');
+      }
+    };
+    
+    return (
+      <>
+        <div className="ClassHeader">
+          <div className="ClassHeaderLeft">
+            <h2>{className}</h2>
+          </div>
+
+        <div className="ClassHeaderRight">
+          {isTeacher() ? (
+            <Button onClick={() => importCSV(id as string)}>
+              Add Students via CSV
+            </Button>
+          ) : null}
       <h2>{className}</h2>
       {isTeacher() && (
         <Button onClick={() => importCSV(id as string)}>Add Students via CSV</Button>
@@ -68,6 +89,37 @@ export default function ClassHome() {
           <RichTextEditor value={newAssignmentDescription} onChange={setNewAssignmentDescription} placeholder="Write assignment instructions..." />
           <Button onClick={() => tryCreateAssingment()}>Add</Button>
           <StatusMessage message={statusMessage} type={statusType} />
+        </div>
+      </div>
+
+      <TabNavigation
+        tabs={[
+          {
+            label: "Home",
+            path: `/classes/${id}/home`,
+          },
+          {
+            label: "Members",
+            path: `/classes/${id}/members`,
+          },
+        ]}
+      />
+
+      <StatusMessage message={statusMessage} type={statusType} />
+
+      <div className="Class">
+        <div className="Assignments">
+          <ul className="Assignment">
+            {assignments.map((assignment) => {
+              return (
+                <li key={assignment.id}>
+                  <AssignmentCard id={assignment.id}>
+                    {assignment.name}
+                  </AssignmentCard>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
     </div>
