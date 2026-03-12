@@ -59,8 +59,9 @@ Field types, primary keys, and notable constraints are included for quick refere
 ### Reviews, Rubrics, and Criteria
 
 - Review
-  - id (PK), assignmentID (FK -> Assignment.id), reviewerID (FK -> User.id), revieweeID (FK -> User.id)
+  - id (PK), assignmentID (FK -> Assignment.id), reviewerID (FK -> User.id), revieweeID (FK -> User.id), comments (VARCHAR(500), nullable)
   - Peer review instances scoped to a single assignment, with eager-loaded relationships for performance
+  - The `comments` field stores the reviewer's overall comment for the entire review
 - Rubric
   - id (PK), assignmentID (FK -> Assignment.id), canComment (BOOLEAN NOT NULL DEFAULT TRUE)
   - Multiple rubrics per assignment permitted; business logic decides which one is active

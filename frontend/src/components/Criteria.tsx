@@ -8,6 +8,7 @@ interface props {
     canComment: boolean;
     hasScores: Array<boolean>;
     onCriterionSelect: (row: number, column: number) => void;
+    onCommentChange?: (comment: string) => void;
     grades: number[];
 }
 
@@ -51,7 +52,11 @@ export default function Criteria(props: props) {
                 </div>
             )}
             {props.canComment && 
-            <textarea className="criteriaText" placeholder="Additional comments..." />}
+            <textarea
+              className="criteriaText"
+              placeholder="Additional comments..."
+              onChange={(e) => props.onCommentChange?.(e.target.value)}
+            />}
         </div>
     )
 }

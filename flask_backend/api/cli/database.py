@@ -219,12 +219,35 @@ def add_sample_courses_command():
     click.echo("Sample courses and assignments created successfully")
 
 
+@click.command("migrate_review_comments")
+@with_appcontext
+def migrate_review_comments_command():
+    """Add comments column to Review table for existing databases.
+
+    This command is idempotent and safe to run multiple times.
+    """
+    inspector = inspect(db.engine)
+    if not inspector.has_table("Review"):
+        click.echo("Review table does not exist. Run 'flask init_db' first.", err=True)
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("Review")}
+    if "comments" in existing_columns:
+        click.echo("Column 'comments' already exists on Review")
+        return
+
+    db.session.execute(text('ALTER TABLE "Review" ADD COLUMN comments VARCHAR(500)'))
+    db.session.commit()
+    click.echo("Added column 'comments' to Review")
+
+
 def init_app(app):
     """Register CLI commands with the Flask app"""
     app.cli.add_command(init_db_command)
     app.cli.add_command(drop_db_command)
     app.cli.add_command(migrate_assignment_columns_command)
     app.cli.add_command(migrate_assignment_resources_command)
+    app.cli.add_command(migrate_review_comments_command)
     app.cli.add_command(add_users_command)
     app.cli.add_command(create_admin_command)
     app.cli.add_command(ensure_admin_command)

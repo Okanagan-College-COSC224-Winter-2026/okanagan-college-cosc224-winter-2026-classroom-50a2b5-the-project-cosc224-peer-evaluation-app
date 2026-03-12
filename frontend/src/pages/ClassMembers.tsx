@@ -47,6 +47,14 @@ export default function ClassMembers() {
             label: "Members",
             path: `/classes/${id}/members`,
           },
+          {
+            label: "Groups",
+            path: `/classes/${id}/groups`,
+          },
+          {
+            label: "Evaluations",
+            path: `/classes/${id}/evaluations`,
+          },
         ]}
       />
 

@@ -6,6 +6,7 @@ import './RubricDisplay.css';
 interface RubricDisplayProps {
     rubricId: number | null;
     onCriterionSelect: (row: number, column: number) => void;
+    onCommentChange?: (comment: string) => void;
     grades: number[];
 }
 
@@ -16,7 +17,7 @@ interface RubricInfo {
     grades: number[];
 }
 
-export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: RubricDisplayProps) {
+export default function RubricDisplay({ rubricId, onCriterionSelect, onCommentChange, grades }: RubricDisplayProps) {
     const [criteria, setCriteria] = useState<Criterion[]>([]);
     const [rubricInfo, setRubricInfo] = useState<RubricInfo | null>(null);
     const questions: string[] = [];
@@ -59,7 +60,15 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
                 scoreMaxes={scoreMaxes}
                 canComment={rubricInfo?.canComment ?? false}
                 hasScores={hasScores}
-                onCriterionSelect={onCriterionSelect}
+                onCriterionSelect={(row: number, value: number) => {
+                    // Map the array index to the actual CriteriaDescription.id
+                    // so the backend receives the real DB ID, not a positional index
+                    const criterionId = criteria[row]?.id;
+                    if (criterionId !== undefined) {
+                        onCriterionSelect(criterionId, value);
+                    }
+                }}
+                onCommentChange={onCommentChange}
                 grades={grades}
             />
         </div>
