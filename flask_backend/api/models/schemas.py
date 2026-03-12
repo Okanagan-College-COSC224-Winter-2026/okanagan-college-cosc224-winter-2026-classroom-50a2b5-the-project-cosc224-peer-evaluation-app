@@ -12,6 +12,7 @@ class UserSchema(Schema):
     email = fields.Str()
     role = fields.Str()
     must_change_password = fields.Bool()
+    is_active = fields.Bool()
 
 
 class UserLoginSchema(Schema):

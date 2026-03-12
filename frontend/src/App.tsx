@@ -15,6 +15,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
 import TeacherReviewsPage from "./pages/TeacherReviewsPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
 
 function AppContent() {
   const location = useLocation();
@@ -106,6 +107,15 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <TeacherReviewsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <AdminUsersPage />
               </ProtectedRoute>
             }
           />
