@@ -1,7 +1,17 @@
-// import { useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import './Profile.css'
-// import { useEffect, useState } from 'react'
-// import { getProfile } from '../util/api'
+import { useEffect, useState } from 'react'
+import AvatarInitials from '../components/AvatarInitials'
+import { updateUserProfile } from '../util/api'
+
+const BASE_URL = 'http://localhost:5000'
+
+// Helper: split a single "First Last" name string into two parts for AvatarInitials
+function splitName(fullName: string): { first: string; last: string } {
+  const parts = (fullName || '').trim().split(/\s+/);
+  return { first: parts[0] || '', last: parts.slice(1).join(' ') || '' };
+}
 
 // Get the currently logged-in user's id from localStorage
 function getCurrentUserId(): number | null {
@@ -14,16 +24,16 @@ function getCurrentUserId(): number | null {
 }
 
 export default function Profile() {
-  // const { id } = useParams()
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const [profile, setProfile] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState({ name: '' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
 
-<<<<<<< Updated upstream
-  // const [profile, setProfile] = useState({})
-
-  // useEffect(() => {
-  //   const f = async () => {
-  //     setProfile(await getProfile(id))
-  //   }
-=======
   const currentUserId = getCurrentUserId()
   const isOwnProfile = currentUserId !== null && String(currentUserId) === String(id)
 
@@ -71,25 +81,24 @@ export default function Profile() {
     } catch { setError('Network error'); }
     finally { setSaving(false); }
   }
->>>>>>> Stashed changes
 
-  //   f()
-  // }, [])
+  if (loading) {
+    return <div className="Profile"><p>Loading...</p></div>
+  }
+
+  const { first, last } = splitName(profile?.name || '')
 
   return (
     <div className="Profile">
       <div className="profile-image">
-        <img src={`https://placehold.co/200x200`} alt="profile" />
+        <AvatarInitials
+          firstName={first}
+          lastName={last}
+          userId={profile?.id || 0}
+          size={72}
+        />
       </div>
-
       <div className="profile-info">
-<<<<<<< Updated upstream
-        <h1>Full Name</h1>
-        <span>Place Holder</span>
-        <h1>Email</h1>
-        <span>placeholder@email.com</span>
-      </div>
-=======
         {success && <p style={{ color: 'green' }}>Profile updated!</p>}
         {error && <p style={{ color: 'red' }}>{error}</p>}
         {!editing ? (<>
@@ -130,7 +139,6 @@ export default function Profile() {
           </button>
         </div>
       )}
->>>>>>> Stashed changes
     </div>
   )
 }

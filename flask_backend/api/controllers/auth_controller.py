@@ -73,6 +73,10 @@ def login():
     if user is None or not check_password_hash(user.hash_pass, data["password"]):
         return jsonify({"msg": "Bad email or password"}), 401
 
+    # Block deactivated users
+    if not user.is_active:
+        return jsonify({"msg": "Account is deactivated"}), 403
+
     # Generate access token and set as httponly cookie
     access_token = create_access_token(identity=data["email"])
     response = jsonify(user_schema.dump(user))
