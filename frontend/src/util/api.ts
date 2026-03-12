@@ -610,69 +610,6 @@ export const teacherSaveConclusion = async (
 export const getUserProfile = () =>
   fetch(`${BASE_URL}/user/profile`, { credentials: 'include' }).then(maybeHandleExpire);
 
-// ---- Admin User Management (US26) ----
-
-export interface AdminUserPayload {
-  name: string;
-  email: string;
-  password?: string;
-  role: string;
-  must_change_password?: boolean;
-}
-
-export const adminListUsers = async (page = 1, role = '', search = '') => {
-  const params = new URLSearchParams({ page: String(page) });
-  if (role) params.set('role', role);
-  if (search) params.set('search', search);
-
-  const resp = await fetch(`${BASE_URL}/admin/users?${params}`, {
-    credentials: 'include',
-  });
-  maybeHandleExpire(resp);
-  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
-  return await resp.json();
-};
-
-export const adminCreateUser = async (data: AdminUserPayload) => {
-  const resp = await fetch(`${BASE_URL}/admin/users/create`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  maybeHandleExpire(resp);
-  return resp;
-};
-
-export const adminUpdateUser = async (id: number, data: Partial<AdminUserPayload>) => {
-  const resp = await fetch(`${BASE_URL}/admin/users/${id}`, {
-    method: 'PUT',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  maybeHandleExpire(resp);
-  return resp;
-};
-
-export const adminDeactivateUser = async (id: number) => {
-  const resp = await fetch(`${BASE_URL}/admin/users/${id}/deactivate`, {
-    method: 'PATCH',
-    credentials: 'include',
-  });
-  maybeHandleExpire(resp);
-  return resp;
-};
-
-export const adminReactivateUser = async (id: number) => {
-  const resp = await fetch(`${BASE_URL}/admin/users/${id}/reactivate`, {
-    method: 'PATCH',
-    credentials: 'include',
-  });
-  maybeHandleExpire(resp);
-  return resp;
-};
-
 export const updateUserProfile = (data: { first_name?: string; last_name?: string }) =>
   fetch(`${BASE_URL}/user/profile`, {
     method: 'PUT',
