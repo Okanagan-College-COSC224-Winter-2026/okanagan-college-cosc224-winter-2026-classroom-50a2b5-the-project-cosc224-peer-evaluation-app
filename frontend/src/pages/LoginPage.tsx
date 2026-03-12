@@ -14,19 +14,17 @@ export default function LoginPage() {
 
   const attemptLogin = async () => {
     try {
+      setError('');
       const result = await tryLogin(email, password);
-      if (result) {
-        // Check if user must change password
-        if (result.must_change_password) {
-          navigate('/change-password');
-        } else {
-          navigate('/home');
-        }
+      // Check if user must change password
+      if (result.must_change_password) {
+        navigate('/change-password');
       } else {
-        setError('Invalid email or password');
+        navigate('/home');
       }
-    } catch {
-      setError('Invalid email or password');
+    } catch (err) {
+      // Display the actual message from the backend (e.g. "Account is deactivated")
+      setError(err instanceof Error ? err.message : 'Invalid email or password');
     }
   }
 

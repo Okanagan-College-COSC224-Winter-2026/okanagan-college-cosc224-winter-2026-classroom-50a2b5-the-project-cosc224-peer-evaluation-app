@@ -1,9 +1,39 @@
+<<<<<<< Updated upstream
 import { logout } from '../util/login'
 import './Sidebar.css'
 
 export default function Sidebar() {
   // Check which page we are on
   const location = window.location.pathname
+=======
+import { useState, useEffect } from 'react'
+import { logout, isAdmin, isTeacher } from '../util/login'
+import './Sidebar.css'
+import AvatarInitials from './AvatarInitials'
+
+function getLoggedInUser() {
+  try {
+    return JSON.parse(localStorage.getItem('user') || '{}');
+  } catch {
+    return {};
+  }
+}
+
+export default function Sidebar() {
+  const location = window.location.pathname
+  const [user, setUser] = useState(getLoggedInUser);
+
+  // Re-read user from localStorage whenever it's updated (e.g. after name change)
+  useEffect(() => {
+    const handleStorage = () => setUser(getLoggedInUser());
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  const nameParts = (user.name || '').trim().split(/\s+/);
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+>>>>>>> Stashed changes
 
   return (
     <div className="Sidebar">
@@ -12,22 +42,59 @@ export default function Sidebar() {
       </div>
 
       <div className="SidebarTop">
+<<<<<<< Updated upstream
         <SidebarRow
           onClick={() => logout()}
           href='#'
           selected={false}
         >
+=======
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}>
+          <AvatarInitials
+            firstName={firstName}
+            lastName={lastName}
+            userId={user.id || 0}
+            size={36}
+          />
+        </div>
+
+        <SidebarRow onClick={() => logout()} href='#' selected={false}>
+>>>>>>> Stashed changes
           Logout
         </SidebarRow>
 
         <SidebarRow selected={location === '/home'} href="/home">
           Home
         </SidebarRow>
+<<<<<<< Updated upstream
         
         { /* TODO: make this ID match who is logged in */ }
         <SidebarRow selected={location.includes('/profile')} href="/profile/1">
           My Info
         </SidebarRow>
+=======
+
+        <SidebarRow selected={location.includes('/profile')} href={`/profile/${user.id || 0}`}>
+          My Info
+        </SidebarRow>
+
+        {(isTeacher() || isAdmin()) && (
+          <SidebarRow selected={location === '/classes/create'} href="/classes/create">
+            Create Class
+          </SidebarRow>
+        )}
+
+        {isAdmin() && (
+          <>
+            <SidebarRow selected={location === '/admin/users'} href="/admin/users">
+              User Management
+            </SidebarRow>
+            <SidebarRow selected={location === '/admin/create-teacher'} href="/admin/create-teacher">
+              Create Teacher
+            </SidebarRow>
+          </>
+        )}
+>>>>>>> Stashed changes
       </div>
     </div>
   )
@@ -46,4 +113,8 @@ function SidebarRow(props: SidebarRowProps) {
       <a href={props.selected ? '#' : props.href}>{props.children}</a>
     </div>
   )
+<<<<<<< Updated upstream
 }
+=======
+}
+>>>>>>> Stashed changes

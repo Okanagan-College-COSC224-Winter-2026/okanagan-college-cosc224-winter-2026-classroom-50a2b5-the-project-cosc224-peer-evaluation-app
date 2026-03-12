@@ -13,6 +13,28 @@ from .auth_controller import jwt_admin_required
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
+<<<<<<< Updated upstream
+=======
+# ---- Validation schemas for admin endpoints ----
+
+class AdminUserCreateSchema(Schema):
+    name = fields.Str(required=True, validate=validate.Length(min=1, max=255))
+    email = fields.Email(required=True)
+    password = fields.Str(required=True, validate=validate.Length(min=6))
+    role = fields.Str(required=True, validate=validate.OneOf(["student", "teacher", "admin"]))
+    must_change_password = fields.Bool(load_default=False)
+
+
+class AdminUserUpdateSchema(Schema):
+    name = fields.Str(validate=validate.Length(min=1, max=255))
+    email = fields.Email()
+    role = fields.Str(validate=validate.OneOf(["student", "teacher", "admin"]))
+    password = fields.Str(validate=validate.Length(min=6))
+
+
+# ---- Endpoints ----
+
+>>>>>>> Stashed changes
 @bp.route("/users", methods=["GET"])
 @jwt_admin_required
 def list_all_users():
@@ -71,6 +93,54 @@ def create_user():
     )
 
 
+<<<<<<< Updated upstream
+=======
+@bp.route("/users/<int:user_id>", methods=["PUT"])
+@jwt_admin_required
+def update_user(user_id):
+    """Update a user's name, email, or role (admin only)"""
+    if not request.is_json:
+        return jsonify({"msg": "Missing JSON in request"}), 400
+
+    user = User.get_by_id(user_id)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    schema = AdminUserUpdateSchema()
+    errors = schema.validate(request.json)
+    if errors:
+        return jsonify({"msg": "Validation error", "errors": errors}), 400
+
+    data = schema.load(request.json)
+
+    # Check email uniqueness if changing email
+    if "email" in data and data["email"] != user.email:
+        existing = User.get_by_email(data["email"])
+        if existing:
+            return jsonify({"msg": "Email already in use"}), 409
+
+    # Prevent self-demotion from admin
+    if "role" in data:
+        current_email = get_jwt_identity()
+        current_user = User.get_by_email(current_email)
+        if current_user and current_user.id == user_id and data["role"] != "admin":
+            return jsonify({"msg": "Cannot demote yourself from admin role"}), 400
+
+    for field, value in data.items():
+        if field == "password":
+            user.hash_pass = generate_password_hash(value)
+        else:
+            setattr(user, field, value)
+
+    user.update()
+
+    return jsonify({
+        "msg": "User updated successfully",
+        "user": UserSchema().dump(user),
+    }), 200
+
+
+>>>>>>> Stashed changes
 @bp.route("/users/<int:user_id>/role", methods=["PUT"])
 @jwt_admin_required
 def update_user_role(user_id):
