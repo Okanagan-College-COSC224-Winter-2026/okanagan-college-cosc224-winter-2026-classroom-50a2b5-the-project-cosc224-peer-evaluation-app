@@ -108,6 +108,32 @@ export const listClasses = async () => {
   return await resp.json();
 };
 
+/**
+ * Search courses by name (US-17).
+ * Tokens are space-separated, order-independent, case-insensitive.
+ */
+export const searchCourses = async (
+  query: string
+): Promise<CourseSearchResult[]> => {
+  const params = new URLSearchParams();
+  if (query.trim()) {
+    params.set("q", query.trim());
+  }
+
+  const resp = await fetch(`${BASE_URL}/class/search?${params.toString()}`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json();
+};
+
 export const importStudentsForCourse = async (courseID: number, students: string) => {
   const response = await fetch(`${BASE_URL}/class/enroll_students`, {
     method: "POST",

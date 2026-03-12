@@ -52,3 +52,10 @@ interface CourseWithAssignments extends Course {
   assignments?: Assignment[];
   assignmentCount?: number;
 }
+
+interface CourseSearchResult {
+  id: number;
+  name: string;
+  teacherID: number;
+  teacher_name: string | null;
+}

@@ -15,6 +15,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
 import Dashboard from "./pages/Dashboard";
+import CourseSearch from "./pages/CourseSearch";
 
 
 function AppContent() {
@@ -51,6 +52,12 @@ function AppContent() {
           <Route path="/classes/create" element={
             <ProtectedRoute>
               <CreateClass />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/courses/search" element={
+            <ProtectedRoute>
+              <CourseSearch />
             </ProtectedRoute>
           } />
 
