@@ -54,7 +54,7 @@ export const tryLogin = async (email: string, password: string) => {
 export async function tryRegister(
   name: string,
   email: string,
-  password: string
+  password: string,
 ): Promise<{ ok: boolean; msg?: string }> {
   const res = await fetch("http://127.0.0.1:5000/auth/register", {
     method: "POST",
@@ -113,7 +113,7 @@ export const listClasses = async () => {
  * Tokens are space-separated, order-independent, case-insensitive.
  */
 export const searchCourses = async (
-  query: string
+  query: string,
 ): Promise<CourseSearchResult[]> => {
   const params = new URLSearchParams();
   if (query.trim()) {
@@ -134,7 +134,10 @@ export const searchCourses = async (
   return await resp.json();
 };
 
-export const importStudentsForCourse = async (courseID: number, students: string) => {
+export const importStudentsForCourse = async (
+  courseID: number,
+  students: string,
+) => {
   const response = await fetch(`${BASE_URL}/class/enroll_students`, {
     method: "POST",
     body: JSON.stringify({
@@ -181,7 +184,7 @@ export const listStuGroup = async (assignmentId: number, studentId: number) => {
         "Content-Type": "application/json",
       },
       credentials: "include",
-    }
+    },
   );
 
   maybeHandleExpire(resp);
@@ -242,7 +245,10 @@ export const listCourseMembers = async (classId: string) => {
   return await resp.json();
 };
 
-export const listGroupMembers = async (assignmentId: number, groupID: number) => {
+export const listGroupMembers = async (
+  assignmentId: number,
+  groupID: number,
+) => {
   const resp = await fetch(
     `${BASE_URL}/list_group_members/` + assignmentId + "/" + groupID,
     {
@@ -251,7 +257,7 @@ export const listGroupMembers = async (assignmentId: number, groupID: number) =>
         "Content-Type": "application/json",
       },
       credentials: "include",
-    }
+    },
   );
 
   maybeHandleExpire(resp);
@@ -281,7 +287,11 @@ export const getUserId = async () => {
   return await resp.json();
 };
 
-export const saveGroups = async (groupID: number, userID: number, assignmentID: number) => {
+export const saveGroups = async (
+  groupID: number,
+  userID: number,
+  assignmentID: number,
+) => {
   await fetch(`${BASE_URL}/save_groups`, {
     method: "POST",
     body: JSON.stringify({
@@ -315,7 +325,7 @@ export const createCriteria = async (
   question: string,
   scoreMax: number,
   canComment: boolean,
-  hasScore: boolean = true
+  hasScore: boolean = true,
 ) => {
   const response = await fetch(`${BASE_URL}/create_criteria`, {
     method: "POST",
@@ -339,18 +349,22 @@ export const createCriteria = async (
   }
 };
 
-export const createRubric = async (assignmentID: number, canComment: boolean): Promise<{ id: number }> => {
+export const createRubric = async (
+  assignmentID: number,
+  canComment: boolean,
+): Promise<{ id: number }> => {
   const response = await fetch(`${BASE_URL}/create_rubric`, {
     method: "POST",
     body: JSON.stringify({
-      assignmentID, canComment
+      assignmentID,
+      canComment,
     }),
     headers: {
       "Content-Type": "application/json",
     },
-    credentials: 'include'
-  })
-  
+    credentials: "include",
+  });
+
   maybeHandleExpire(response);
 
   if (!response.ok) {
@@ -372,16 +386,16 @@ export const getRubric = async (rubricID: number) => {
   }
 
   return await resp.json();
-}
+};
 
 export const deleteRubric = async (rubricID: number) => {
   const response = await fetch(`${BASE_URL}/delete_rubric`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({ rubricID }),
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
-    credentials: 'include'
+    credentials: "include",
   });
 
   maybeHandleExpire(response);
@@ -391,8 +405,7 @@ export const deleteRubric = async (rubricID: number) => {
   }
 
   return await response.json();
-}
-
+};
 
 export const createAssignment = async (courseID: number, name: string) => {
   const response = await fetch(`${BASE_URL}/assignment/create_assignment`, {
@@ -429,7 +442,11 @@ export const deleteGroup = async (groupID: number) => {
   });
 };
 
-export const createReview = async (assignmentID: number, reviewerID: number, revieweeID: number) => {
+export const createReview = async (
+  assignmentID: number,
+  reviewerID: number,
+  revieweeID: number,
+) => {
   const response = await fetch(`${BASE_URL}/create_review`, {
     method: "POST",
     body: JSON.stringify({
@@ -455,7 +472,7 @@ export const createCriterion = async (
   reviewID: number,
   criterionRowID: number,
   grade: number,
-  comments: string
+  comments: string,
 ) => {
   const response = await fetch(`${BASE_URL}/create_criterion`, {
     method: "POST",
@@ -479,12 +496,16 @@ export const createCriterion = async (
   return response;
 };
 
-export const getReview = async (assignmentID: number, reviewerID: number, revieweeID: number) => {
+export const getReview = async (
+  assignmentID: number,
+  reviewerID: number,
+  revieweeID: number,
+) => {
   const resp = await fetch(
     `${BASE_URL}/review?assignmentID=${assignmentID}&reviewerID=${reviewerID}&revieweeID=${revieweeID}`,
     {
       credentials: "include",
-    }
+    },
   );
 
   maybeHandleExpire(resp);
@@ -497,13 +518,16 @@ export const getReview = async (assignmentID: number, reviewerID: number, review
 };
 
 export const getNextGroupID = async (assignmentID: number) => {
-  const response = await fetch(`${BASE_URL}/next_groupid?assignmentID=${assignmentID}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
+  const response = await fetch(
+    `${BASE_URL}/next_groupid?assignmentID=${assignmentID}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
     },
-    credentials: "include",
-  });
+  );
 
   maybeHandleExpire(response);
 
@@ -514,7 +538,11 @@ export const getNextGroupID = async (assignmentID: number) => {
   return await response.json();
 };
 
-export const createGroup = async (assignmentID: number, name: string, id: number) => {
+export const createGroup = async (
+  assignmentID: number,
+  name: string,
+  id: number,
+) => {
   const response = await fetch(`${BASE_URL}/create_group`, {
     method: "POST",
     body: JSON.stringify({
@@ -537,7 +565,11 @@ export const createGroup = async (assignmentID: number, name: string, id: number
 };
 
 // Admin - Create Teacher Account
-export const createTeacherAccount = async (name: string, email: string, password: string) => {
+export const createTeacherAccount = async (
+  name: string,
+  email: string,
+  password: string,
+) => {
   const response = await fetch(`${BASE_URL}/admin/users/create`, {
     method: "POST",
     body: JSON.stringify({
@@ -564,7 +596,10 @@ export const createTeacherAccount = async (name: string, email: string, password
 };
 
 // User - Change Password
-export const changePassword = async (currentPassword: string, newPassword: string) => {
+export const changePassword = async (
+  currentPassword: string,
+  newPassword: string,
+) => {
   const response = await fetch(`${BASE_URL}/user/password`, {
     method: "PATCH",
     body: JSON.stringify({
@@ -600,22 +635,23 @@ export const getDashboard = async () => {
   return await resp.json();
 };
 
-
-
 // US9 - edit assignment
 export const editAssignment = async (
   assignmentId: number,
-  updates: { name?: string; due_date?: string | null; rubric?: string | null }
+  updates: { name?: string; due_date?: string | null; rubric?: string | null },
 ) => {
-  const response = await fetch(`${BASE_URL}/assignment/edit_assignment/${assignmentId}`, {
-    method: 'PATCH',
-    body: JSON.stringify(updates),
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await fetch(
+    `${BASE_URL}/assignment/edit_assignment/${assignmentId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
     },
-    credentials: 'include'
-  })
-  
+  );
+
   maybeHandleExpire(response);
 
   if (!response.ok) {
@@ -623,18 +659,21 @@ export const editAssignment = async (
   }
 
   return await response.json();
-}
+};
 
 // US9 - delete assignment
 export const deleteAssignment = async (assignmentId: number) => {
-  const response = await fetch(`${BASE_URL}/assignment/delete_assignment/${assignmentId}`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await fetch(
+    `${BASE_URL}/assignment/delete_assignment/${assignmentId}`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
     },
-    credentials: 'include'
-  })
-  
+  );
+
   maybeHandleExpire(response);
 
   if (!response.ok) {
@@ -642,4 +681,4 @@ export const deleteAssignment = async (assignmentId: number) => {
   }
 
   return await response.json();
-}
+};
