@@ -14,6 +14,12 @@ import Group from "./pages/Group";
 import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
+<<<<<<< Updated upstream
+=======
+import TeacherReviewsPage from "./pages/TeacherReviewsPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
+import AssignmentAnalytics from "./pages/AssignmentAnalytics";
+>>>>>>> Stashed changes
 
 function AppContent() {
   const location = useLocation();
@@ -70,11 +76,31 @@ function AppContent() {
             </ProtectedRoute>
           } />
 
+<<<<<<< Updated upstream
           <Route path="/assignments/:id/group" element={
             <ProtectedRoute>
               <Group />
             </ProtectedRoute>
           } />
+=======
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <AdminUsersPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/assignments/:id/analytics"
+            element={
+              <ProtectedRoute>
+                <AssignmentAnalytics />
+              </ProtectedRoute>
+            }
+          />
+>>>>>>> Stashed changes
         </Routes>
       </div>
     </div>
