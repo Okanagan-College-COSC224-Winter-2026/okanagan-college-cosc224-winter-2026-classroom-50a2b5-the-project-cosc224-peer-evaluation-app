@@ -5,6 +5,10 @@ export default function Sidebar() {
   // Check which page we are on
   const location = window.location.pathname
 
+  const nameParts = (user.name || '').trim().split(/\s+/);
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+
   return (
     <div className="Sidebar">
       <div className="SidebarLogo">
@@ -12,11 +16,23 @@ export default function Sidebar() {
       </div>
 
       <div className="SidebarTop">
+<<<<<<< Updated upstream
         <SidebarRow
           onClick={() => logout()}
           href='#'
           selected={false}
         >
+=======
+         <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}>
+          <AvatarInitials
+            firstName={firstName}
+            lastName={lastName}
+            userId={user.id || 0}
+            size={36}
+          />
+        </div>
+        <SidebarRow onClick={() => logout()} href='#' selected={false}>
+>>>>>>> Stashed changes
           Logout
         </SidebarRow>
 

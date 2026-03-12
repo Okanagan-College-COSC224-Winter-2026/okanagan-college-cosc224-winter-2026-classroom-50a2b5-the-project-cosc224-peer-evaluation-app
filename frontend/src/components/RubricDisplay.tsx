@@ -23,19 +23,9 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
     const scoreMaxes: number[] = [];
     const hasScores: boolean[] = [];
 
-    useEffect(() => {
-        const loadData = async () => {
-            if (rubricId) {
-                const [criteriaResp, rubricResp] = await Promise.all([
-                    getCriteria(rubricId),
-                    getRubric(rubricId)
-                ]);
-                setCriteria(criteriaResp);
-                setRubricInfo(rubricResp);
-            }
-        };
-        loadData();
-    }, [rubricId]);
+interface RubricDisplayProps {
+  rubricId: number;
+}
 
     criteria.forEach((crit) => {
         questions.push(crit.question);
@@ -43,6 +33,7 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
         hasScores.push(crit.hasScore);
     });
 
+<<<<<<< Updated upstream
     if (!rubricId || criteria.length === 0) {
         return (
             <div className="RubricDisplay">
@@ -51,6 +42,16 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
         );
     }
 
+=======
+  useEffect(() => {
+    if (!rubricId) return;
+    getRubricByAssignment(rubricId)
+      .then((data) => setRubric(data as RubricResponse))
+      .catch(() => setRubric(null));
+  }, [rubricId]);
+
+  if (!rubric || rubric.criteria.length === 0) {
+>>>>>>> Stashed changes
     return (
         <div className="RubricDisplay">
             <h2>Rubric</h2>
@@ -64,4 +65,38 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
             />
         </div>
     );
+<<<<<<< Updated upstream
 } 
+=======
+  }
+
+  return (
+    <div className="RubricDisplay">
+      <h3 className="RubricDisplay__title">{rubric.title}</h3>
+      <table className="RubricDisplay__table">
+        <tbody>
+          {rubric.criteria.map((criterion) => (
+            <tr key={criterion.id}>
+              <td className="RubricDisplay__criterion-title">
+                {(criterion as any).title || (criterion as any).question}
+              </td>
+              {criterion.levels ? criterion.levels.map((level) => (
+                <td key={level.id} className="RubricDisplay__level">
+                  <div className="RubricDisplay__level-score">{level.score}</div>
+                  <div className="RubricDisplay__level-desc">{level.description}</div>
+                </td>
+              )) : (
+                <td className="RubricDisplay__level">
+                  <div className="RubricDisplay__level-score">
+                    {(criterion as any).score_max || (criterion as any).scoreMax}
+                  </div>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+>>>>>>> Stashed changes

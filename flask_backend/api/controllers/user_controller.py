@@ -24,6 +24,20 @@ class UserUpdateSchema(Schema):
 user_update_schema = UserUpdateSchema()
 
 
+<<<<<<< Updated upstream
+=======
+class ProfileUpdateSchema(Schema):
+    class Meta:
+        unknown = EXCLUDE
+    name = fields.Str(validate=validate.Length(min=1, max=255))
+    first_name = fields.Str(validate=validate.Length(min=1, max=255))
+    last_name = fields.Str(validate=validate.Length(min=1, max=255))
+
+
+profile_update_schema = ProfileUpdateSchema()
+
+
+>>>>>>> Stashed changes
 @bp.route("/", methods=["GET"])
 @jwt_required()
 def get_current_user():
@@ -108,6 +122,87 @@ def delete_user(user_id):
     return jsonify({"msg": "User deleted successfully"}), 200
 
 
+<<<<<<< Updated upstream
+=======
+@bp.route("/profile", methods=["GET"])
+@jwt_required()
+def get_profile():
+    """Get the currently logged-in user's own profile."""
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+    return jsonify({
+        "id":         user.id,
+        "name":       user.name,
+        "email":      user.email,
+        "role":       user.role,
+        "created_at": None,
+    }), 200
+
+
+@bp.route("/profile", methods=["PUT"])
+@jwt_required()
+def update_profile():
+    """Update the currently logged-in user's name. Email is read-only."""
+    errors = profile_update_schema.validate(request.json or {})
+    if errors:
+        return jsonify(errors), 400
+    data = profile_update_schema.load(request.json or {})
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+    if "name" in data:
+        user.name = data["name"]
+    elif "first_name" in data or "last_name" in data:
+        # Frontend may send first_name/last_name separately — combine into name
+        parts = (user.name or "").split(" ", 1)
+        first = data.get("first_name", parts[0])
+        last = data.get("last_name", parts[1] if len(parts) > 1 else "")
+        user.name = f"{first} {last}".strip()
+    user.update()
+    return jsonify({
+        "id":         user.id,
+        "name":       user.name,
+        "email":      user.email,
+        "role":       user.role,
+        "created_at": None,
+    }), 200
+
+
+@bp.route("/password", methods=["PUT"])
+@jwt_required()
+def change_password_v2():
+    """Change current user's password with full validation criteria."""
+    if not request.is_json:
+        return jsonify({"msg": "Missing JSON in request"}), 400
+    from ..services.password_validator import validate_password
+    current_password = request.json.get("current_password", None)
+    new_password = request.json.get("new_password", None)
+    if not current_password:
+        return jsonify({"error": "Current password is required"}), 400
+    if not new_password:
+        return jsonify({"error": "New password is required"}), 400
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+    if not check_password_hash(user.hash_pass, current_password):
+        return jsonify({"error": "Current password is incorrect"}), 400
+    failures = validate_password(new_password)
+    if failures:
+        return jsonify({
+            "error": "Password validation failed",
+            "failures": failures,
+        }), 400
+    user.hash_pass = generate_password_hash(new_password)
+    user.must_change_password = False
+    user.update()
+    return jsonify({"message": "Password changed successfully"}), 200
+
+
+>>>>>>> Stashed changes
 @bp.route("/password", methods=["PATCH"])
 @jwt_required()
 def change_password():
