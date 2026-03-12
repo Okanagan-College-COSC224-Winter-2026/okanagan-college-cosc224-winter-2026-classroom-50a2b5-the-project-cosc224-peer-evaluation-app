@@ -34,20 +34,6 @@ export default function Assignment() {
 
   // Load assignment details + student list once on mount
   useEffect(() => {
-<<<<<<< Updated upstream
-      (async () => {
-        const stuID = await getUserId();
-      setStuID(stuID);
-      const stus = await listStuGroup(Number(id), stuID);
-      setStuGroup(stus);
-        try {
-          const reviewResponse = await getReview(Number(id), stuID, revieweeID);
-          const reviewData = await reviewResponse.json();
-          setReview(reviewData.grades);
-          console.log("Review data:", reviewData);
-        } catch (error) {
-          console.error('Error fetching review:', error);
-=======
     (async () => {
       try {
         const assignment = await getAssignment(Number(id));
@@ -62,7 +48,6 @@ export default function Assignment() {
             nameMap[m.id] = m.name;
           });
           setMemberNames(nameMap);
->>>>>>> Stashed changes
         }
       } catch (e) {
         console.error("Failed to load assignment details:", e);
@@ -104,32 +89,9 @@ export default function Assignment() {
     })();
   }, [revieweeID, id, stuID]);
 
-<<<<<<< Updated upstream
-  const handleCriterionSelect = (row: number, column: number) => {
-    // Check if this criterion is already selected
-    const existingIndex = selectedCriteria.findIndex(
-      criterion => criterion.row === row && criterion.column === column
-    );
-    
-    if (existingIndex >= 0) {
-      // If already selected, remove it (toggle off)
-      setSelectedCriteria(prev => 
-        prev.filter((_, index) => index !== existingIndex)
-      );
-    } else {
-      // Add the new criterion, removing any other selection in the same row
-      setSelectedCriteria(prev => {
-        // Remove any existing selection for this row
-        const filteredCriteria = prev.filter(criterion => criterion.row !== row);
-        // Add the new selection
-        return [...filteredCriteria, { row, column }];
-      });
-    }
-=======
   const handleRadioChange = (event: ChangeEvent<HTMLInputElement>) => {
     setRevieweeID(Number(event.target.value));
     setSubmitStatus("");
->>>>>>> Stashed changes
   };
 
   const handleSubmitReview = async (
@@ -159,63 +121,6 @@ export default function Assignment() {
 
       <TabNavigation
         tabs={[
-<<<<<<< Updated upstream
-          {
-            label: "Home",
-            path: `/assignment/${id}`,
-          },
-          {
-            label: "Group",
-            path: `/assignment/${id}/group`,
-          }
-        ]}
-      />
-
-      <div className='assignmentRubricDisplay'>
-        <RubricDisplay rubricId={Number(id)} onCriterionSelect={handleCriterionSelect} grades={review} />
-      </div>
-      {
-        isTeacher() && 
-          <div className='assignmentRubric'>
-            <RubricCreator id={Number(id)}/>
-          </div>
-      }
-
-{
-      //List group members as radio buttons to select for given review
-      !isTeacher() && <div className='groupMembers'>
-        <h3>Select a group member to review</h3>
-          {stuGroup.map((stus) => {
-                return (
-                  <>
-                  <input type='radio' id={stus.userID.toString()} value={stus.userID} name='groupMembers' onChange={handleRadioChange}></input>
-                  <label htmlFor={stus.userID.toString()}>{stus.userID}</label>
-                  <br></br>
-                  </>
-                )
-              }
-            )
-          }
-          <button className='submitReview' onClick={async () => {
-            console.log("Submitting review with selected criteria:", selectedCriteria);
-            try {
-              const reviewResponse = await createReview(Number(id), stuID, revieweeID);
-              const reviewData = await reviewResponse.json();
-              console.log("Review response:", reviewData);
-              for (const criterion of selectedCriteria) {
-                await createCriterion(reviewData.id, criterion.row, criterion.column, "");
-              }
-              console.log('Review submitted successfully');
-            } catch (error) {
-              console.error('Error submitting review:', error);
-            }
-          }}>Submit Review</button>
-      </div>}
-    </>
-  );
-}
-
-=======
           { label: "Home",  path: `/assignments/${id}` },
           { label: "Group", path: `/assignments/${id}/group` },
           ...(isTeacher()
@@ -301,4 +206,3 @@ export default function Assignment() {
     </>
   );
 }
->>>>>>> Stashed changes

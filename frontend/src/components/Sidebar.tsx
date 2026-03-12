@@ -1,65 +1,74 @@
-import { logout } from '../util/login'
-import './Sidebar.css'
+import { useEffect, useState } from 'react';
+import { getRubricByAssignment } from '../util/api';
+import './RubricDisplay.css';
 
-export default function Sidebar() {
-  // Check which page we are on
-  const location = window.location.pathname
-
-  const nameParts = (user.name || '').trim().split(/\s+/);
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
-
-  return (
-    <div className="Sidebar">
-      <div className="SidebarLogo">
-        <img src="/oc_logo.png" alt="OC Logo" />
-      </div>
-
-      <div className="SidebarTop">
-<<<<<<< Updated upstream
-        <SidebarRow
-          onClick={() => logout()}
-          href='#'
-          selected={false}
-        >
-=======
-         <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}>
-          <AvatarInitials
-            firstName={firstName}
-            lastName={lastName}
-            userId={user.id || 0}
-            size={36}
-          />
-        </div>
-        <SidebarRow onClick={() => logout()} href='#' selected={false}>
->>>>>>> Stashed changes
-          Logout
-        </SidebarRow>
-
-        <SidebarRow selected={location === '/home'} href="/home">
-          Home
-        </SidebarRow>
-        
-        { /* TODO: make this ID match who is logged in */ }
-        <SidebarRow selected={location.includes('/profile')} href="/profile/1">
-          My Info
-        </SidebarRow>
-      </div>
-    </div>
-  )
+interface RubricCriterion {
+  id: number;
+  title: string;
+  description: string;
+  levels: RubricLevel[];
 }
 
-interface SidebarRowProps {
-  selected: boolean
-  href: string
-  children: React.ReactNode
-  onClick?: () => void
+interface RubricLevel {
+  id: number;
+  score: number;
+  description: string;
 }
 
-function SidebarRow(props: SidebarRowProps) {
+interface RubricResponse {
+  id: number;
+  title: string;
+  criteria: RubricCriterion[];
+}
+
+interface RubricDisplayProps {
+  rubricId: number;
+}
+
+export default function RubricDisplay({ rubricId }: RubricDisplayProps) {
+  const [rubric, setRubric] = useState<RubricResponse | null>(null);
+
+  useEffect(() => {
+    if (!rubricId) return;
+    getRubricByAssignment(rubricId)
+      .then((data) => setRubric(data as RubricResponse))
+      .catch(() => setRubric(null));
+  }, [rubricId]);
+
+  if (!rubric || rubric.criteria.length === 0) {
+    return (
+      <div className="RubricDisplay">
+        <p className="RubricDisplay__empty">No rubric assigned yet.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className={`SidebarRow ${props.selected ? 'selected' : ''}`} onClick={props.onClick}>
-      <a href={props.selected ? '#' : props.href}>{props.children}</a>
+    <div className="RubricDisplay">
+      <h3 className="RubricDisplay__title">{rubric.title}</h3>
+      <table className="RubricDisplay__table">
+        <tbody>
+          {rubric.criteria.map((criterion) => (
+            <tr key={criterion.id}>
+              <td className="RubricDisplay__criterion-title">
+                {(criterion as any).title || (criterion as any).question}
+              </td>
+              {criterion.levels ? criterion.levels.map((level) => (
+                <td key={level.id} className="RubricDisplay__level">
+                  <div className="RubricDisplay__level-score">{level.score}</div>
+                  <div className="RubricDisplay__level-desc">{level.description}</div>
+                </td>
+              )) : (
+                <td className="RubricDisplay__level">
+                  <div className="RubricDisplay__level-score">
+                    {(criterion as any).score_max || (criterion as any).scoreMax}
+                  </div>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
-  )
+  );
 }

@@ -524,8 +524,6 @@ export const changePassword = async (currentPassword: string, newPassword: strin
 
   return await response.json();
 }
-<<<<<<< Updated upstream
-=======
 
 export interface TeacherReviewRow {
   review_id: number;
@@ -814,4 +812,3 @@ export const updateUserProfile = (data: { first_name?: string; last_name?: strin
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   }).then(maybeHandleExpire);
->>>>>>> Stashed changes
