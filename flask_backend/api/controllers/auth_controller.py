@@ -62,8 +62,14 @@ def login():
     except ValidationError as err:
         return jsonify({"msg": "Validation error", "errors": err.messages}), 400
 
-    # Verify credentials
+    # Look up user first
     user = User.get_by_email(data["email"])
+
+    # Block deactivated users before anything else — show a clear message
+    if user is not None and not user.is_active:
+        return jsonify({"msg": "Account is deactivated. Please contact an administrator."}), 403
+
+    # Verify credentials
     if user is None or not check_password_hash(user.hash_pass, data["password"]):
         return jsonify({"msg": "Bad email or password"}), 401
 

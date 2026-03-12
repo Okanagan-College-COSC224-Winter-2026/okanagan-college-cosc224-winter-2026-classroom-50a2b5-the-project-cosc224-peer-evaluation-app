@@ -13,6 +13,16 @@ function splitName(fullName: string): { first: string; last: string } {
   return { first: parts[0] || '', last: parts.slice(1).join(' ') || '' };
 }
 
+// Get the currently logged-in user's id from localStorage
+function getCurrentUserId(): number | null {
+  try {
+    const stored = JSON.parse(localStorage.getItem('user') || '{}');
+    return stored?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export default function Profile() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -23,6 +33,9 @@ export default function Profile() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+
+  const currentUserId = getCurrentUserId()
+  const isOwnProfile = currentUserId !== null && String(currentUserId) === String(id)
 
   useEffect(() => {
     ;(async () => {
@@ -47,14 +60,21 @@ export default function Profile() {
     if (!form.name.trim()) { setError('Name cannot be empty'); return; }
     setSaving(true); setError(''); setSuccess(false);
     try {
-      // updateUserProfile accepts { first_name, last_name } — we send name split
-      const { first, last } = splitName(form.name);
-      const res = await updateUserProfile({ first_name: first, last_name: last });
+      // Send name directly — backend handles it as a single field
+      const res = await updateUserProfile({ name: form.name.trim() });
       if (res && res.ok) {
         const updated = await res.json();
-        // backend returns { name } — reconcile
-        setProfile({ ...profile!, name: updated.name || form.name });
+        const newName = updated.name || form.name;
+        // Update React state
+        setProfile({ ...profile!, name: newName });
+        // Also update localStorage so the sidebar avatar reflects the new name
+        try {
+          const stored = JSON.parse(localStorage.getItem('user') || '{}');
+          localStorage.setItem('user', JSON.stringify({ ...stored, name: newName }));
+        } catch {}
         setEditing(false); setSuccess(true);
+        // Force sidebar to re-render by triggering a storage event
+        window.dispatchEvent(new Event('storage'));
       } else {
         setError('Update failed');
       }
@@ -85,7 +105,10 @@ export default function Profile() {
           <h1>Full Name</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span>{profile?.name || '—'}</span>
-            <button onClick={() => setEditing(true)}>Edit Name</button>
+            {/* Only show Edit button for own profile */}
+            {isOwnProfile && (
+              <button onClick={() => setEditing(true)}>Edit Name</button>
+            )}
           </div>
           <h1>Email</h1>
           <span>{profile?.email ?? '—'}</span>
@@ -98,21 +121,24 @@ export default function Profile() {
           <button onClick={() => setEditing(false)}>Cancel</button>
         </>)}
       </div>
-      <div className="profile-actions" style={{ marginTop: "1.5rem" }}>
-        <button
-          onClick={() => navigate("/change-password")}
-          style={{
-            padding: "0.6rem 1.2rem",
-            backgroundColor: "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          Change Password
-        </button>
-      </div>
+      {/* Only show Change Password for own profile */}
+      {isOwnProfile && (
+        <div className="profile-actions" style={{ marginTop: "1.5rem" }}>
+          <button
+            onClick={() => navigate("/change-password")}
+            style={{
+              padding: "0.6rem 1.2rem",
+              backgroundColor: "#007bff",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Change Password
+          </button>
+        </div>
+      )}
     </div>
   )
 }

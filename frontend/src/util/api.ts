@@ -17,35 +17,27 @@ export const maybeHandleExpire = (response: Response) => {
 }
 
 export const tryLogin = async (email: string, password: string) => {
-  try {
-    const response = await fetch(`${BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ email: email, password: password }),
-      credentials: 'include'  // Include cookies in request/response
-    });
-    
-    if (!response.ok) { 
-      // Throw if login fails for any reason
-      throw new Error(`Response status: ${response.status}`);
-    }
+  const response = await fetch(`${BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ email: email, password: password }),
+    credentials: 'include'  // Include cookies in request/response
+  });
 
-    const json = await response.json();
-    
-    // Store user info (but not token - that's in httponly cookie now)
-    localStorage.setItem('user', JSON.stringify(json));
-    //console.log("Logged in:", json);
-
-    return json;
-  } catch (error) {
-    // Login is wrong
-    console.error(error);
-    // window.location.href = '/';
+  if (!response.ok) {
+    // Read the actual error message from the backend and throw it
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.msg || 'Invalid email or password');
   }
 
-  return false
+  const json = await response.json();
+
+  // Store user info (but not token - that's in httponly cookie now)
+  localStorage.setItem('user', JSON.stringify(json));
+
+  return json;
 }
 
 export const tryRegister = async (name: string, email: string, password: string) => {
@@ -803,15 +795,21 @@ export const downloadConclusionFile = async (assignmentId: number, fileId: numbe
 // ── User profile ─────────────────────────────────────────────────────────────
 
 export const getUserProfile = () =>
-  fetch(`${BASE_URL}/user/profile`, { credentials: 'include' }).then(maybeHandleExpire);
+  fetch(`${BASE_URL}/user/profile`, { credentials: 'include' }).then(res => {
+    maybeHandleExpire(res);
+    return res;
+  });
 
-export const updateUserProfile = (data: { first_name?: string; last_name?: string }) =>
+export const updateUserProfile = (data: { name?: string; first_name?: string; last_name?: string }) =>
   fetch(`${BASE_URL}/user/profile`, {
     method: 'PUT',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  }).then(maybeHandleExpire);
+  }).then(res => {
+    maybeHandleExpire(res);
+    return res;
+  });
 
 // ── Admin user management ─────────────────────────────────────────────────────
 
@@ -825,7 +823,7 @@ export interface AdminUserPayload {
 export const adminListUsers = (page = 1, role = '', search = '') =>
   fetch(`${BASE_URL}/admin/users?page=${page}&role=${role}&search=${encodeURIComponent(search)}`, {
     credentials: 'include',
-  }).then(maybeHandleExpire);
+  }).then(res => { maybeHandleExpire(res); return res; });
 
 export const adminCreateUser = (data: AdminUserPayload) =>
   fetch(`${BASE_URL}/admin/users/create`, {
@@ -833,7 +831,7 @@ export const adminCreateUser = (data: AdminUserPayload) =>
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  }).then(maybeHandleExpire);
+  }).then(res => { maybeHandleExpire(res); return res; });
 
 export const adminUpdateUser = (id: number, data: Partial<AdminUserPayload>) =>
   fetch(`${BASE_URL}/admin/users/${id}`, {
@@ -841,19 +839,19 @@ export const adminUpdateUser = (id: number, data: Partial<AdminUserPayload>) =>
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  }).then(maybeHandleExpire);
+  }).then(res => { maybeHandleExpire(res); return res; });
 
 export const adminDeactivateUser = (id: number) =>
   fetch(`${BASE_URL}/admin/users/${id}/deactivate`, {
     method: 'PATCH',
     credentials: 'include',
-  }).then(maybeHandleExpire);
+  }).then(res => { maybeHandleExpire(res); return res; });
 
 export const adminReactivateUser = (id: number) =>
   fetch(`${BASE_URL}/admin/users/${id}/reactivate`, {
     method: 'PATCH',
     credentials: 'include',
-  }).then(maybeHandleExpire);
+  }).then(res => { maybeHandleExpire(res); return res; });
 
 // ── Teacher analytics ─────────────────────────────────────────────────────────
 
@@ -884,7 +882,7 @@ export interface AnalyticsData {
 export const getAssignmentAnalytics = (assignmentId: number) =>
   fetch(`${BASE_URL}/teacher/assignments/${assignmentId}/analytics`, {
     credentials: 'include',
-  }).then(maybeHandleExpire);
+  }).then(res => { maybeHandleExpire(res); return res; });
 
 export const exportReviewsCSV = (assignmentId: number) =>
   fetch(`${BASE_URL}/teacher/assignments/${assignmentId}/export`, {
