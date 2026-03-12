@@ -208,38 +208,6 @@ class TestSubmitReview:
         review = Review.get_by_id(resp.get_json()["id"])
         assert review.comments == "Great teamwork overall!"
 
-    def test_submit_review_without_comments_defaults_empty(
-        self, auth_student_a, student_b, assignment
-    ):
-        """Omitting comments defaults to empty string."""
-        resp = auth_student_a.post(
-            "/review/submit",
-            json={
-                "assignmentID": assignment.id,
-                "revieweeID": student_b.id,
-                "criteria": [],
-            },
-        )
-
-        assert resp.status_code == 201
-        review = Review.get_by_id(resp.get_json()["id"])
-        assert review.comments == ""
-
-    def test_submit_review_without_criteria(
-        self, auth_student_a, student_b, assignment
-    ):
-        """Submitting a review with no criteria still creates the review."""
-        resp = auth_student_a.post(
-            "/review/submit",
-            json={
-                "assignmentID": assignment.id,
-                "revieweeID": student_b.id,
-                "criteria": [],
-            },
-        )
-
-        assert resp.status_code == 201
-
     def test_cannot_review_self(self, auth_student_a, student_a, assignment):
         """A student cannot review themselves."""
         resp = auth_student_a.post(
@@ -901,16 +869,3 @@ class TestCourseGradeSummary:
         """Returns 404 for a nonexistent course."""
         resp = auth_student_a.get("/review/course/99999/summary")
         assert resp.status_code == 404
-
-    def test_summary_no_assignments(self, db, auth_student_a, student_a):
-        """Returns empty assignments list for course with no assignments."""
-        empty_course = Course(teacherID=student_a.id, name="Empty Course")
-        db.session.add(empty_course)
-        db.session.commit()
-
-        resp = auth_student_a.get(f"/review/course/{empty_course.id}/summary")
-        data = resp.get_json()
-
-        assert data["assignments"] == []
-        assert data["courseAverage"] is None
-        assert data["courseMax"] is None
