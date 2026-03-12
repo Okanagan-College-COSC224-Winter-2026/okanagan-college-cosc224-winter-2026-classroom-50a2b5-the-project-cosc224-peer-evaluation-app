@@ -6,6 +6,9 @@ import StatusMessage from "../components/StatusMessage";
 import { isTeacher } from "../util/login";
 import {
   teacherListReviews,
+  getAssignment,
+  listCourseMembers,
+  listAllGroups,
   type TeacherReviewRow,
 } from "../util/api";
 import "./TeacherReviewsPage.css";
@@ -20,6 +23,30 @@ export default function TeacherReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedReviewId, setSelectedReviewId] = useState<number | null>(null);
+  const [memberNames, setMemberNames] = useState<Record<number, string>>({});
+  const [groups, setGroups] = useState<{ id: number; name: string }[]>([]);
+
+  // Load member names once on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const assignment = await getAssignment(assignmentId);
+        if (assignment.courseID) {
+          const members = await listCourseMembers(String(assignment.courseID));
+          const nameMap: Record<number, string> = {};
+          members.forEach((m: { id: number; name: string }) => {
+            nameMap[m.id] = m.name;
+          });
+          setMemberNames(nameMap);
+        }
+        // Load groups for dropdown filter
+        const groupData = await listAllGroups(assignmentId).catch(() => []);
+        setGroups(groupData);
+      } catch {
+        // Names unavailable — fall back to IDs
+      }
+    })();
+  }, [assignmentId]);
 
   useEffect(() => {
     const load = async () => {
@@ -39,6 +66,8 @@ export default function TeacherReviewsPage() {
       load();
     }
   }, [assignmentId, groupId, sort]);
+
+  const nameOf = (userId: number) => memberNames[userId] || `#${userId}`;
 
   if (!isTeacher()) {
     return (
@@ -68,13 +97,15 @@ export default function TeacherReviewsPage() {
         </label>
 
         <label>
-          Group ID
-          <input
-            type="number"
-            placeholder="Filter by group ID"
-            value={groupId}
-            onChange={(e) => setGroupId(e.target.value)}
-          />
+          Group
+          <select value={groupId} onChange={(e) => setGroupId(e.target.value)}>
+            <option value="">All groups</option>
+            {groups.map((g) => (
+              <option key={g.id} value={String(g.id)}>
+                {g.name || `Group ${g.id}`}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
 
@@ -104,8 +135,8 @@ export default function TeacherReviewsPage() {
               {reviews.map((review) => (
                 <tr key={review.review_id}>
                   <td>{review.review_id}</td>
-                  <td>{review.reviewer_id}</td>
-                  <td>{review.reviewee_id}</td>
+                  <td>{nameOf(review.reviewer_id)}</td>
+                  <td>{nameOf(review.reviewee_id)}</td>
                   <td>{review.total_score}</td>
                   <td>{review.has_conclusion ? "✓" : "—"}</td>
                   <td>

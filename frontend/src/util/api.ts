@@ -196,7 +196,7 @@ export const listUnassignedGroups = async (assignmentId : number) => {
 }
 
 export const listCourseMembers = async (classId: string) => {
-  const resp = await fetch(`${BASE_URL}/classes/members`, {
+  const resp = await fetch(`${BASE_URL}/class/classes/members`, {
     method: 'POST',
     body: JSON.stringify({
       id: classId,
@@ -285,10 +285,10 @@ export const getCriteria = async (rubricID: number) => {
 }
 
 export const createCriteria = async (rubricID: number, question: string, scoreMax: number, canComment: boolean, hasScore: boolean = true) => {
-  const response = await fetch(`${BASE_URL}/create_criteria`, {
+  const response = await fetch(`${BASE_URL}/assignment/rubric/${rubricID}/criteria`, {
     method: 'POST',
     body: JSON.stringify({
-      rubricID, question, scoreMax, canComment, hasScore
+      question, scoreMax, hasScore
     }),
     headers: {
       'Content-Type': 'application/json',
@@ -304,10 +304,10 @@ export const createCriteria = async (rubricID: number, question: string, scoreMa
 }
 
 export const createRubric = async (id: number, assignmentID: number, canComment: boolean): Promise<{ id: number }> => {
-  const response = await fetch(`${BASE_URL}/create_rubric`, {
+  const response = await fetch(`${BASE_URL}/assignment/${assignmentID}/rubric`, {
     method: 'POST',
     body: JSON.stringify({
-      id, assignmentID, canComment
+      canComment
     }),
     headers: {
       'Content-Type': 'application/json',
@@ -339,11 +339,11 @@ export const getRubric = async (rubricID: number) => {
 }
 
 
-export const createAssignment = async (courseID: number, name: string)=> {
+export const createAssignment = async (courseID: number, name: string, description_html = '')=> {
   const response = await fetch(`${BASE_URL}/assignment/create_assignment`, {
     method: 'POST',
     body: JSON.stringify({
-      courseID, name
+      courseID, name, description_html
     }),
     headers: {
       'Content-Type': 'application/json',
@@ -500,7 +500,7 @@ export const createTeacherAccount = async (name: string, email: string, password
 // User - Change Password
 export const changePassword = async (currentPassword: string, newPassword: string) => {
   const response = await fetch(`${BASE_URL}/user/password`, {
-    method: 'PATCH',
+    method: 'PUT',
     body: JSON.stringify({
       current_password: currentPassword,
       new_password: newPassword
@@ -515,7 +515,11 @@ export const changePassword = async (currentPassword: string, newPassword: strin
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.msg || `Response status: ${response.status}`);
+    // PUT route returns { error, failures[] } on validation fail
+    if (errorData.failures && errorData.failures.length > 0) {
+      throw new Error(errorData.failures.join('\n'));
+    }
+    throw new Error(errorData.error || errorData.msg || `Response status: ${response.status}`);
   }
 
   return await response.json();
@@ -606,6 +610,197 @@ export const teacherSaveConclusion = async (
 
   return await resp.json();
 };
+
+export const listAllGroups = async (assignmentId: number) => {
+  const resp = await fetch(`${BASE_URL}/list_all_groups/${assignmentId}`, {
+    credentials: 'include',
+  });
+  maybeHandleExpire(resp);
+  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
+  return await resp.json();
+};
+
+// ── Assignment file attachment ───────────────────────────────────────────────
+
+export const uploadAssignmentFile = async (assignmentId: number, file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const resp = await fetch(`${BASE_URL}/assignment/${assignmentId}/upload`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  });
+  maybeHandleExpire(resp);
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => ({}));
+    throw new Error(data.msg || `Response status: ${resp.status}`);
+  }
+  return await resp.json();
+};
+
+export const downloadAssignmentAttachment = async (assignmentId: number, filename: string) => {
+  const resp = await fetch(`${BASE_URL}/assignment/${assignmentId}/attachment`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  maybeHandleExpire(resp);
+  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
+  const blob = await resp.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+};
+
+export const deleteAssignmentAttachment = async (assignmentId: number) => {
+  const resp = await fetch(`${BASE_URL}/assignment/${assignmentId}/attachment`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  maybeHandleExpire(resp);
+  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
+  return await resp.json();
+};
+
+// ── Assignment detail ────────────────────────────────────────────────────────
+
+export const getAssignment = async (assignmentId: number) => {
+  const resp = await fetch(`${BASE_URL}/assignment/detail/${assignmentId}`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  maybeHandleExpire(resp);
+  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
+  return await resp.json();
+};
+
+// ── Rubric by assignment ─────────────────────────────────────────────────────
+
+export const getRubricByAssignment = async (assignmentId: number) => {
+  const resp = await fetch(`${BASE_URL}/assignment/${assignmentId}/rubric`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  maybeHandleExpire(resp);
+  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
+  return await resp.json();
+};
+
+// ── Submit review ────────────────────────────────────────────────────────────
+
+interface CriterionSubmission {
+  criteria_description_id: number;
+  grade: number;
+  comments: string;
+}
+
+interface ReviewSubmissionPayload {
+  assignment_id: number;
+  reviewee_id: number;
+  criteria: CriterionSubmission[];
+}
+
+export const submitReview = async (payload: ReviewSubmissionPayload) => {
+  const resp = await fetch(`${BASE_URL}/api/reviews/submit`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+  });
+  maybeHandleExpire(resp);
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => ({}));
+    throw new Error(data.msg || `Response status: ${resp.status}`);
+  }
+  return await resp.json();
+};
+
+// ── Review file attachments ──────────────────────────────────────────────────
+
+export const getReviewFiles = async (reviewId: number) => {
+  const resp = await fetch(`${BASE_URL}/review/${reviewId}/files`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  maybeHandleExpire(resp);
+  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
+  return await resp.json();
+};
+
+// Returns a direct URL for use in an <a href> — no auth needed (served as file)
+export const downloadReviewFile = (fileId: number): string =>
+  `${BASE_URL}/review/file/${fileId}`;
+
+// ── Student grades & feedback ────────────────────────────────────────────────
+
+export const getStudentGrades = async () => {
+  const resp = await fetch(`${BASE_URL}/student/grades`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  maybeHandleExpire(resp);
+  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
+  return await resp.json();
+};
+
+export const getStudentFeedback = async (assignmentId: number) => {
+  const resp = await fetch(`${BASE_URL}/student/assignments/${assignmentId}/feedback`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  maybeHandleExpire(resp);
+  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
+  return await resp.json();
+};
+
+// ── Conclusion file attachments ──────────────────────────────────────────────
+
+export const uploadConclusionFile = async (assignmentId: number, file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const resp = await fetch(`${BASE_URL}/assignment/${assignmentId}/conclusion/upload`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  });
+  maybeHandleExpire(resp);
+  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
+  return await resp.json();
+};
+
+export const listConclusionFiles = async (assignmentId: number) => {
+  const resp = await fetch(`${BASE_URL}/assignment/${assignmentId}/conclusion/files`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  maybeHandleExpire(resp);
+  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
+  return await resp.json();
+};
+
+export const downloadConclusionFile = async (assignmentId: number, fileId: number) => {
+  const resp = await fetch(
+    `${BASE_URL}/assignment/${assignmentId}/conclusion/file/${fileId}`,
+    { method: 'GET', credentials: 'include' }
+  );
+  maybeHandleExpire(resp);
+  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
+  const blob = await resp.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `conclusion_file_${fileId}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+};
+
+// ── User profile ─────────────────────────────────────────────────────────────
 
 export const getUserProfile = () =>
   fetch(`${BASE_URL}/user/profile`, { credentials: 'include' }).then(maybeHandleExpire);

@@ -21,36 +21,18 @@ interface RubricResponse {
   criteria: RubricCriterion[];
 }
 
-    useEffect(() => {
-        const loadData = async () => {
-            if (rubricId) {
-                const [criteriaResp, rubricResp] = await Promise.all([
-                    getCriteria(rubricId),
-                    getRubric(rubricId)
-                ]);
-                setCriteria(criteriaResp);
-                setRubricInfo(rubricResp);
-            }
-        };
-        loadData();
-    }, [rubricId]);
+interface RubricDisplayProps {
+  rubricId: number;
+}
 
 export default function RubricDisplay({ rubricId }: RubricDisplayProps) {
   const [rubric, setRubric] = useState<RubricResponse | null>(null);
 
-    if (!rubricId || criteria.length === 0) {
-        return (
-            <div className="RubricDisplay">
-                <p>No rubric available yet</p>
-            </div>
-        );
-    }
   useEffect(() => {
     if (!rubricId) return;
-
     getRubricByAssignment(rubricId)
-    .then((data) => setRubric(data as RubricResponse))
-    .catch(() => setRubric(null));
+      .then((data) => setRubric(data as RubricResponse))
+      .catch(() => setRubric(null));
   }, [rubricId]);
 
   if (!rubric || rubric.criteria.length === 0) {
@@ -59,7 +41,6 @@ export default function RubricDisplay({ rubricId }: RubricDisplayProps) {
         <p className="RubricDisplay__empty">No rubric assigned yet.</p>
       </div>
     );
-} 
   }
 
   return (
@@ -69,7 +50,9 @@ export default function RubricDisplay({ rubricId }: RubricDisplayProps) {
         <tbody>
           {rubric.criteria.map((criterion) => (
             <tr key={criterion.id}>
-              <td className="RubricDisplay__criterion-title">{(criterion as any).title || (criterion as any).question}</td>
+              <td className="RubricDisplay__criterion-title">
+                {(criterion as any).title || (criterion as any).question}
+              </td>
               {criterion.levels ? criterion.levels.map((level) => (
                 <td key={level.id} className="RubricDisplay__level">
                   <div className="RubricDisplay__level-score">{level.score}</div>
@@ -77,7 +60,9 @@ export default function RubricDisplay({ rubricId }: RubricDisplayProps) {
                 </td>
               )) : (
                 <td className="RubricDisplay__level">
-                  <div className="RubricDisplay__level-score">{(criterion as any).score_max || (criterion as any).scoreMax}</div>
+                  <div className="RubricDisplay__level-score">
+                    {(criterion as any).score_max || (criterion as any).scoreMax}
+                  </div>
                 </td>
               )}
             </tr>

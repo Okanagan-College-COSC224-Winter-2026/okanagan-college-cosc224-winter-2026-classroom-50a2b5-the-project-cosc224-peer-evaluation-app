@@ -1,4 +1,4 @@
-﻿import AssignmentCard from "../components/AssignmentCard"
+import AssignmentCard from "../components/AssignmentCard"
 import Button from "../components/Button"
 import "./ClassHome.css"
 import { useParams } from "react-router-dom"
@@ -31,7 +31,7 @@ export default function ClassHome() {
     })()
   }, [id])
 
-  const tryCreateAssingment = async () => {
+  const tryCreateAssignment = async () => {
     try {
       setStatusMessage("")
       const response = await createAssignment(idNew, newAssignmentName, newAssignmentDescription)
@@ -49,77 +49,54 @@ export default function ClassHome() {
     }
   }
 
-        setAssignments((prev) => [...prev, createdAssignment]);
-        setNewAssignmentName("");
-        setStatusType('success');
-        setStatusMessage('Assignment created successfully!');
-      } catch (error) {
-        console.error('Error creating assignment:', error);
-        setStatusType('error');
-        setStatusMessage('Error creating assignment.');
-      }
-    };
-    
-    return (
-      <>
-        <div className="ClassHeader">
-          <div className="ClassHeaderLeft">
-            <h2>{className}</h2>
-          </div>
-
+  return (
+    <div className="ClassHome">
+      <div className="ClassHeader">
+        <div className="ClassHeaderLeft">
+          <h2>{className}</h2>
+        </div>
         <div className="ClassHeaderRight">
-          {isTeacher() ? (
+          {isTeacher() && (
             <Button onClick={() => importCSV(id as string)}>
               Add Students via CSV
             </Button>
-          ) : null}
-      <h2>{className}</h2>
-      {isTeacher() && (
-        <Button onClick={() => importCSV(id as string)}>Add Students via CSV</Button>
-      )}
-      {assignments.map((assignment) => (
-        <AssignmentCard key={assignment.id} id={assignment.id}>{assignment.name}</AssignmentCard>
-      ))}
-      {isTeacher() && (
-        <div>
-          <h3>New Assignment</h3>
-          <label>Name:</label>
-          <Textbox onInput={(val) => setNewAssignmentName(val)} placeholder="Assignment name" />
-          <label>Description:</label>
-          <RichTextEditor value={newAssignmentDescription} onChange={setNewAssignmentDescription} placeholder="Write assignment instructions..." />
-          <Button onClick={() => tryCreateAssingment()}>Add</Button>
-          <StatusMessage message={statusMessage} type={statusType} />
+          )}
         </div>
       </div>
 
       <TabNavigation
         tabs={[
-          {
-            label: "Home",
-            path: `/classes/${id}/home`,
-          },
-          {
-            label: "Members",
-            path: `/classes/${id}/members`,
-          },
+          { label: "Home",    path: `/classes/${id}/home` },
+          { label: "Members", path: `/classes/${id}/members` },
         ]}
       />
 
-      <StatusMessage message={statusMessage} type={statusType} />
+      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        {assignments.map((assignment) => (
+          <li key={assignment.id}>
+            <AssignmentCard id={assignment.id}>
+              {assignment.name}
+            </AssignmentCard>
+          </li>
+        ))}
+      </ul>
 
-      <div className="Class">
-        <div className="Assignments">
-          <ul className="Assignment">
-            {assignments.map((assignment) => {
-              return (
-                <li key={assignment.id}>
-                  <AssignmentCard id={assignment.id}>
-                    {assignment.name}
-                  </AssignmentCard>
-                </li>
-              );
-            })}
-          </ul>
+      {isTeacher() && (
+        <div className="NewAssignment">
+          <h3>New Assignment</h3>
+          <label>Name:</label>
+          <Textbox
+            onInput={(val) => setNewAssignmentName(val)}
+            placeholder="Assignment name"
+          />
+          <label>Description:</label>
+          <RichTextEditor
+            value={newAssignmentDescription}
+            onChange={setNewAssignmentDescription}
+            placeholder="Write assignment instructions..."
+          />
+          <Button onClick={tryCreateAssignment}>Add</Button>
+          <StatusMessage message={statusMessage} type={statusType} />
         </div>
       )}
     </div>
