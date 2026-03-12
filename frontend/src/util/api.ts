@@ -196,7 +196,7 @@ export const listUnassignedGroups = async (assignmentId : number) => {
 }
 
 export const listCourseMembers = async (classId: string) => {
-  const resp = await fetch(`${BASE_URL}/classes/members`, {
+  const resp = await fetch(`${BASE_URL}/class/classes/members`, {
     method: 'POST',
     body: JSON.stringify({
       id: classId,
@@ -285,10 +285,10 @@ export const getCriteria = async (rubricID: number) => {
 }
 
 export const createCriteria = async (rubricID: number, question: string, scoreMax: number, canComment: boolean, hasScore: boolean = true) => {
-  const response = await fetch(`${BASE_URL}/create_criteria`, {
+  const response = await fetch(`${BASE_URL}/assignment/rubric/${rubricID}/criteria`, {
     method: 'POST',
     body: JSON.stringify({
-      rubricID, question, scoreMax, canComment, hasScore
+      question, scoreMax, hasScore
     }),
     headers: {
       'Content-Type': 'application/json',
@@ -304,10 +304,10 @@ export const createCriteria = async (rubricID: number, question: string, scoreMa
 }
 
 export const createRubric = async (id: number, assignmentID: number, canComment: boolean): Promise<{ id: number }> => {
-  const response = await fetch(`${BASE_URL}/create_rubric`, {
+  const response = await fetch(`${BASE_URL}/assignment/${assignmentID}/rubric`, {
     method: 'POST',
     body: JSON.stringify({
-      id, assignmentID, canComment
+      canComment
     }),
     headers: {
       'Content-Type': 'application/json',
@@ -339,11 +339,11 @@ export const getRubric = async (rubricID: number) => {
 }
 
 
-export const createAssignment = async (courseID: number, name: string)=> {
+export const createAssignment = async (courseID: number, name: string, description_html = '')=> {
   const response = await fetch(`${BASE_URL}/assignment/create_assignment`, {
     method: 'POST',
     body: JSON.stringify({
-      courseID, name
+      courseID, name, description_html
     }),
     headers: {
       'Content-Type': 'application/json',
@@ -500,7 +500,7 @@ export const createTeacherAccount = async (name: string, email: string, password
 // User - Change Password
 export const changePassword = async (currentPassword: string, newPassword: string) => {
   const response = await fetch(`${BASE_URL}/user/password`, {
-    method: 'PATCH',
+    method: 'PUT',
     body: JSON.stringify({
       current_password: currentPassword,
       new_password: newPassword
@@ -515,13 +515,15 @@ export const changePassword = async (currentPassword: string, newPassword: strin
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.msg || `Response status: ${response.status}`);
+    // PUT route returns { error, failures[] } on validation fail
+    if (errorData.failures && errorData.failures.length > 0) {
+      throw new Error(errorData.failures.join('\n'));
+    }
+    throw new Error(errorData.error || errorData.msg || `Response status: ${response.status}`);
   }
 
   return await response.json();
 }
-<<<<<<< Updated upstream
-=======
 
 export interface TeacherReviewRow {
   review_id: number;
@@ -888,4 +890,3 @@ export const exportReviewsCSV = (assignmentId: number) =>
   fetch(`${BASE_URL}/teacher/assignments/${assignmentId}/export`, {
     credentials: 'include',
   });
->>>>>>> Stashed changes
