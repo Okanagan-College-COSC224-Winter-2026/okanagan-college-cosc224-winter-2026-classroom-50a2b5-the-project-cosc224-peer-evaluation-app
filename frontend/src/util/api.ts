@@ -812,3 +812,81 @@ export const updateUserProfile = (data: { first_name?: string; last_name?: strin
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   }).then(maybeHandleExpire);
+
+// ── Admin user management ─────────────────────────────────────────────────────
+
+export interface AdminUserPayload {
+  name: string;
+  email: string;
+  password?: string;
+  role: string;
+}
+
+export const adminListUsers = (page = 1, role = '', search = '') =>
+  fetch(`${BASE_URL}/admin/users?page=${page}&role=${role}&search=${encodeURIComponent(search)}`, {
+    credentials: 'include',
+  }).then(maybeHandleExpire);
+
+export const adminCreateUser = (data: AdminUserPayload) =>
+  fetch(`${BASE_URL}/admin/users/create`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).then(maybeHandleExpire);
+
+export const adminUpdateUser = (id: number, data: Partial<AdminUserPayload>) =>
+  fetch(`${BASE_URL}/admin/users/${id}`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).then(maybeHandleExpire);
+
+export const adminDeactivateUser = (id: number) =>
+  fetch(`${BASE_URL}/admin/users/${id}/deactivate`, {
+    method: 'PATCH',
+    credentials: 'include',
+  }).then(maybeHandleExpire);
+
+export const adminReactivateUser = (id: number) =>
+  fetch(`${BASE_URL}/admin/users/${id}/reactivate`, {
+    method: 'PATCH',
+    credentials: 'include',
+  }).then(maybeHandleExpire);
+
+// ── Teacher analytics ─────────────────────────────────────────────────────────
+
+export interface CriterionStat {
+  criterion_id: number;
+  criterion_name: string;
+  score_max: number;
+  avg_score: number;
+  response_count: number;
+}
+
+export interface AnalyticsData {
+  assignment_id: number;
+  assignment_name: string;
+  completion_pct: number;
+  total_students: number;
+  submitted: number;
+  criteria: CriterionStat[];
+  outliers: {
+    review_id: number;
+    reviewer_id: number;
+    reviewee_id: number;
+    total_score: number;
+    deviation: number;
+  }[];
+}
+
+export const getAssignmentAnalytics = (assignmentId: number) =>
+  fetch(`${BASE_URL}/teacher/assignments/${assignmentId}/analytics`, {
+    credentials: 'include',
+  }).then(maybeHandleExpire);
+
+export const exportReviewsCSV = (assignmentId: number) =>
+  fetch(`${BASE_URL}/teacher/assignments/${assignmentId}/export`, {
+    credentials: 'include',
+  });

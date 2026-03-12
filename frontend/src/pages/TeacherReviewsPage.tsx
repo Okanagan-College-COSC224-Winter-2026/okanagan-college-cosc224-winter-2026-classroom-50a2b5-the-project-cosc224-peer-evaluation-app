@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 import ReviewDetailModal from "../components/ReviewDetailModal";
 import StatusMessage from "../components/StatusMessage";
@@ -15,6 +15,7 @@ import "./TeacherReviewsPage.css";
 
 export default function TeacherReviewsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const assignmentId = Number(id);
 
   const [reviews, setReviews] = useState<TeacherReviewRow[]>([]);
@@ -85,6 +86,9 @@ export default function TeacherReviewsPage() {
           <h1>Submitted Reviews</h1>
           <p>Assignment #{assignmentId}</p>
         </div>
+        <Button onClick={() => navigate(`/assignments/${assignmentId}/analytics`)}>
+          View Analytics
+        </Button>
       </div>
 
       <div className="TeacherReviewsPage__filters">

@@ -15,6 +15,8 @@ import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
 import TeacherReviewsPage from "./pages/TeacherReviewsPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
+import AssignmentAnalytics from "./pages/AssignmentAnalytics";
 
 function AppContent() {
   const location = useLocation();
@@ -110,6 +112,23 @@ function AppContent() {
             }
           />
 
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <AdminUsersPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/assignments/:id/analytics"
+            element={
+              <ProtectedRoute>
+                <AssignmentAnalytics />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
     </div>
