@@ -460,7 +460,7 @@
 
 ---
 
-## US26 – Admin User Management — **Backlog**
+## US26 – Admin User Management — **In Progress**
 
 **As an administrator, I want to manage user accounts from the admin dashboard so that I can keep the user base accurate and up to date.**
 

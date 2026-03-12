@@ -1,17 +1,33 @@
 """
 Teacher Review Dashboard controller.
-Implements US13 (view review submissions) and US14 (add conclusion note).
+Implements US13 (view review submissions), US14 (add conclusion note),
+and US7/US8 extension (assignment analytics & CSV export).
 
 Endpoints:
     GET  /teacher/assignments/<assignment_id>/reviews
     GET  /teacher/assignments/<assignment_id>/reviews/<review_id>
     POST /teacher/reviews/<review_id>/conclusion
+    GET  /teacher/assignments/<assignment_id>/analytics
+    GET  /teacher/assignments/<assignment_id>/export
 """
 
-from flask import Blueprint, jsonify, request
+import csv
+import io
+import statistics
+
+from flask import Blueprint, Response, jsonify, request
 from flask_jwt_extended import get_jwt_identity
 
-from ..models import Assignment, Criterion, CourseGroup, Group_Members, Review, User
+from ..models import (
+    Assignment,
+    CriteriaDescription,
+    Criterion,
+    CourseGroup,
+    Group_Members,
+    Review,
+    Rubric,
+    User,
+)
 from ..models.conclusion_model import Conclusion
 from ..models.db import db
 from .auth_controller import jwt_teacher_required
@@ -228,3 +244,164 @@ def upsert_conclusion(review_id):
         Conclusion.create(existing)
 
     return jsonify(existing.to_dict()), 200
+
+
+# ============================================================
+# GET /teacher/assignments/<assignment_id>/analytics
+# Per-criterion averages, completion rate, outlier detection
+# ============================================================
+
+@teacher_bp.route("/assignments/<int:assignment_id>/analytics", methods=["GET"])
+@jwt_teacher_required
+def assignment_analytics(assignment_id):
+    """
+    Return analytics for an assignment: completion rate, per-criterion
+    average scores, and flagged outlier reviews (>2 std deviations).
+
+    Response 200:
+        {
+            "assignment_id":   int,
+            "assignment_name": str,
+            "completion_pct":  float,
+            "total_students":  int,
+            "submitted":       int,
+            "criteria":        [ { criterion_id, criterion_name, score_max,
+                                   avg_score, response_count } ],
+            "outliers":        [ { review_id, reviewer_id, reviewee_id,
+                                   total_score, deviation } ]
+        }
+
+    Response 404: assignment not found
+    """
+    assignment = Assignment.get_by_id(assignment_id)
+    if assignment is None:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    # --- Completion rate ---
+    total_students = (
+        db.session.query(Group_Members.userID)
+        .join(CourseGroup, CourseGroup.id == Group_Members.groupID)
+        .filter(CourseGroup.assignmentID == assignment_id)
+        .distinct()
+        .count()
+    )
+    submitted = (
+        Review.query
+        .filter_by(assignmentID=assignment_id)
+        .with_entities(Review.reviewerID)
+        .distinct()
+        .count()
+    )
+    completion_pct = (
+        round((submitted / total_students * 100), 1) if total_students else 0
+    )
+
+    # --- Per-criterion averages ---
+    crit_descs = (
+        CriteriaDescription.query
+        .join(Rubric, Rubric.id == CriteriaDescription.rubricID)
+        .filter(Rubric.assignmentID == assignment_id)
+        .all()
+    )
+
+    criterion_data = []
+    all_review_totals = []
+    for cd in crit_descs:
+        scores = [
+            c.grade
+            for c in Criterion.query.filter_by(criterionRowID=cd.id).all()
+            if c.grade is not None
+        ]
+        avg = round(statistics.mean(scores), 2) if scores else 0
+        criterion_data.append({
+            "criterion_id": cd.id,
+            "criterion_name": cd.question,
+            "score_max": cd.scoreMax,
+            "avg_score": avg,
+            "response_count": len(scores),
+        })
+        all_review_totals.extend(scores)
+
+    # --- Outlier detection (>2 std deviations from mean) ---
+    outliers = []
+    if len(all_review_totals) >= 2:
+        mean = statistics.mean(all_review_totals)
+        stdev = statistics.stdev(all_review_totals)
+        threshold = 2 * stdev
+
+        reviews = Review.query.filter_by(assignmentID=assignment_id).all()
+        for rev in reviews:
+            total = sum(
+                (c.grade or 0) for c in rev.criteria.all()
+            )
+            if abs(total - mean) > threshold:
+                outliers.append({
+                    "review_id": rev.id,
+                    "reviewer_id": rev.reviewerID,
+                    "reviewee_id": rev.revieweeID,
+                    "total_score": total,
+                    "deviation": round(total - mean, 2),
+                })
+
+    return jsonify({
+        "assignment_id": assignment_id,
+        "assignment_name": assignment.name,
+        "completion_pct": completion_pct,
+        "total_students": total_students,
+        "submitted": submitted,
+        "criteria": criterion_data,
+        "outliers": outliers,
+    }), 200
+
+
+# ============================================================
+# GET /teacher/assignments/<assignment_id>/export
+# CSV export of all raw review data for an assignment
+# ============================================================
+
+@teacher_bp.route("/assignments/<int:assignment_id>/export", methods=["GET"])
+@jwt_teacher_required
+def export_reviews_csv(assignment_id):
+    """
+    Export all review scores for an assignment as a downloadable CSV file.
+
+    Columns: review_id, reviewer_id, reviewee_id, criterion, score,
+             max_score, comment
+
+    Response 200: text/csv attachment
+    Response 404: assignment not found
+    """
+    assignment = Assignment.get_by_id(assignment_id)
+    if assignment is None:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    reviews = Review.query.filter_by(assignmentID=assignment_id).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "review_id", "reviewer_id", "reviewee_id",
+        "criterion", "score", "max_score", "comment",
+    ])
+
+    for rev in reviews:
+        for c in rev.criteria.all():
+            writer.writerow([
+                rev.id,
+                rev.reviewerID,
+                rev.revieweeID,
+                c.criterion_row.question if c.criterion_row else "",
+                c.grade,
+                c.criterion_row.scoreMax if c.criterion_row else "",
+                c.comments or "",
+            ])
+
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition":
+                f"attachment;filename=assignment_{assignment_id}_reviews.csv"
+        },
+    )

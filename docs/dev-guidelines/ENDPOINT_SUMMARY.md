@@ -257,6 +257,18 @@ All endpoints in this section require the HTTPOnly JWT cookie. Frontend requests
 
 ---
 
+## Admin User Management (US26)
+
+| Method | URL | Auth | Description |
+|--------|-----|------|-------------|
+| GET | `/admin/users` | JWT (admin) | Paginated list of all users. Query params: `page` (default 1), `role` (filter by role), `search` (name/email substring). Returns `{ users, page, per_page, total, pages }`. |
+| POST | `/admin/users/create` | JWT (admin) | Create a new user. Body: `{ name, email, password, role, must_change_password? }`. Returns `201 { msg, user }` or `409` on duplicate email. |
+| PUT | `/admin/users/<id>` | JWT (admin) | Update user name, email, or role. Returns `200 { msg, user }` or `404`. Admins cannot demote themselves. |
+| PATCH | `/admin/users/<id>/deactivate` | JWT (admin) | Soft-deactivate a user (sets `is_active = false`). Admins cannot deactivate themselves. Returns `200 { msg }` or `400/404`. |
+| PATCH | `/admin/users/<id>/reactivate` | JWT (admin) | Reactivate a previously deactivated user. Returns `200 { msg }` or `404`. |
+
+---
+
 ## Password Management (Feature C)
 
 ### PUT /user/password
