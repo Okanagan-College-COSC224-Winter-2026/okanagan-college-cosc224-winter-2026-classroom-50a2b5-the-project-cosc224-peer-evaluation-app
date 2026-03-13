@@ -120,10 +120,13 @@ export const searchCourses = async (
     params.set("q", query.trim());
   }
 
-  const resp = await fetch(`${BASE_URL}/class/search?${params.toString()}`, {
-    method: "GET",
-    credentials: "include",
-  });
+  const resp = await fetch(
+    `${BASE_URL}/class/search_course?${params.toString()}`,
+    {
+      method: "GET",
+      credentials: "include",
+    },
+  );
 
   maybeHandleExpire(resp);
 

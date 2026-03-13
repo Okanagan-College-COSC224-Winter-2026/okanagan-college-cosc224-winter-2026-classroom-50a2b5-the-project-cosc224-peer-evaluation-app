@@ -1,5 +1,5 @@
 """
-Tests for US-17 — Student Course Search (GET /class/search)
+Tests for US-17 — Student Course Search (GET /class/search_course)
 """
 
 import json
@@ -22,7 +22,7 @@ def _login(client, email, password):
 
 
 def _search(client, q=""):
-    url = f"/class/search?q={q}" if q else "/class/search"
+    url = f"/class/search_course?q={q}" if q else "/class/search_course"
     return client.get(url, headers={"Content-Type": "application/json"})
 
 
@@ -84,7 +84,7 @@ def seed_courses(db):
 # ── AUTH ───────────────────────────────────────────────────
 
 class TestSearchAuth:
-    """Unauthenticated users must not access /class/search."""
+    """Unauthenticated users must not access /class/search_course."""
 
     def test_search_requires_login(self, test_client):
         resp = _search(test_client, "COSC")

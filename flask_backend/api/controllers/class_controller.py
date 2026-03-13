@@ -154,7 +154,7 @@ def _matches_query(course_name: str, tokens: list[str]) -> bool:
     return all(token in lower_name for token in tokens)
 
 
-@bp.route("/search", methods=["GET"])
+@bp.route("/search_course", methods=["GET"])
 @jwt_required()
 def search_courses():
     """Search courses by name.
@@ -191,6 +191,7 @@ def search_courses():
             .filter(User_Course.userID == user.id)
         )
     else:
+        # Fallback for any unrecognised role — return empty list as a safe default
         return jsonify([]), 200
 
     courses = query.all()
