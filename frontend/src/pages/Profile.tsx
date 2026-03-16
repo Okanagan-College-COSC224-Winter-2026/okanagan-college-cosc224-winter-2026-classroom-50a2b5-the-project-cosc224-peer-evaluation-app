@@ -28,6 +28,7 @@ export default function Profile() {
         <span>Place Holder</span>
         <h1>Email</h1>
         <span>placeholder@email.com</span>
+        
       </div>
     </div>
   )

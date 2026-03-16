@@ -111,7 +111,7 @@ def delete_user(user_id):
 @bp.route("/password", methods=["PATCH"])
 @jwt_required()
 def change_password():
-    """Change current user's password (only if must_change_password is True)"""
+    """Change current user's password"""
     if not request.is_json:
         return jsonify({"msg": "Missing JSON in request"}), 400
 
