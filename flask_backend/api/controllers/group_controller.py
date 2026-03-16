@@ -31,6 +31,7 @@ def create_group():
 
     email = get_jwt_identity()
     user = User.get_by_email(email)
+
     if not user:
         return jsonify({"msg": "User not found"}), 404
 
@@ -47,6 +48,16 @@ def create_group():
 
     if not assignment.can_modify():
         return jsonify({"msg": "Groups cannot be modified after assignment due date"}), 400
+
+    # check for duplicate name in same assignment
+    existing = CourseGroup.query.filter_by(
+        assignmentID=assignment_id, name=group_name
+    ).first()
+    if existing:
+        return (
+            jsonify({"msg": "Group name already exists for this assignment"}),
+            400,
+        )
 
     new_group = CourseGroup(name=group_name, assignmentID=assignment_id)
     CourseGroup.create_group(new_group)
@@ -80,17 +91,13 @@ def get_groups_for_assignment(assignment_id):
         return jsonify({"msg": "Course not found"}), 404
 
     # Only the teacher of the course or admin can view groups for an assignment
-    if not user.is_admin() and course.teacherID != user.id:
-        # TODO: Allow students to view their own groups
-        return jsonify({"msg": "Unauthorized: You cannot view groups for this assignment"}), 403
-
+    # teacher, admin, or student may view all groups for the assignment
     groups = assignment.groups.all()
     groups_data = CourseGroupSchema(many=True).dump(groups)
-
     return jsonify(groups_data), 200
 
 
-@bp.route("/<int:group_id>", methods=["GET"])
+@bp.route("/details/<int:group_id>", methods=["GET"])
 @jwt_required()
 def get_group_details(group_id):
     """Get details of a specific group including members"""
@@ -111,8 +118,9 @@ def get_group_details(group_id):
     if not course:
         return jsonify({"msg": "Course not found"}), 404
 
-    # Only teacher of course or admin can view group details
-    if not user.is_admin() and course.teacherID != user.id:
+    # teacher, admin, or student may view group details
+    # (students are not restricted to their own groups)
+    if not (user.is_admin() or course.teacherID == user.id or user.is_student()):
         return jsonify({"msg": "Unauthorized: You cannot view this group"}), 403
 
     members = group.members.all()
@@ -208,6 +216,45 @@ def delete_group(group_id):
     return jsonify({"msg": "Group deleted successfully"}), 200
 
 
+@bp.route("/list_group_members/<int:assignment_id>/<int:group_id>", methods=["GET"])
+@jwt_required()
+def list_group_members_legacy(assignment_id, group_id):
+    """Legacy route for getting group members (used by frontend)"""
+    # Validate assignment exists
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    # Validate group exists and belongs to assignment
+    group = CourseGroup.get_by_id(group_id)
+    if not group or group.assignmentID != assignment_id:
+        return jsonify({"msg": "Group not found for this assignment"}), 404
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    course = Course.get_by_id(assignment.courseID)
+    if not course:
+        return jsonify({"msg": "Course not found"}), 404
+
+    # Allow teacher, admin, or students to view group members
+    if not (user.is_admin() or course.teacherID == user.id or user.is_student()):
+        return jsonify({"msg": "Unauthorized: You cannot view group members"}), 403
+
+    members = group.members.all()
+    members_data = []
+    for member in members:
+        member_user = User.get_by_id(member.userID)
+        if member_user:
+            user_data = UserListSchema().dump(member_user)
+            user_data['groupID'] = group_id  # Add groupID for frontend compatibility
+            members_data.append(user_data)
+
+    return jsonify(members_data), 200
+
+
 @bp.route("/<int:group_id>/members", methods=["GET"])
 @jwt_required()
 def get_group_members(group_id):
@@ -241,6 +288,107 @@ def get_group_members(group_id):
             members_data.append(UserListSchema().dump(member_user))
 
     return jsonify(members_data), 200
+
+
+@bp.route("/next_groupid", methods=["GET"])
+@jwt_required()
+def next_group_id():
+    """Return count of groups for a given assignment (used by frontend for temporary IDs)"""
+    assignment_id = request.args.get("assignmentID", type=int)
+    if not assignment_id:
+        return jsonify({"msg": "assignmentID query parameter is required"}), 400
+
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    # count groups belonging to this assignment
+    count = CourseGroup.query.filter_by(assignmentID=assignment_id).count()
+    return jsonify(count), 200
+
+
+# backwards-compatible wrapper for legacy frontend
+@bp.route("/list_all_groups/<int:assignment_id>", methods=["GET"])
+@jwt_required()
+def list_all_groups(assignment_id):
+    """Legacy path pointing to get_groups_for_assignment"""
+    return get_groups_for_assignment(assignment_id)
+
+
+@bp.route("/list_ua_groups/<int:assignment_id>", methods=["GET"])
+@jwt_required()
+def list_unassigned_groups(assignment_id):
+    """Get unassigned students for an assignment (legacy compatibility)"""
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    course = Course.get_by_id(assignment.courseID)
+    if not course:
+        return jsonify({"msg": "Course not found"}), 404
+
+    # Get all enrolled users
+    enrolled_students = [uc.user for uc in course.user_courses]
+
+    # Return as list of users with groupID = -1 (legacy format)
+    result = []
+    for stu in enrolled_students:
+        user_data = UserListSchema().dump(stu)
+        user_data['groupID'] = -1
+        result.append(user_data)
+
+    return jsonify(result), 200
+
+
+@bp.route("/list_stu_groups/<int:assignment_id>/<int:student_id>", methods=["GET"])
+@jwt_required()
+def list_student_group_members(assignment_id, student_id):
+    """Returns list of group members for the given student's group (legacy compatibility)"""
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    course = Course.get_by_id(assignment.courseID)
+    if not course:
+        return jsonify({"msg": "Course not found"}), 404
+
+    # Only allow teachers/admins or the requested student themselves
+    if not (user.is_admin() or course.teacherID == user.id or user.id == student_id):
+        return jsonify({"msg": "Unauthorized"}), 403
+
+    membership = Group_Members.query.filter_by(
+        userID=student_id, assignmentID=assignment_id
+    ).first()
+
+    if not membership:
+        # Not assigned to any group
+        return jsonify([]), 200
+
+    group_id = membership.groupID
+    members = Group_Members.query.filter_by(
+        groupID=group_id, assignmentID=assignment_id
+    ).all()
+
+    result = [
+        {
+            "userID": m.userID,
+            "groupID": m.groupID,
+            "assignmentID": m.assignmentID,
+        }
+        for m in members
+    ]
+
+    return jsonify(result), 200
 
 
 @bp.route("/<int:group_id>/add_member", methods=["POST"])
@@ -353,3 +501,59 @@ def remove_member_from_group(group_id, user_id):
     group_member.delete()
 
     return jsonify({"msg": "Student removed from group successfully"}), 200
+
+
+@bp.route("/save_groups", methods=["POST"])
+@jwt_teacher_required
+def save_groups():
+    """Save group membership for a student (add to group or unassign)"""
+    data = request.get_json()
+    group_id = data.get("groupID")
+    user_id = data.get("userID")
+    assignment_id = data.get("assignmentID")
+
+    if group_id is None or user_id is None or assignment_id is None:
+        return jsonify({"msg": "groupID, userID, and assignmentID are required"}), 400
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    course = Course.get_by_id(assignment.courseID)
+    if not course:
+        return jsonify({"msg": "Course not found"}), 404
+
+    if course.teacherID != user.id:
+        return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
+
+    if not assignment.can_modify():
+        return jsonify({"msg": "Groups cannot be modified after assignment due date"}), 400
+
+    student = User.get_by_id(user_id)
+    if not student or not student.is_student():
+        return jsonify({"msg": "Invalid student"}), 400
+
+    # Remove from any existing group for this assignment
+    existing_membership = Group_Members.query.filter_by(
+        userID=user_id, assignmentID=assignment_id
+    ).first()
+    if existing_membership:
+        existing_membership.delete()
+
+    # If assigning to a group (not unassigning)
+    if group_id != -1:
+        group = CourseGroup.get_by_id(group_id)
+        if not group or group.assignmentID != assignment_id:
+            return jsonify({"msg": "Invalid group"}), 400
+
+        # Add to new group
+        Group_Members.create_group_member(
+            userID=user_id, groupID=group_id, assignmentID=assignment_id
+        )
+
+    return jsonify({"msg": "Group membership saved"}), 200

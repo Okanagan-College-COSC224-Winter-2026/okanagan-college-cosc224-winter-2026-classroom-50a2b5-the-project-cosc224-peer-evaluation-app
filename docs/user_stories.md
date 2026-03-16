@@ -489,6 +489,23 @@
 - [ ] Teacher can remove students from groups  
 - [ ] Teacher can view all groups and their members for an assignment  
 - [ ] Teacher can edit group names and memberships before the assignment due date  
-- [ ] Students can see their group assignments  
 - [ ] Groups are scoped to specific assignments  
 - [ ] System prevents invalid group assignments (e.g., student in multiple groups for same assignment)
+
+---
+
+## US28 – Student Group Viewing — **Backlog**
+
+**As a student, I want to view my group assignments so that I know which group I am in for peer evaluations.**
+
+### Assumptions and Details
+
+- Student is signed in  
+- Groups have been created for assignments by the teacher  
+- Student is enrolled in the class  
+
+### Capabilities and Acceptance Criteria
+
+- [ ] Student can see their group assignments  
+- [ ] Groups are scoped to specific assignments  
+- [ ] Student can view group members for their assignments

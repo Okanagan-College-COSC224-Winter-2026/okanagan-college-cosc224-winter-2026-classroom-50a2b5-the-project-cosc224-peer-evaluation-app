@@ -209,8 +209,10 @@ class CourseGroupSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = CourseGroup
         load_instance = True
-        include_fk = False
+        include_fk = True  # Include assignmentID
         sqla_session = db.session
+
+    assignment = fields.Nested(AssignmentSchema, dump_only=True)
 
 
 class GroupMembersSchema(ma.SQLAlchemyAutoSchema):

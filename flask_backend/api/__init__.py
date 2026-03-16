@@ -17,6 +17,7 @@ from .controllers import (
     assignment_controller,
     rubric_controller,
     group_controller,
+    review_controller,
 )
 from .models.db import db, ma
 
@@ -60,6 +61,7 @@ def create_app(test_config=None):
         ),  # Strict in production for maximum security
         JWT_ACCESS_COOKIE_PATH="/",
         JWT_COOKIE_DOMAIN=os.environ.get("JWT_COOKIE_DOMAIN", None),
+        UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
     )
 
     if test_config is None:
@@ -113,6 +115,7 @@ def create_app(test_config=None):
     app.register_blueprint(assignment_controller.bp)
     app.register_blueprint(rubric_controller.bp)
     app.register_blueprint(group_controller.bp)
+    app.register_blueprint(review_controller.bp)
     app.register_blueprint(fake_api_controller.fake)
     app.register_blueprint(dashboard_bp)
 
