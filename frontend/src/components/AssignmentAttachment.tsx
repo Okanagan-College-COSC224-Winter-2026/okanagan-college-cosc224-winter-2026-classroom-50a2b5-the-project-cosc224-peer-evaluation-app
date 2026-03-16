@@ -41,10 +41,8 @@ export default function AssignmentAttachment({
     (async () => {
       try {
         const assignment = await getAssignment(assignmentId);
-        // The backend should include attachment_filename in the response
-        // after Dev 2 updates the model
-        if ((assignment as any).attachment_filename) {
-          setAttachmentFilename((assignment as any).attachment_filename);
+        if (assignment.attachment_filename) {
+          setAttachmentFilename(assignment.attachment_filename);
         }
       } catch {
         // Assignment fetch failed — attachment info unavailable

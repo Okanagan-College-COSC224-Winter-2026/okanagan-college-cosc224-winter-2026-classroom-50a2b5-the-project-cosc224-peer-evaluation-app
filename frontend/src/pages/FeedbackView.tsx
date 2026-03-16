@@ -11,7 +11,7 @@ export default function FeedbackView() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       try {
         const data = await getStudentFeedback(Number(id))
         setFeedback(data)
@@ -58,8 +58,9 @@ export default function FeedbackView() {
   }
 
   // Calculate overall percentage for the summary
-  const overallMaxPossible = feedback.criteria.length > 0
-    ? feedback.criteria.reduce((sum, c) => sum + c.score_max, 0) / feedback.criteria.length
+  const criteria = feedback.criteria ?? [];
+  const overallMaxPossible = criteria.length > 0
+    ? criteria.reduce((sum, c) => sum + c.score_max, 0) / criteria.length
     : 0
   const overallPercentage = overallMaxPossible > 0
     ? (feedback.overall_avg / overallMaxPossible) * 100
@@ -89,7 +90,7 @@ export default function FeedbackView() {
 
       {/* Criterion feedback cards */}
       <div className="FeedbackView__cards">
-        {feedback.criteria.map((criterion, index) => (
+        {criteria.map((criterion, index) => (
           <FeedbackCard
             key={index}
             question={criterion.question}

@@ -28,6 +28,13 @@ class Review(db.Model):
     files = db.relationship(
         "ReviewFile", back_populates="review", cascade="all, delete-orphan", lazy="dynamic"
     )
+    # Task 3 — teacher conclusion note (one-to-one, uselist=False)
+    conclusion = db.relationship(
+        "Conclusion",
+        back_populates="review",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
     def __init__(self, assignmentID, reviewerID, revieweeID):
         self.assignmentID = assignmentID
@@ -44,8 +51,7 @@ class Review(db.Model):
 
     @classmethod
     def get_by_id_with_relations(cls, review_id):
-        """Get review by ID with all relationships explicitly loaded.
-        Use this when you need to ensure assignment's course is also loaded."""
+        """Get review by ID with all relationships explicitly loaded."""
         return (
             cls.query.options(joinedload(cls.assignment).joinedload("course"))
             .filter_by(id=int(review_id))
@@ -54,15 +60,12 @@ class Review(db.Model):
 
     @classmethod
     def get_all_with_relations(cls):
-        """Get all reviews with relationships loaded.
-        Assignment relationships (reviewer, reviewee, assignment) are
-        automatically loaded via lazy='joined'."""
+        """Get all reviews with relationships loaded."""
         return cls.query.options(joinedload(cls.assignment).joinedload("course")).all()
 
     @classmethod
     def get_reviews_for_student(cls, assignment_id, student_id):
-        """Get all reviews where a student is the reviewee for a given assignment.
-        Used for anonymous feedback aggregation — does not expose reviewer identity."""
+        """Get all reviews where a student is the reviewee for a given assignment."""
         return cls.query.filter_by(
             assignmentID=assignment_id, revieweeID=student_id
         ).all()
@@ -81,8 +84,7 @@ class Review(db.Model):
 
     @classmethod
     def review_exists(cls, reviewer_id, reviewee_id, assignment_id):
-        """Check if a review already exists for this reviewer/reviewee/assignment combination.
-        Used to prevent duplicate submissions."""
+        """Check if a review already exists for this reviewer/reviewee/assignment combination."""
         return (
             cls.query.filter_by(
                 reviewerID=reviewer_id,

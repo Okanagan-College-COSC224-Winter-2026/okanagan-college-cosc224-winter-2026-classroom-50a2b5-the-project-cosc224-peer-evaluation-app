@@ -1,238 +1,364 @@
-import os
+"""
+Assignment controller for the peer evaluation app.
+
+Routes use the /assignment prefix from the blueprint.
+Frontend calls: /assignment/create_assignment, /assignment/detail/<id>,
+/assignment/edit_assignment/<id>, /assignment/delete_assignment/<id>, /assignment/<class_id>
+"""
+
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from werkzeug.utils import secure_filename
 
-from api.models import Assignment, AssignmentSchema
-from api.models.conclusion_file_model import ConclusionFile
-from api.models.schemas import ConclusionFileSchema
-from api.models.user_model import User
+from api.models import Assignment, Course, User
+from api.models.db import db
+from .auth_controller import jwt_teacher_required
 
-# Blueprint must be named "bp" because api/__init__.py registers assignment_controller.bp
-bp = Blueprint("assignment_bp", __name__)
-
-assignment_schema = AssignmentSchema()
-assignments_schema = AssignmentSchema(many=True)
+bp = Blueprint("assignment", __name__, url_prefix="/assignment")
 
 
 # ---------------------------------------------------------------------
-# Existing endpoints
+# GET /assignment/<class_id> — List assignments for a course
 # ---------------------------------------------------------------------
 
-@bp.get("/assignment")
+@bp.route("/<int:class_id>", methods=["GET"])
 @jwt_required()
-def get_assignments():
-    assignments = Assignment.get_all_assignments()
-    return jsonify(assignments_schema.dump(assignments)), 200
+def get_assignments_by_class(class_id):
+    """Return all assignments for a given course."""
+    course = Course.get_by_id(class_id)
+    if not course:
+        return jsonify({"msg": "Class not found"}), 404
+
+    assignments = Assignment.get_by_class_id(class_id)
+    result = []
+    for a in assignments:
+        result.append({
+            "id": a.id,
+            "courseID": a.courseID,
+            "name": a.name,
+            "rubric": a.rubric_text,
+            "due_date": a.due_date.isoformat() if a.due_date else None,
+            "description_html": a.description_html,
+            "attachment_filename": a.attachment_filename,
+            "has_attachment": a.attachment_filename is not None,
+        })
+    return jsonify(result), 200
 
 
-@bp.get("/assignment/<int:assignment_id>")
+# ---------------------------------------------------------------------
+# GET /assignment/detail/<assignment_id> — Get single assignment
+# ---------------------------------------------------------------------
+
+@bp.route("/detail/<int:assignment_id>", methods=["GET"])
 @jwt_required()
-def get_assignment(assignment_id):
-    assignment = Assignment.get_assignment_by_id(assignment_id)
+def get_assignment_detail(assignment_id):
+    """Return a single assignment by ID."""
+    assignment = Assignment.get_by_id(assignment_id)
     if not assignment:
-        return jsonify({"message": "Assignment not found"}), 404
+        return jsonify({"msg": "Assignment not found"}), 404
 
-    return jsonify(assignment_schema.dump(assignment)), 200
+    return jsonify({
+        "id": assignment.id,
+        "courseID": assignment.courseID,
+        "name": assignment.name,
+        "rubric": assignment.rubric_text,
+        "due_date": assignment.due_date.isoformat() if assignment.due_date else None,
+        "description_html": assignment.description_html,
+        "attachment_filename": assignment.attachment_filename,
+        "has_attachment": assignment.attachment_filename is not None,
+    }), 200
 
 
-@bp.post("/assignment")
-@jwt_required()
+# ---------------------------------------------------------------------
+# POST /assignment/create_assignment — Create a new assignment
+# ---------------------------------------------------------------------
+
+@bp.route("/create_assignment", methods=["POST"])
+@jwt_teacher_required
 def create_assignment():
+    """Create a new assignment for a course. Teacher must own the course."""
     data = request.get_json() or {}
 
-    required_fields = ["courseGroupID", "assignment_name", "start_date", "end_date"]
-    for field in required_fields:
-        if field not in data:
-            return jsonify({"message": f"Missing required field: {field}"}), 400
+    course_id = data.get("courseID")
+    name = data.get("name")
 
-    try:
-        start_date = datetime.fromisoformat(data["start_date"])
-        end_date = datetime.fromisoformat(data["end_date"])
-    except ValueError:
-        return jsonify({"message": "Invalid date format. Use ISO format."}), 400
+    if not course_id or not name:
+        return jsonify({"msg": "courseID and name are required"}), 400
 
-    assignment = Assignment.add_assignment(
-        course_group_id=data["courseGroupID"],
-        assignment_name=data["assignment_name"],
-        start_date=start_date,
-        end_date=end_date,
-    )
-
-    return jsonify(assignment_schema.dump(assignment)), 201
-
-
-@bp.put("/assignment/<int:assignment_id>")
-@jwt_required()
-def update_assignment(assignment_id):
-    data = request.get_json() or {}
-
-    assignment_name = data.get("assignment_name")
-    start_date = data.get("start_date")
-    end_date = data.get("end_date")
-
-    if start_date is not None:
-        try:
-            start_date = datetime.fromisoformat(start_date)
-        except ValueError:
-            return jsonify({"message": "Invalid start_date format. Use ISO format."}), 400
-
-    if end_date is not None:
-        try:
-            end_date = datetime.fromisoformat(end_date)
-        except ValueError:
-            return jsonify({"message": "Invalid end_date format. Use ISO format."}), 400
-
-    assignment = Assignment.update_assignment(
-        assignment_id=assignment_id,
-        assignment_name=assignment_name,
-        start_date=start_date,
-        end_date=end_date,
-    )
-
-    if not assignment:
-        return jsonify({"message": "Assignment not found"}), 404
-
-    return jsonify(assignment_schema.dump(assignment)), 200
-
-
-@bp.delete("/assignment/<int:assignment_id>")
-@jwt_required()
-def delete_assignment(assignment_id):
-    success = Assignment.delete_assignment(assignment_id)
-
-    if not success:
-        return jsonify({"message": "Assignment not found"}), 404
-
-    return jsonify({"message": "Assignment deleted"}), 200
-
-
-# ---------------------------------------------------------------------
-# Feature B (Dev 2): Conclusion upload + list endpoints
-# ---------------------------------------------------------------------
-
-ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "docx"}
-MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
-
-
-def _allowed_file(filename: str) -> bool:
-    if not filename or "." not in filename:
-        return False
-
-    ext = filename.rsplit(".", 1)[1].lower()
-    return ext in ALLOWED_EXTENSIONS
-
-
-def _ensure_conclusion_upload_dir() -> str:
-    """
-    Store conclusion files under instance/uploads/conclusions
-    """
-    base_dir = os.path.join(os.getcwd(), "instance", "uploads", "conclusions")
-    os.makedirs(base_dir, exist_ok=True)
-    return base_dir
-
-
-def _file_size_ok(file_storage) -> bool:
-    """
-    Check file size without consuming the stream permanently.
-    """
-    pos = file_storage.stream.tell()
-    file_storage.stream.seek(0, os.SEEK_END)
-    size = file_storage.stream.tell()
-    file_storage.stream.seek(pos)
-
-    return size <= MAX_FILE_SIZE_BYTES
-
-
-def _current_user():
-    identity = get_jwt_identity()
-
-    if not identity:
-        return None
-
-    return User.query.get(identity)
-
-
-@bp.post("/assignment/<int:assignment_id>/conclusion/upload")
-@jwt_required()
-def upload_conclusion_file(assignment_id):
-    """
-    Teacher uploads a conclusion file to an assignment.
-    """
-
-    user = _current_user()
-
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
     if not user:
-        return jsonify({"message": "Unauthorized"}), 401
+        return jsonify({"msg": "User not found"}), 404
 
-    if str(user.role).lower() != "teacher":
-        return jsonify({"message": "Forbidden: teacher only"}), 403
+    course = Course.get_by_id(course_id)
+    if not course:
+        return jsonify({"msg": "Class not found"}), 404
 
-    assignment = Assignment.get_assignment_by_id(assignment_id)
+    if course.teacherID != user.id:
+        return jsonify({"msg": "Forbidden: you are not the teacher of this class"}), 403
 
-    if not assignment:
-        return jsonify({"message": "Assignment not found"}), 404
+    rubric_text = data.get("rubric", "")
+    due_date = None
+    if data.get("due_date"):
+        try:
+            due_date = datetime.fromisoformat(data["due_date"])
+        except ValueError:
+            return jsonify({"msg": "Invalid date format"}), 400
 
-    if "file" not in request.files:
-        return jsonify({"message": "No file provided"}), 400
+    description_html = data.get("description_html", "")
 
-    file = request.files["file"]
-
-    if file.filename == "":
-        return jsonify({"message": "No file selected"}), 400
-
-    if not _allowed_file(file.filename):
-        return jsonify({"message": "Invalid file type"}), 400
-
-    if not _file_size_ok(file):
-        return jsonify({"message": "File too large (max 10MB)"}), 400
-
-    upload_dir = _ensure_conclusion_upload_dir()
-
-    original_name = secure_filename(file.filename)
-    stored_name = f"conclusion_{assignment_id}_{original_name}"
-
-    full_path = os.path.join(upload_dir, stored_name)
-
-    file.save(full_path)
-
-    created = ConclusionFile.create_conclusion_file(
-        assignment_id=assignment_id,
-        teacher_id=user.id,
-        filename=original_name,
-        path=full_path,
+    assignment = Assignment(
+        courseID=course_id,
+        name=name,
+        rubric_text=rubric_text,
+        due_date=due_date,
+        description_html=description_html,
     )
+    Assignment.create(assignment)
 
-    return jsonify(
-        {
-            "message": "File uploaded successfully",
-            "file_id": created.id,
-            "filename": created.filename,
+    return jsonify({
+        "msg": "Assignment created",
+        "assignment": {
+            "id": assignment.id,
+            "courseID": assignment.courseID,
+            "name": assignment.name,
+            "rubric": assignment.rubric_text,
+            "due_date": assignment.due_date.isoformat() if assignment.due_date else None,
+            "description_html": assignment.description_html,
         }
-    ), 201
+    }), 201
 
 
-@bp.get("/assignment/<int:assignment_id>/conclusion/files")
-@jwt_required()
-def list_conclusion_files(assignment_id):
-    """
-    List conclusion files for an assignment (any authenticated user).
-    """
+# ---------------------------------------------------------------------
+# PATCH /assignment/edit_assignment/<assignment_id> — Edit assignment
+# ---------------------------------------------------------------------
 
-    assignment = Assignment.get_assignment_by_id(assignment_id)
-
+@bp.route("/edit_assignment/<int:assignment_id>", methods=["PATCH"])
+@jwt_teacher_required
+def edit_assignment(assignment_id):
+    """Edit an assignment. Teacher must own the course. Cannot edit past due date."""
+    assignment = Assignment.get_by_id(assignment_id)
     if not assignment:
-        return jsonify({"message": "Assignment not found"}), 404
+        return jsonify({"msg": "Assignment not found"}), 404
 
-    files = ConclusionFile.get_files_by_assignment(assignment_id)
+    if not assignment.can_modify():
+        return jsonify({"msg": "Cannot edit: assignment is past due date"}), 403
 
-    schema = ConclusionFileSchema(many=True)
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
 
-    return jsonify(
-        {
-            "assignment_id": assignment_id,
-            "files": schema.dump(files),
+    course = Course.get_by_id(assignment.courseID)
+    if not course or course.teacherID != user.id:
+        return jsonify({"msg": "Forbidden: you are not the teacher of this class"}), 403
+
+    data = request.get_json() or {}
+
+    if "name" in data:
+        assignment.name = data["name"]
+    if "rubric" in data:
+        assignment.rubric_text = data["rubric"]
+    if "description_html" in data:
+        assignment.description_html = data["description_html"]
+    if "due_date" in data:
+        try:
+            assignment.due_date = datetime.fromisoformat(data["due_date"]) if data["due_date"] else None
+        except ValueError:
+            return jsonify({"msg": "Invalid date format"}), 400
+
+    assignment.update()
+
+    return jsonify({
+        "msg": "Assignment updated",
+        "assignment": {
+            "id": assignment.id,
+            "courseID": assignment.courseID,
+            "name": assignment.name,
+            "rubric": assignment.rubric_text,
+            "due_date": assignment.due_date.isoformat() if assignment.due_date else None,
+            "description_html": assignment.description_html,
         }
-    ), 200
+    }), 200
+
+
+# ---------------------------------------------------------------------
+# DELETE /assignment/delete_assignment/<assignment_id>
+# ---------------------------------------------------------------------
+
+@bp.route("/delete_assignment/<int:assignment_id>", methods=["DELETE"])
+@jwt_teacher_required
+def delete_assignment(assignment_id):
+    """Delete an assignment. Teacher must own the course. Cannot delete past due date."""
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    if not assignment.can_modify():
+        return jsonify({"msg": "Cannot delete: assignment is past due date"}), 403
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    course = Course.get_by_id(assignment.courseID)
+    if not course or course.teacherID != user.id:
+        return jsonify({"msg": "Forbidden: you are not the teacher of this class"}), 403
+
+    assignment.delete()
+    return jsonify({"msg": "Assignment deleted"}), 200
+
+
+# ---------------------------------------------------------------------
+# Rubric endpoints (used by frontend)
+# ---------------------------------------------------------------------
+
+@bp.route("/<int:assignment_id>/rubric", methods=["POST"])
+@jwt_teacher_required
+def create_rubric(assignment_id):
+    """Create a rubric for an assignment."""
+    from api.models import Rubric
+    data = request.get_json() or {}
+    can_comment = data.get("canComment", True)
+
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    # Remove existing rubric if any
+    existing = Rubric.query.filter_by(assignmentID=assignment_id).first()
+    if existing:
+        db.session.delete(existing)
+        db.session.commit()
+
+    rubric = Rubric(assignmentID=assignment_id, canComment=can_comment)
+    db.session.add(rubric)
+    db.session.commit()
+
+    return jsonify({"id": rubric.id}), 201
+
+
+@bp.route("/rubric/<int:rubric_id>/criteria", methods=["POST"])
+@jwt_teacher_required
+def create_criteria(rubric_id):
+    """Add a criterion to a rubric."""
+    from api.models import CriteriaDescription
+    data = request.get_json() or {}
+
+    question = data.get("question", "")
+    score_max = data.get("scoreMax", 5)
+    has_score = data.get("hasScore", True)
+
+    criteria = CriteriaDescription(
+        rubricID=rubric_id,
+        question=question,
+        scoreMax=score_max,
+        hasScore=has_score,
+    )
+    db.session.add(criteria)
+    db.session.commit()
+
+    return jsonify({"id": criteria.id}), 201
+
+
+@bp.route("/criteria", methods=["GET"])
+@jwt_required()
+def get_criteria():
+    """Get criteria for a rubric by rubricID query param."""
+    from api.models import CriteriaDescription
+    rubric_id = request.args.get("rubricID")
+    if not rubric_id:
+        return jsonify({"msg": "rubricID is required"}), 400
+
+    criteria = CriteriaDescription.query.filter_by(rubricID=int(rubric_id)).all()
+    result = []
+    for c in criteria:
+        result.append({
+            "id": c.id,
+            "rubricID": c.rubricID,
+            "question": c.question,
+            "scoreMax": c.scoreMax,
+            "hasScore": c.hasScore,
+        })
+    return jsonify(result), 200
+
+
+@bp.route("/rubric/by-id", methods=["GET"])
+@jwt_required()
+def get_rubric_by_id():
+    """Get a rubric by rubricID query param."""
+    from api.models import Rubric
+    rubric_id = request.args.get("rubricID")
+    if not rubric_id:
+        return jsonify({"msg": "rubricID is required"}), 400
+
+    rubric = Rubric.query.get(int(rubric_id))
+    if not rubric:
+        return jsonify({"msg": "Rubric not found"}), 404
+
+    return jsonify({
+        "id": rubric.id,
+        "assignmentID": rubric.assignmentID,
+        "canComment": rubric.canComment,
+    }), 200
+
+
+@bp.route("/<int:assignment_id>/rubric", methods=["GET"])
+@jwt_required()
+def get_rubric_by_assignment(assignment_id):
+    """Get the rubric and criteria for an assignment."""
+    from api.models import Rubric, CriteriaDescription
+
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    rubric = Rubric.query.filter_by(assignmentID=assignment_id).first()
+    if not rubric:
+        return jsonify({"msg": "Rubric not found"}), 404
+
+    criteria = CriteriaDescription.query.filter_by(rubricID=rubric.id).all()
+    return jsonify({
+        "rubric_id": rubric.id,
+        "assignment_id": assignment_id,
+        "criteria": [
+            {
+                "id": c.id,
+                "question": c.question,
+                "score_max": c.scoreMax,
+                "has_score": c.hasScore,
+                "can_comment": rubric.canComment,
+            }
+            for c in criteria
+        ],
+    }), 200
+
+
+@bp.route("/review", methods=["GET"])
+@jwt_required()
+def get_review():
+    """Get review grades by query params."""
+    from api.models import Review, Criterion
+
+    assignment_id = request.args.get("assignmentID")
+    reviewer_id = request.args.get("reviewerID")
+    reviewee_id = request.args.get("revieweeID")
+
+    if not all([assignment_id, reviewer_id, reviewee_id]):
+        return jsonify({"msg": "Missing required parameters"}), 400
+
+    review = Review.query.filter_by(
+        assignmentID=int(assignment_id),
+        reviewerID=int(reviewer_id),
+        revieweeID=int(reviewee_id),
+    ).first()
+
+    if not review:
+        return jsonify({"msg": "Review not found"}), 404
+
+    criteria = Criterion.query.filter_by(reviewID=review.id).all()
+    grades = [c.grade for c in criteria]
+
+    return jsonify({"grades": grades}), 200

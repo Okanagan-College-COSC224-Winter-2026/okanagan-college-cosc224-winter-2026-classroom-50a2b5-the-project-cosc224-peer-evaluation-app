@@ -1,4 +1,6 @@
 from .assignment_model import Assignment
+from .conclusion_model import Conclusion
+from .conclusion_file_model import ConclusionFile
 from .course_group_model import CourseGroup
 from .course_model import Course
 from .criteria_description_model import CriteriaDescription
@@ -6,7 +8,6 @@ from .criterion_model import Criterion
 from .db import db, ma
 from .group_members_model import Group_Members
 from .review_file_model import ReviewFile
-from .conclusion_file_model import ConclusionFile
 from .review_model import Review
 from .rubric_model import Rubric
 from .submission_model import Submission
@@ -41,6 +42,7 @@ __all__ = [
     "CriteriaDescription",
     "Review",
     "ReviewFile",
+    "Conclusion",
     "ConclusionFile",
     "Rubric",
     "Submission",

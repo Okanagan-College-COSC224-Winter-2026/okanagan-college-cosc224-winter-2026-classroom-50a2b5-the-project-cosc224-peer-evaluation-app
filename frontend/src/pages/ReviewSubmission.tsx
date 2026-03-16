@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import RubricForm from '../components/RubricForm'
 import StatusMessage from '../components/StatusMessage'
-import { getRubricByAssignment, submitReview, listCourseMembers } from '../util/api'
+import { getRubricByAssignment, submitReview, listCourseMembers, getAssignment } from '../util/api'
 import './ReviewSubmission.css'
 
 export default function ReviewSubmission() {
@@ -25,11 +25,14 @@ export default function ReviewSubmission() {
       }
       // Try to get reviewee's name
       try {
-        const members = await listCourseMembers(String(id));
-        const reviewee = members.find((m: User) => m.id === Number(revieweeId));
-        if (reviewee) setRevieweeName(reviewee.name);
+        const assignmentData = await getAssignment(Number(id));
+        if (assignmentData?.courseID) {
+          const members = await listCourseMembers(String(assignmentData.courseID));
+          const reviewee = members.find((m: User) => m.id === Number(revieweeId));
+          if (reviewee) setRevieweeName(reviewee.name);
+        }
       } catch {
-        // Name lookup failed — fallback handled in render
+        // Name lookup failed
       }
       setLoading(false);
     })();

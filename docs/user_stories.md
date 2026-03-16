@@ -235,7 +235,7 @@
 
 ---
 
-## US13 – Teacher Change Password — **Backlog**
+## US13 – Teacher Change Password — **In-progress**
 
 **As a teacher, I want to change my password so that I can update my login information.**
 
@@ -248,7 +248,11 @@
 
 - [ ] Given the teacher has a current password, when they submit a password change, the system updates it successfully  
 - [ ] Teacher receives confirmation that the password change occurred  
-- [ ] Updated credentials allow the teacher to log in immediately  
+- [ ] Updated credentials allow the teacher to log in immediately
+- [ ] Password validation enforces security criteria (minimum length, complexity)
+- [ ] Incorrect current password prevents update
+- [ ] User receives appropriate success or error messages
+- [ ] Password field includes show/hide toggle in the change password form
 
 ---
 
@@ -456,7 +460,7 @@
 
 ---
 
-## US26 – Admin User Management — **Backlog**
+## US26 – Admin User Management — **In Progress**
 
 **As an administrator, I want to manage user accounts from the admin dashboard so that I can keep the user base accurate and up to date.**
 

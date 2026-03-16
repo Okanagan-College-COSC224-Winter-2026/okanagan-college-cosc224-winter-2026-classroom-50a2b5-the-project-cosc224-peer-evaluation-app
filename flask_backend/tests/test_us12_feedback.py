@@ -142,8 +142,8 @@ def test_feedback_no_reviews(test_client, db, setup_teacher, setup_student):
     assert resp.status_code == 200
     data = resp.get_json()
     assert data["assignment_id"] == assignment.id
-    assert data["total_reviews_received"] == 0
-    assert data["criteria"] == []
+    assert data["total_reviews"] == 0
+    assert data["criteria_feedback"] == []
 
 
 def test_feedback_with_reviews(test_client, db, setup_teacher, setup_student, setup_reviewer):
@@ -169,12 +169,12 @@ def test_feedback_with_reviews(test_client, db, setup_teacher, setup_student, se
 
     assert resp.status_code == 200
     data = resp.get_json()
-    assert data["total_reviews_received"] == 2
-    assert len(data["criteria"]) == 1
+    assert data["total_reviews"] == 2
+    assert len(data["criteria_feedback"]) == 1
 
-    crit = data["criteria"][0]
-    assert crit["average_score"] == 3.0  # (4 + 2) / 2
-    assert crit["score_max"] == 5
+    crit = data["criteria_feedback"][0]
+    assert crit["avg_score"] == 3.0  # (4 + 2) / 2
+    assert crit["max_score"] == 5
     assert len(crit["comments"]) == 2
 
 
@@ -264,10 +264,10 @@ def test_feedback_score_aggregation(test_client, db, setup_teacher, setup_studen
 
     assert resp.status_code == 200
     data = resp.get_json()
-    assert data["total_reviews_received"] == 3
-    assert len(data["criteria"]) == 1
+    assert data["total_reviews"] == 3
+    assert len(data["criteria_feedback"]) == 1
 
-    crit = data["criteria"][0]
-    assert crit["average_score"] == 7.0  # (8 + 6 + 7) / 3
-    assert crit["score_max"] == 10
+    crit = data["criteria_feedback"][0]
+    assert crit["avg_score"] == 7.0  # (8 + 6 + 7) / 3
+    assert crit["max_score"] == 10
     assert len(crit["comments"]) == 3

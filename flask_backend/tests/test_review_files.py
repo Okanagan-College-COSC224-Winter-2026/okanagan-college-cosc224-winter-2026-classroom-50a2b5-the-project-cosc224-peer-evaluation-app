@@ -538,3 +538,43 @@ def test_list_files_for_nonexistent_review(test_client, db):
 
     resp = test_client.get("/review/99999/files")
     assert resp.status_code == 404
+
+
+def test_download_conclusion_file(test_client, db):
+    """
+    GIVEN a teacher uploaded a conclusion file
+    WHEN GET /assignment/<id>/conclusion/file/<file_id> is called
+    THEN the server responds 200 with the file content
+    """
+    teacher, reviewer, reviewee, assignment, review_id, _ = _setup_review_scenario(test_client)
+
+    _login(test_client, "teacher@example.com")
+    upload_resp = _upload_conclusion_file(test_client, assignment.id, _make_file("grades.pdf"))
+    assert upload_resp.status_code == 201
+    file_id = upload_resp.json["file_id"]
+
+    resp = test_client.get(f"/assignment/{assignment.id}/conclusion/file/{file_id}")
+    assert resp.status_code == 200
+
+
+def test_download_nonexistent_conclusion_file(test_client, db):
+    """
+    GIVEN an authenticated user
+    WHEN GET /assignment/<id>/conclusion/file/<nonexistent_id> is called
+    THEN the server responds 404
+    """
+    teacher, reviewer, reviewee, assignment, review_id, _ = _setup_review_scenario(test_client)
+    _login(test_client, "teacher@example.com")
+
+    resp = test_client.get(f"/assignment/{assignment.id}/conclusion/file/99999")
+    assert resp.status_code == 404
+
+
+def test_unauthenticated_conclusion_download_rejected(test_client, db):
+    """
+    GIVEN no user is logged in
+    WHEN GET /assignment/<id>/conclusion/file/<file_id> is called
+    THEN the server responds 401
+    """
+    resp = test_client.get("/assignment/1/conclusion/file/1")
+    assert resp.status_code == 401

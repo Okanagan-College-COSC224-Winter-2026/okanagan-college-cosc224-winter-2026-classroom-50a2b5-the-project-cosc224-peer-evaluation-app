@@ -103,7 +103,7 @@ export default function ConclusionSection({
   const handleDownload = async (fileId: number, filename: string) => {
     setDownloadingId(fileId);
     try {
-      await downloadConclusionFile(fileId, filename);
+      await downloadConclusionFile(assignmentId, fileId);
     } catch (error) {
       setStatusMessage(
         error instanceof Error ? error.message : "Download failed."

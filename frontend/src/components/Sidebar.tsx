@@ -1,19 +1,30 @@
-import { logout } from '../util/login'
+import { useState, useEffect } from 'react'
+import { logout, isAdmin, isTeacher } from '../util/login'
 import './Sidebar.css'
+import AvatarInitials from './AvatarInitials'
 
-function getLoggedInUserId(): number {
+function getLoggedInUser() {
   try {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    return user.id || 0;
+    return JSON.parse(localStorage.getItem('user') || '{}');
   } catch {
-    return 0;
+    return {};
   }
 }
 
 export default function Sidebar() {
-  // Check which page we are on
   const location = window.location.pathname
-  const userId = getLoggedInUserId();
+  const [user, setUser] = useState(getLoggedInUser);
+
+  // Re-read user from localStorage whenever it's updated (e.g. after name change)
+  useEffect(() => {
+    const handleStorage = () => setUser(getLoggedInUser());
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  const nameParts = (user.name || '').trim().split(/\s+/);
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
 
   return (
     <div className="Sidebar">
@@ -22,21 +33,43 @@ export default function Sidebar() {
       </div>
 
       <div className="SidebarTop">
-        <SidebarRow
-          onClick={() => logout()}
-          href='#'
-          selected={false}
-        >
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}>
+          <AvatarInitials
+            firstName={firstName}
+            lastName={lastName}
+            userId={user.id || 0}
+            size={36}
+          />
+        </div>
+
+        <SidebarRow onClick={() => logout()} href='#' selected={false}>
           Logout
         </SidebarRow>
 
         <SidebarRow selected={location === '/home'} href="/home">
           Home
         </SidebarRow>
-        
-        <SidebarRow selected={location.includes('/profile')} href={`/profile/${userId}`}>
+
+        <SidebarRow selected={location.includes('/profile')} href={`/profile/${user.id || 0}`}>
           My Info
         </SidebarRow>
+
+        {(isTeacher() || isAdmin()) && (
+          <SidebarRow selected={location === '/classes/create'} href="/classes/create">
+            Create Class
+          </SidebarRow>
+        )}
+
+        {isAdmin() && (
+          <>
+            <SidebarRow selected={location === '/admin/users'} href="/admin/users">
+              User Management
+            </SidebarRow>
+            <SidebarRow selected={location === '/admin/create-teacher'} href="/admin/create-teacher">
+              Create Teacher
+            </SidebarRow>
+          </>
+        )}
       </div>
     </div>
   )
