@@ -9,7 +9,7 @@ interface RubricCreatorProps {
 }
 
 export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProps) {
-    const [newCriteria, setNewCriteria] = useState<Criterion[]>([{ rubricID: 0, question: '', scoreMax: 0, hasScore: true }]);
+    const [newCriteria, setNewCriteria] = useState<Omit<Criterion, 'id'>[]>([{ rubricID: 0, question: '', scoreMax: 0, hasScore: true }]);
     const [canComment, setCanComment] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
     const [statusType, setStatusType] = useState<'error' | 'success'>('error');
@@ -55,7 +55,7 @@ export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProp
         setNewCriteria(updatedCriteria);
     };
 
-    const handleAddNewSection = () => setNewCriteria(prev => [...prev, { rubricID: 0, question: '', scoreMax: 0, hasScore: true }]);
+    const handleAddNewSection = () => setNewCriteria(prev => [...prev, { rubricID: 0, question: '', scoreMax: 0, hasScore: true } as Omit<Criterion, 'id'>]);
 
     const handleRemoveSection = (index: number) => setNewCriteria(prev => prev.filter((_, i) => i !== index));
 

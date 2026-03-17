@@ -143,6 +143,22 @@ class CriterionSchema(ma.SQLAlchemyAutoSchema):
         include_fk = True
         sqla_session = db.session
 
+    # Pull the human-readable criterion name from the related CriteriaDescription
+    criterion_name = fields.Method("get_criterion_name")
+    score_max = fields.Method("get_score_max")
+
+    def get_criterion_name(self, obj):
+        """Return the question text from the linked CriteriaDescription row."""
+        if obj.criterion_row:
+            return obj.criterion_row.question
+        return None
+
+    def get_score_max(self, obj):
+        """Return the maximum possible score from the linked CriteriaDescription row."""
+        if obj.criterion_row:
+            return obj.criterion_row.scoreMax
+        return None
+
 
 # ============================================================
 # REVIEW SCHEMAS
@@ -179,7 +195,7 @@ class ReviewListSchema(ma.SQLAlchemyAutoSchema):
 
     class Meta:
         model = Review
-        fields = ("id", "assignmentID", "reviewer", "reviewee")
+        fields = ("id", "assignmentID", "comments", "reviewer", "reviewee")
         dump_only = ("id",)
         include_fk = True  # Allows assignmentID to be serialized
 

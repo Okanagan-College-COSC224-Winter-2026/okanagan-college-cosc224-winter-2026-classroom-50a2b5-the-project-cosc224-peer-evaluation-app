@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import ClassCard from "../components/ClassCard";
 import { listClasses, listAssignments } from "../util/api";
-import { isTeacher, isAdmin, isStudent } from "../util/login";
+import { isTeacher, isAdmin } from "../util/login";
 
 export default function Home() {
   const [courses, setCourses] = useState<CourseWithAssignments[]>([]);

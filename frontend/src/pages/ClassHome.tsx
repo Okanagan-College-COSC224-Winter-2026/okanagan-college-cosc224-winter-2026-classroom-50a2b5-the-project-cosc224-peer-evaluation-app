@@ -91,9 +91,18 @@ export default function ClassHome() {
 
       <TabNavigation
         tabs={[
-          { label: "Home", path: `/classes/${id}/home` },
-          { label: "Members", path: `/classes/${id}/members` },
-          { label: "Groups", path: `/classes/${id}/groups` },
+          {
+            label: "Home",
+            path: `/classes/${id}/home`,
+          },
+          {
+            label: "Members",
+            path: `/classes/${id}/members`,
+          },
+          {
+            label: "Groups",
+            path: `/classes/${id}/groups`,
+          },
         ]}
       />
 

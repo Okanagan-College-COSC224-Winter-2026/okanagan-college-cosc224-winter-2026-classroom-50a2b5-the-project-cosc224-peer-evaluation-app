@@ -173,6 +173,88 @@ Rubrics belong to **assignments** and contain multiple **criteria descriptions**
 
 ---
 
+## Review Endpoints
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| `POST` | `/review/submit` | JWT (any) | Submit a review with criteria (atomic) |
+| `GET` | `/review/lookup?assignmentID=X&revieweeID=Y` | JWT (any) | Look up an existing review (reviewer from JWT) |
+| `GET` | `/review/<id>` | JWT (any) | Get a single review with its criteria |
+| `GET` | `/review/assignment/<id>` | JWT (any) | List reviews for an assignment |
+| `GET` | `/review/course/<id>/summary` | JWT (any) | Grade summary for all assignments in a course |
+
+**Authorization notes:**
+- `submit`: Reviewer is derived from the JWT token (prevents impersonation). Cannot review yourself. Duplicate reviews return 409.
+- `lookup`: Reviewer is derived from JWT. Returns 404 if no review exists.
+- `GET /<id>`: Students can only view reviews they authored or received. Teachers can view any.
+- `assignment/<id>`: Teachers see all reviews. Students only see reviews they received.
+- **Anonymous reviews (US3):** When `assignment.is_anonymous` is `true`, the reviewer identity is replaced with `{ id: null, name: "Anonymous", email: null }` for the reviewee. Teachers always see the real reviewer.
+- `course/<id>/summary`: Students see averages based on reviews they received. Teachers see aggregate across all reviews. Teachers can pass `?studentID=X` to get a specific student's summary.
+
+### Review Request Shape
+
+**POST /review/submit:**
+```json
+{
+  "assignmentID": 1,
+  "revieweeID": 3,
+  "comments": "Great teamwork overall!",
+  "criteria": [
+    { "criterionRowID": 5, "grade": 4, "comments": "" },
+    { "criterionRowID": 6, "grade": 8, "comments": "" }
+  ]
+}
+```
+
+> **Note:** The `comments` field at the top level is the overall review comment (stored on the Review model). Per-criterion `comments` fields exist in the schema but are not currently used by the frontend.
+```
+
+### Review Response Shapes
+
+**Review object (from GET endpoints):**
+```json
+{
+  "id": 1,
+  "assignmentID": 1,
+  "comments": "Great teamwork overall!",
+  "reviewer": { "id": 2, "name": "Alice", "email": "alice@test.com" },
+  "reviewee": { "id": 3, "name": "Bob", "email": "bob@test.com" },
+  "criteria": [
+    { "id": 1, "reviewID": 1, "criterionRowID": 5, "criterion_name": "Communication", "score_max": 5, "grade": 4, "comments": "" }
+  ]
+}
+```
+
+**Submit response (POST /review/submit):**
+```json
+{
+  "msg": "Review submitted",
+  "id": 1
+}
+```
+
+**Course grade summary (GET /review/course/<id>/summary):**
+```json
+{
+  "assignments": [
+    {
+      "id": 1,
+      "name": "Peer Review HW",
+      "reviewCount": 3,
+      "averageScore": 12.5,
+      "maxScore": 15
+    }
+  ],
+  "courseAverage": 12.5,
+  "courseMax": 15.0
+}
+```
+
+**Query parameters:**
+- `studentID` (optional, teacher/admin only): Scope the summary to a specific student's received reviews
+
+---
+
 ## Submission Endpoints
 
 File upload/download for student assignment submissions.
@@ -205,7 +287,7 @@ These endpoints are planned based on the database schema but not yet implemented
 
 | Feature | Endpoints | Notes |
 |---------|-----------|-------|
-| Reviews | `/review/*` | Peer review submissions |
+| *(none currently)* | — | — |
 
 ---
 

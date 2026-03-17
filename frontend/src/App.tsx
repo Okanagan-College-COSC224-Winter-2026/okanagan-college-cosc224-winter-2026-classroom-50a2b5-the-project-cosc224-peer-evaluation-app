@@ -9,6 +9,7 @@ import ClassHome from "./pages/ClassHome";
 import ClassMembers from "./pages/ClassMembers";
 import Assignment from "./pages/Assignment";
 import Group from "./pages/Group";
+import ClassEvaluations from "./pages/ClassEvaluations";
 import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
@@ -54,15 +55,65 @@ function AppContent() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/change-password" element={<ChangePassword />} />
 
-          <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-          <Route path="/admin/create-teacher" element={<ProtectedRoute><CreateTeacher /></ProtectedRoute>} />
-          <Route path="/classes/create" element={<ProtectedRoute><CreateClass /></ProtectedRoute>} />
-          <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/classes/:id/home" element={<ProtectedRoute><ClassHome /></ProtectedRoute>} />
-          <Route path="/classes/:id/members" element={<ProtectedRoute><ClassMembers /></ProtectedRoute>} />
-          <Route path="/classes/:id/groups" element={<ProtectedRoute><Group /></ProtectedRoute>} />
-          <Route path="/assignments/:id" element={<ProtectedRoute><Assignment /></ProtectedRoute>} />
-          <Route path="/assignments/:id/manage" element={<ProtectedRoute><Assignment /></ProtectedRoute>} />
+          <Route path="/home" element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/create-teacher" element={
+            <ProtectedRoute>
+              <CreateTeacher />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/classes/create" element={
+            <ProtectedRoute>
+              <CreateClass />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/profile/:id" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/classes/:id/home" element={
+            <ProtectedRoute>
+              <ClassHome />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/classes/:id/members" element={
+            <ProtectedRoute>
+              <ClassMembers />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/classes/:id/groups" element={
+            <ProtectedRoute>
+              <Group />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/classes/:id/evaluations" element={
+            <ProtectedRoute>
+              <ClassEvaluations />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/assignments/:id" element={
+            <ProtectedRoute>
+              <Assignment />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/assignments/:id/manage" element={
+            <ProtectedRoute>
+              <Assignment />
+            </ProtectedRoute>
+          } />
         </Routes>
       </div>
     </div>

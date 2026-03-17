@@ -7,6 +7,7 @@ interface props {
     canComment: boolean;
     hasScores: Array<boolean>;
     onCriterionSelect: (row: number, column: number) => void;
+    onCommentChange?: (comment: string) => void;
     grades: number[];
 }
 
@@ -48,11 +49,11 @@ export default function Criteria(props: props) {
                     Total: <span className="text-btn-primary font-bold">{currentTotal}</span> / {maxTotal}
                 </div>
             )}
-
             {props.canComment && (
                 <textarea
                     className="mt-4 w-full max-w-2xl min-h-[80px] px-3 py-2 border border-border rounded-lg bg-bg-secondary text-text-primary text-sm font-[inherit] resize-y focus:outline-none focus:ring-2 focus:ring-btn-primary focus:border-btn-primary transition-colors"
                     placeholder="Additional comments..."
+                    onChange={(e) => props.onCommentChange?.(e.target.value)}
                 />
             )}
         </div>

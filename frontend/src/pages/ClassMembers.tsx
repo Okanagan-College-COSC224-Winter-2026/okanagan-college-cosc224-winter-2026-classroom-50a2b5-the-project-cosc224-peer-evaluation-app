@@ -34,8 +34,14 @@ export default function ClassMembers() {
 
       <TabNavigation
         tabs={[
-          { label: "Home", path: `/classes/${id}/home` },
-          { label: "Members", path: `/classes/${id}/members` },
+          {
+            label: "Home",
+            path: `/classes/${id}/home`,
+          },
+          {
+            label: "Members",
+            path: `/classes/${id}/members`,
+          },
         ]}
       />
 

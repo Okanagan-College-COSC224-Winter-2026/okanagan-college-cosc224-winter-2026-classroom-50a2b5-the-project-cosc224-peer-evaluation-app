@@ -83,7 +83,7 @@ The system has three role types with hierarchical permissions:
 - Anonymous to protect reviewer identity
 - Scoped to specific assignments
 - Structured by rubric criteria
-- Include both scores and qualitative comments
+- Include scores per criterion and an overall qualitative comment
 
 ---
 
@@ -178,24 +178,28 @@ Teacher assigns reviews:
     Carol reviews → Alice & Bob
 
 Each review contains:
-  ├── Criterion 1 (Code Quality):     Score: 4/5, Comments: "..."
-  ├── Criterion 2 (Communication):    Score: 5/5, Comments: "..."
-  └── Criterion 3 (Effort):           Score: 3/5, Comments: "..."
+  ├── Overall Comment: "Great team player, very collaborative"
+  ├── Criterion 1 (Code Quality):     Score: 4/5
+  ├── Criterion 2 (Communication):    Score: 5/5
+  └── Criterion 3 (Effort):           Score: 3/5
 ```
 
 ### Analysis Phase
 ```
-System aggregates for Alice:
+System aggregates for Alice (via GET /review/course/<courseId>/summary):
   Reviews received from: Bob, Carol
-  Average scores:
-    Code Quality:    (4 + 5) / 2 = 4.5
-    Communication:   (5 + 4) / 2 = 4.5
-    Effort:          (3 + 5) / 2 = 4.0
 
-Teacher views:
-  ├── Individual scores
-  ├── Group averages
-  └── Outliers/concerns flagged
+  Per-review totals:
+    Bob's review:   4 + 5 + 3 = 12
+    Carol's review: 5 + 4 + 5 = 14
+  Assignment average: (12 + 14) / 2 = 13.0 / 15
+
+  Course average: mean of all assignment averages
+
+Teacher views (same endpoint, sees all students):
+  ├── Individual student scores (?studentID=X)
+  ├── Aggregate scores across all reviews
+  └── Per-assignment breakdowns
 ```
 
 ---
