@@ -14,6 +14,7 @@ import Group from "./pages/Group";
 import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
+import ReviewHistoryPage from "./pages/ReviewHistoryPage";
 
 function AppContent() {
   const location = useLocation();
@@ -75,6 +76,12 @@ function AppContent() {
               <Group />
             </ProtectedRoute>
           } />
+
+          <Route path="/student/review-history" element={
+            <ProtectedRoute>
+              <ReviewHistoryPage />
+            </ProtectedRoute>
+}           />
         </Routes>
       </div>
     </div>
