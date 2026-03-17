@@ -1,4 +1,4 @@
-import Criterion from '../components/Criterion';
+import Criterion from './Criterion';
 import { useState } from 'react';
 
 interface props {

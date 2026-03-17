@@ -1,28 +1,23 @@
-import { useCallback, useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import { useLocation, useParams } from "react-router-dom";
-import RubricCreator from "../components/RubricCreator";
-import RubricDisplay from "../components/RubricDisplay";
-import TabNavigation from "../components/TabNavigation";
-import Modal from "../components/Modal";
-import { isTeacher, getUserId } from "../util/login";
-
+import RubricCreator from "../reviews/RubricCreator";
+import RubricDisplay from "../reviews/RubricDisplay";
+import TabNavigation from "../../ui/TabNavigation";
+import Modal from "../../ui/Modal";
+import { isTeacher, getUserId } from "../../util/login";
 import {
-  getAssignment,
-  listStuGroup,
-  submitReview,
-  getReview,
-  editAssignment,
-  deleteAssignment,
-  getRubricForAssignment,
-  deleteRubric,
-  getMySubmission,
-  uploadMySubmission,
-  deleteMySubmission,
-  listAssignmentResources,
-  uploadAssignmentResource,
-  deleteAssignmentResource,
-} from "../util/api";
-import StatusMessage from "../components/StatusMessage";
+  useAssignment,
+  useEditAssignment,
+  useDeleteAssignment,
+  useAssignmentResources,
+  useUploadAssignmentResource,
+  useDeleteAssignmentResource,
+} from "./useAssignments";
+import { useRubricForAssignment, useDeleteRubric } from "../reviews/useRubric";
+import { useMySubmission, useUploadSubmission, useDeleteSubmission } from "../reviews/useSubmission";
+import { useMyGroup } from "../groups/useGroups";
+import { useSubmitReview, useReview } from "../reviews/useReviews";
+import StatusMessage from "../../ui/StatusMessage";
 
 // Group member type returned from listStuGroup
 interface GroupMember {
@@ -34,14 +29,6 @@ interface GroupMember {
 interface SelectedCriterion {
   row: number;
   column: number;
-}
-
-interface SubmissionAttachment {
-  id: number;
-  filename: string;
-  download_url: string;
-  studentID: number;
-  assignmentID: number;
 }
 
 interface AssignmentResourceItem {
@@ -65,12 +52,9 @@ const labelClass = "flex flex-col gap-1.5 text-sm font-medium text-text-primary"
 export default function Assignment() {
   const { id } = useParams();
   const location = useLocation();
-  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [revieweeID, setRevieweeID] = useState<number>(0);
   const [selectedCriteria, setSelectedCriteria] = useState<SelectedCriterion[]>([]);
   const [reviewComment, _setReviewComment] = useState("");
-  const [review, setReview] = useState<number[]>([]);
-  const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editStartDate, setEditStartDate] = useState("");
@@ -78,53 +62,46 @@ export default function Assignment() {
   const [editIsAnonymous, setEditIsAnonymous] = useState(true);
   const [statusMessage, setStatusMessage] = useState("");
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
-  const [rubricId, setRubricId] = useState<number | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedMemberName, setSelectedMemberName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [mySubmission, setMySubmission] = useState<SubmissionAttachment | null>(null);
-  const [resources, setResources] = useState<AssignmentResourceItem[]>([]);
   const [resourceUpload, setResourceUpload] = useState<File | null>(null);
   const [_reviewedMembers, setReviewedMembers] = useState<Set<number>>(new Set());
 
   const teacherMode = isTeacher();
   const isManageTab = teacherMode && location.pathname.endsWith('/manage');
 
-  const loadRubric = useCallback(async () => {
-    try {
-      const rubric = await getRubricForAssignment(Number(id));
-      setRubricId(rubric ? rubric.id : null);
-    } catch (error) {
-      console.error('Error fetching rubric:', error);
-      setRubricId(null);
-    }
-  }, [id]);
+  // --- React Query hooks ---
+  const { data: assignment } = useAssignment(Number(id));
+  const { data: rubricData } = useRubricForAssignment(Number(id));
+  const { data: mySubmission } = useMySubmission(Number(id), !teacherMode);
+  const { data: resources } = useAssignmentResources(Number(id));
+  const { data: myGroupData } = useMyGroup(assignment?.courseID ?? 0);
+  const { data: reviewData } = useReview(Number(id), revieweeID);
 
-  const loadMySubmission = useCallback(async () => {
-    if (teacherMode || !id) {
-      setMySubmission(null);
-      return;
-    }
-    try {
-      const submission = await getMySubmission(Number(id));
-      setMySubmission(submission || null);
-    } catch {
-      setMySubmission(null);
-    }
-  }, [teacherMode, id]);
+  const editAssignmentMutation = useEditAssignment(Number(id));
+  const deleteAssignmentMutation = useDeleteAssignment();
+  const uploadResourceMutation = useUploadAssignmentResource(Number(id));
+  const deleteResourceMutation = useDeleteAssignmentResource(Number(id));
+  const uploadSubmissionMutation = useUploadSubmission(Number(id));
+  const deleteSubmissionMutation = useDeleteSubmission(Number(id));
+  const submitReviewMutation = useSubmitReview();
+  const deleteRubricMutation = useDeleteRubric(Number(id));
 
-  const loadResources = useCallback(async () => {
-    if (!id) {
-      setResources([]);
-      return;
-    }
-    try {
-      const list = await listAssignmentResources(Number(id));
-      setResources(list || []);
-    } catch {
-      setResources([]);
-    }
-  }, [id]);
+  // Derive rubricId from query data
+  const rubricId = rubricData ? rubricData.id : null;
+
+  // Derive review grades from query data
+  const review: number[] = reviewData?.grades ?? [];
+
+  // Derive group members (filter out self)
+  const currentUserId = getUserId();
+  const groupMembers: GroupMember[] = myGroupData?.members
+    ? myGroupData.members.filter((m: GroupMember) => m.id !== currentUserId)
+    : [];
+
+  // Derive resource list
+  const resourceList: AssignmentResourceItem[] = resources ?? [];
 
   const toDatetimeLocal = (value?: string) => {
     if (!value) return "";
@@ -135,51 +112,16 @@ export default function Assignment() {
       .slice(0, 16);
   };
 
+  // Sync edit form fields when assignment data loads
   useEffect(() => {
-      (async () => {
-        const currentUserId = getUserId();
-        if (currentUserId === null) {
-          console.error('User not logged in');
-          return;
-        }
-      await loadRubric();
-      await loadMySubmission();
-      await loadResources();
-
-      try {
-        const assignmentResponse = await getAssignment(Number(id));
-        setAssignment(assignmentResponse);
-        setEditName(assignmentResponse.name || "");
-        setEditDescription(assignmentResponse.description || "");
-        setEditStartDate(toDatetimeLocal(assignmentResponse.start_date));
-        setEditDueDate(toDatetimeLocal(assignmentResponse.due_date));
-        setEditIsAnonymous(assignmentResponse.is_anonymous ?? true);
-
-          const myGroup = await listStuGroup(assignmentResponse.courseID);
-          if (myGroup?.members) {
-            // Filter out self from group members (can't review yourself)
-            setGroupMembers(myGroup.members.filter((m: GroupMember) => m.id !== currentUserId));
-          }
-        } catch (err) {
-          console.error("Failed to load assignment or group members:", err);
-        }
-
-        // Only fetch review if a reviewee has been selected
-        // NOTE: Review endpoints not yet implemented in Flask backend.
-        // This will 404 until the review feature is migrated.
-        if (revieweeID > 0) {
-          try {
-            const reviewResponse = await getReview(Number(id), revieweeID);
-            if (reviewResponse.ok) {
-              const reviewData = await reviewResponse.json();
-              setReview(reviewData.grades);
-            }
-          } catch {
-            // Review endpoint not yet implemented — silently ignore
-          }
-        }
-      })();
-  }, [revieweeID, id, loadRubric, loadMySubmission, loadResources]);
+    if (assignment) {
+      setEditName(assignment.name || "");
+      setEditDescription(assignment.description || "");
+      setEditStartDate(toDatetimeLocal(assignment.start_date));
+      setEditDueDate(toDatetimeLocal(assignment.due_date));
+      setEditIsAnonymous(assignment.is_anonymous ?? true);
+    }
+  }, [assignment]);
 
   const handleCriterionSelect = (row: number, column: number) => {
     setSelectedCriteria(prev => {
@@ -295,8 +237,7 @@ export default function Assignment() {
                     if (editStartDate) payload.start_date = new Date(editStartDate).toISOString();
                     if (editDueDate) payload.due_date = new Date(editDueDate).toISOString();
 
-                    const updated = await editAssignment(Number(id), payload);
-                    setAssignment(updated.assignment);
+                    await editAssignmentMutation.mutateAsync(payload);
                     setStatusType('success');
                     setStatusMessage('Assignment updated successfully.');
                   } catch (error) {
@@ -321,7 +262,7 @@ export default function Assignment() {
                       setStatusMessage('Delete cancelled. Type DELETE to confirm assignment removal.');
                       return;
                     }
-                    await deleteAssignment(Number(id));
+                    await deleteAssignmentMutation.mutateAsync(Number(id));
                     window.location.href = `/classes/${assignment.courseID}/home`;
                   } catch (error) {
                     setStatusType('error');
@@ -341,11 +282,11 @@ export default function Assignment() {
         <div className={cardClass}>
           <h3 className="text-base font-semibold text-text-primary mt-0 mb-3">Supporting Documents</h3>
 
-          {resources.length === 0 ? (
+          {resourceList.length === 0 ? (
             <p className="text-text-secondary text-sm m-0 mb-3">No supporting documents uploaded yet.</p>
           ) : (
             <ul className="m-0 p-0 list-none flex flex-col gap-2 mb-3">
-              {resources.map((resource) => (
+              {resourceList.map((resource) => (
                 <li key={resource.id} className="flex items-center justify-between gap-2 py-2 border-b border-border last:border-0">
                   <a href={resource.download_url} target="_blank" rel="noreferrer" className="text-btn-primary text-sm hover:underline truncate">
                     {resource.original_name}
@@ -355,8 +296,7 @@ export default function Assignment() {
                     onClick={async () => {
                       try {
                         setStatusMessage('');
-                        await deleteAssignmentResource(resource.id);
-                        await loadResources();
+                        await deleteResourceMutation.mutateAsync(resource.id);
                         setStatusType('success');
                         setStatusMessage('Supporting document deleted successfully.');
                       } catch (error) {
@@ -391,9 +331,8 @@ export default function Assignment() {
                 }
                 try {
                   setStatusMessage('');
-                  await uploadAssignmentResource(Number(id), resourceUpload);
+                  await uploadResourceMutation.mutateAsync(resourceUpload);
                   setResourceUpload(null);
-                  await loadResources();
                   setStatusType('success');
                   setStatusMessage('Supporting document uploaded successfully.');
                 } catch (error) {
@@ -421,8 +360,7 @@ export default function Assignment() {
                   onClick={async () => {
                     if (window.confirm('Are you sure you want to delete this rubric? All criteria will be removed.')) {
                       try {
-                        await deleteRubric(rubricId);
-                        setRubricId(null);
+                        await deleteRubricMutation.mutateAsync(rubricId);
                         setStatusType('success');
                         setStatusMessage('Rubric deleted successfully.');
                       } catch (error) {
@@ -443,8 +381,7 @@ export default function Assignment() {
             <div className={cardClass}>
               <RubricCreator
                 id={Number(id)}
-                onRubricCreated={(newId) => {
-                  setRubricId(newId);
+                onRubricCreated={() => {
                   setStatusType('success');
                   setStatusMessage('Rubric created successfully.');
                 }}
@@ -458,11 +395,11 @@ export default function Assignment() {
       {teacherMode && !isManageTab && (
         <div className={cardClass}>
           <h3 className="text-base font-semibold text-text-primary mt-0 mb-3">Supporting Documents (Student Preview)</h3>
-          {resources.length === 0 ? (
+          {resourceList.length === 0 ? (
             <p className="text-text-secondary text-sm m-0">No supporting documents available.</p>
           ) : (
             <ul className="m-0 p-0 list-none flex flex-col gap-2">
-              {resources.map((resource) => (
+              {resourceList.map((resource) => (
                 <li key={resource.id} className="py-1.5 border-b border-border last:border-0">
                   <a href={resource.download_url} target="_blank" rel="noreferrer" className="text-btn-primary text-sm hover:underline">
                     {resource.original_name}
@@ -478,11 +415,11 @@ export default function Assignment() {
       {!teacherMode && (
         <div className={cardClass}>
           <h3 className="text-base font-semibold text-text-primary mt-0 mb-3">Supporting Documents</h3>
-          {resources.length === 0 ? (
+          {resourceList.length === 0 ? (
             <p className="text-text-secondary text-sm m-0 mb-4">No supporting documents available.</p>
           ) : (
             <ul className="m-0 p-0 list-none flex flex-col gap-2 mb-4">
-              {resources.map((resource) => (
+              {resourceList.map((resource) => (
                 <li key={resource.id} className="py-1.5 border-b border-border last:border-0">
                   <a href={resource.download_url} target="_blank" rel="noreferrer" className="text-btn-primary text-sm hover:underline">
                     {resource.original_name}
@@ -503,8 +440,7 @@ export default function Assignment() {
                 onClick={async () => {
                   try {
                     setStatusMessage('');
-                    await deleteMySubmission(Number(id));
-                    setMySubmission(null);
+                    await deleteSubmissionMutation.mutateAsync();
                     setSelectedFile(null);
                     setStatusType('success');
                     setStatusMessage('Attachment removed successfully.');
@@ -540,8 +476,7 @@ export default function Assignment() {
                 }
                 try {
                   setStatusMessage('');
-                  const response = await uploadMySubmission(Number(id), selectedFile);
-                  setMySubmission(response.submission);
+                  await uploadSubmissionMutation.mutateAsync(selectedFile);
                   setSelectedFile(null);
                   setStatusType('success');
                   setStatusMessage(mySubmission ? 'Attachment updated successfully.' : 'Attachment uploaded successfully.');
@@ -585,12 +520,12 @@ export default function Assignment() {
             className={btnPrimary}
             onClick={async () => {
               try {
-                await submitReview(
-                  Number(id),
+                await submitReviewMutation.mutateAsync({
+                  assignmentID: Number(id),
                   revieweeID,
-                  selectedCriteria.map(c => ({ criterionRowID: c.row, grade: c.column, comments: "" })),
-                  reviewComment,
-                );
+                  criteria: selectedCriteria.map(c => ({ criterionRowID: c.row, grade: c.column, comments: "" })),
+                  comments: reviewComment,
+                });
                 setStatusType('success');
                 setStatusMessage('Review submitted successfully.');
                 setReviewedMembers(prev => new Set(prev).add(revieweeID));
@@ -619,12 +554,12 @@ export default function Assignment() {
               className={btnPrimary}
               onClick={async () => {
                 try {
-                  await submitReview(
-                  Number(id),
-                  revieweeID,
-                  selectedCriteria.map(c => ({ criterionRowID: c.row, grade: c.column, comments: "" })),
-                  reviewComment,
-                );
+                  await submitReviewMutation.mutateAsync({
+                    assignmentID: Number(id),
+                    revieweeID,
+                    criteria: selectedCriteria.map(c => ({ criterionRowID: c.row, grade: c.column, comments: "" })),
+                    comments: reviewComment,
+                  });
                   setIsReviewModalOpen(false);
                   setReviewedMembers(prev => new Set(prev).add(revieweeID));
                   setStatusType('success');

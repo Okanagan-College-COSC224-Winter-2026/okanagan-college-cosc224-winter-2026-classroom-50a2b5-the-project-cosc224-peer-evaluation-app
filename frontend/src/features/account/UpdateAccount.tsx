@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { changePassword, getUser, getUserAvatarUrl, updateUserProfile, uploadUserAvatar } from '../util/api'
-import { getUserId, logout } from '../util/login'
-import StatusMessage from '../components/StatusMessage'
+import { useUser, useUpdateProfile, useUploadAvatar, useChangePassword, getUserAvatarUrl } from './useUser'
+import { getUserId, logout } from '../../util/login'
+import StatusMessage from '../../ui/StatusMessage'
 
 interface UserProfile {
   id: number
@@ -12,7 +12,11 @@ interface UserProfile {
 }
 
 export default function Profile() {
-  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const { data: profile } = useUser() as { data: UserProfile | undefined }
+  const updateProfileMutation = useUpdateProfile()
+  const uploadAvatarMutation = useUploadAvatar()
+  const changePasswordMutation = useChangePassword()
+
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
@@ -32,17 +36,11 @@ export default function Profile() {
   const userId = getUserId()
 
   useEffect(() => {
-    ;(async () => {
-      try {
-        const data = await getUser()
-        setProfile(data)
-        setName(data.name ?? '')
-        setEmail(data.email ?? '')
-      } catch {
-        // silently ignore — ProtectedRoute handles auth failures
-      }
-    })()
-  }, [])
+    if (profile) {
+      setName(profile.name ?? '')
+      setEmail(profile.email ?? '')
+    }
+  }, [profile])
 
   const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -57,8 +55,7 @@ export default function Profile() {
     try {
       // Upload avatar first if one was selected
       if (avatarFile) {
-        const updated = await uploadUserAvatar(avatarFile)
-        setProfile(updated)
+        await uploadAvatarMutation.mutateAsync(avatarFile)
         setAvatarFile(null)
       }
 
@@ -68,10 +65,7 @@ export default function Profile() {
       if (email !== profile?.email) payload.email = email
 
       if (Object.keys(payload).length > 0) {
-        const updated = await updateUserProfile(payload)
-        setProfile(updated)
-        setName(updated.name)
-        setEmail(updated.email)
+        await updateProfileMutation.mutateAsync(payload)
       }
 
       setProfileStatusType('success')
@@ -107,7 +101,7 @@ export default function Profile() {
     }
     setPwLoading(true)
     try {
-      await changePassword(currentPassword, newPassword)
+      await changePasswordMutation.mutateAsync({ currentPassword, newPassword })
       setPwStatusType('success')
       setPwStatus('Password updated successfully.')
       setCurrentPassword('')

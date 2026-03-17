@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Criteria from './Criteria';
-import { getCriteria, getRubric } from '../util/api';
+import { getCriteria, getRubric } from '../../util/api';
 
 interface RubricDisplayProps {
     rubricId: number | null;

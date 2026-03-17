@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import Home from './Home';
+import Home from './DashboardLayout';
 
 const listClassesMock = vi.fn();
 const listAssignmentsMock = vi.fn();
@@ -7,12 +7,12 @@ const isTeacherMock = vi.fn();
 const isAdminMock = vi.fn();
 const isStudentMock = vi.fn();
 
-vi.mock('../util/api', () => ({
+vi.mock('../../util/api', () => ({
   listClasses: (...args: unknown[]) => listClassesMock(...args),
   listAssignments: (...args: unknown[]) => listAssignmentsMock(...args),
 }));
 
-vi.mock('../util/login', () => ({
+vi.mock('../../util/login', () => ({
   isTeacher: () => isTeacherMock(),
   isAdmin: () => isAdminMock(),
   isStudent: () => isStudentMock(),

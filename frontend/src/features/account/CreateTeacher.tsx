@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Button from '../components/Button';
-import Textbox from '../components/Textbox';
-import StatusMessage from '../components/StatusMessage';
-import { createTeacherAccount } from '../util/api';
-import { pageClasses, blockClasses, innerClasses, inputsClasses, inputChunkClasses } from './LoginPage';
+import Button from '../../ui/Button';
+import Textbox from '../../ui/Textbox';
+import StatusMessage from '../../ui/StatusMessage';
+import { createTeacherAccount } from '../../util/api';
+import { pageClasses, blockClasses, innerClasses, inputsClasses, inputChunkClasses } from '../authentication/LoginForm';
 
 export default function CreateTeacher() {
   const navigate = useNavigate();

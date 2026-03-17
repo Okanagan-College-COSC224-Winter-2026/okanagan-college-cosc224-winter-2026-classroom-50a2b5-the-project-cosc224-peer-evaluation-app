@@ -1,17 +1,14 @@
 import { BASE_URL, maybeHandleExpire } from "./apiBase";
 
-export const createReview = async (
+export const submitReview = async (
   assignmentID: number,
-  reviewerID: number,
-  revieweeID: number
+  revieweeID: number,
+  criteria: { criterionRowID: number; grade: number; comments: string }[],
+  comments: string = ""
 ) => {
-  const response = await fetch(`${BASE_URL}/create_review`, {
+  const response = await fetch(`${BASE_URL}/review/submit`, {
     method: "POST",
-    body: JSON.stringify({
-      assignmentID,
-      reviewerID,
-      revieweeID,
-    }),
+    body: JSON.stringify({ assignmentID, revieweeID, comments, criteria }),
     headers: { "Content-Type": "application/json" },
     credentials: "include",
   });
@@ -19,48 +16,58 @@ export const createReview = async (
   maybeHandleExpire(response);
 
   if (!response.ok) {
-    throw new Error(`Response status: ${response.status}`);
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.msg || `Response status: ${response.status}`);
   }
-  return response;
-};
-
-export const createCriterion = async (
-  reviewID: number,
-  criterionRowID: number,
-  grade: number,
-  comments: string
-) => {
-  const response = await fetch(`${BASE_URL}/create_criterion`, {
-    method: "POST",
-    body: JSON.stringify({
-      reviewID,
-      criterionRowID,
-      grade,
-      comments,
-    }),
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-  });
-
-  maybeHandleExpire(response);
-
-  if (!response.ok) {
-    throw new Error(`Response status: ${response.status}`);
-  }
-  return response;
+  return await response.json();
 };
 
 export const getReview = async (
   assignmentID: number,
-  reviewerID: number,
   revieweeID: number
 ) => {
   const resp = await fetch(
-    `${BASE_URL}/review?assignmentID=${assignmentID}&reviewerID=${reviewerID}&revieweeID=${revieweeID}`,
+    `${BASE_URL}/review/lookup?assignmentID=${assignmentID}&revieweeID=${revieweeID}`,
     { credentials: "include" }
   );
 
   maybeHandleExpire(resp);
-
   return resp;
+};
+
+export const getReviewsForAssignment = async (assignmentID: number) => {
+  const resp = await fetch(`${BASE_URL}/review/assignment/${assignmentID}`, {
+    credentials: "include",
+  });
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => null);
+    throw new Error(data?.msg || `Response status: ${resp.status}`);
+  }
+
+  return await resp.json();
+};
+
+export const getCourseGradeSummary = async (
+  courseID: number,
+  studentID?: number
+) => {
+  const url = new URL(`${BASE_URL}/review/course/${courseID}/summary`);
+  if (studentID !== undefined) {
+    url.searchParams.set("studentID", String(studentID));
+  }
+  const resp = await fetch(url.toString(), {
+    credentials: "include",
+  });
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => null);
+    throw new Error(data?.msg || `Response status: ${resp.status}`);
+  }
+
+  return await resp.json();
 };

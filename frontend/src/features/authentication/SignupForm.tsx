@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import Textbox from '../components/Textbox';
-import Button from '../components/Button';
-import StatusMessage from '../components/StatusMessage';
-import { tryRegister } from '../util/api';
+import Textbox from '../../ui/Textbox';
+import Button from '../../ui/Button';
+import StatusMessage from '../../ui/StatusMessage';
+import { tryRegister } from '../../util/api';
 import { useNavigate } from 'react-router-dom';
-import { pageClasses, blockClasses, innerClasses, inputsClasses, inputChunkClasses } from './LoginPage';
+import { pageClasses, blockClasses, innerClasses, inputsClasses, inputChunkClasses } from './LoginForm';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');

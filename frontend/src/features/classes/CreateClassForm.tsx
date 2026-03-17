@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import Button from '../components/Button'
-import Textbox from '../components/Textbox'
-import StatusMessage from '../components/StatusMessage'
-import { createClass } from '../util/api'
+import Button from '../../ui/Button'
+import Textbox from '../../ui/Textbox'
+import StatusMessage from '../../ui/StatusMessage'
+import { createClass } from '../../util/api'
 
 export default function CreateClass() {
   const [name, setName] = useState('')

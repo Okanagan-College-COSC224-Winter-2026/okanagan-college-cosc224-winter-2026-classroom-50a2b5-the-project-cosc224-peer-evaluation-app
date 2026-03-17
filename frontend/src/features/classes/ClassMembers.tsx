@@ -1,25 +1,16 @@
 import { useParams } from "react-router-dom";
-import TabNavigation from "../components/TabNavigation";
-import { useEffect, useState } from "react";
-import Button from "../components/Button";
-import { importCSV } from "../util/csv";
-import { listCourseMembers, listClasses } from "../util/api";
-import { isTeacher } from "../util/login";
+import TabNavigation from "../../ui/TabNavigation";
+import Button from "../../ui/Button";
+import { importCSV } from "../../util/csv";
+import { useCourseMembers, useClasses } from "./useClasses";
+import { isTeacher } from "../../util/login";
 
 export default function ClassMembers() {
   const { id } = useParams()
-  const [members, setMembers] = useState<User[]>([])
-  const [className, setClassName] = useState<string | null>(null);
+  const { data: members = [] } = useCourseMembers(id as string);
+  const { data: classes = [] } = useClasses();
 
-  useEffect(() => {
-    ;(async () => {
-      const members = await listCourseMembers(id as string)
-      const classes = await listClasses();
-      const currentClass = classes.find((c: { id: number }) => c.id === Number(id));
-      setMembers(members)
-      setClassName(currentClass?.name || null);
-    })()
-  }, [id])
+  const className = classes.find((c: { id: number }) => c.id === Number(id))?.name || null;
 
   return (
     <>
@@ -46,7 +37,7 @@ export default function ClassMembers() {
       />
 
       <div className="flex flex-col items-center justify-start w-full p-4 gap-1">
-        {members.map(member => (
+        {members.map((member: User) => (
           <div
             key={member.id}
             className="w-full max-w-3xl px-4 py-3 rounded-lg flex items-center gap-3 hover:cursor-pointer hover:bg-bg-secondary transition-colors duration-100 border border-transparent hover:border-border"

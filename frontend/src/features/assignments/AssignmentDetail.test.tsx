@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import Assignment from './Assignment';
+import Assignment from './AssignmentDetail';
 
 const mockIsTeacher = vi.fn();
 const mockGetUserId = vi.fn();
@@ -21,20 +21,20 @@ const listAssignmentResourcesMock = vi.fn();
 const uploadAssignmentResourceMock = vi.fn();
 const deleteAssignmentResourceMock = vi.fn();
 
-vi.mock('../components/RubricCreator', () => ({
+vi.mock('../reviews/RubricCreator', () => ({
   default: () => <div>Rubric Creator</div>,
 }));
 
-vi.mock('../components/RubricDisplay', () => ({
+vi.mock('../reviews/RubricDisplay', () => ({
   default: () => <div>Rubric Display</div>,
 }));
 
-vi.mock('../util/login', () => ({
+vi.mock('../../util/login', () => ({
   isTeacher: () => mockIsTeacher(),
   getUserId: () => mockGetUserId(),
 }));
 
-vi.mock('../util/api', () => ({
+vi.mock('../../util/api', () => ({
   getAssignment: (...args: unknown[]) => getAssignmentMock(...args),
   listStuGroup: (...args: unknown[]) => listStuGroupMock(...args),
   createReview: (...args: unknown[]) => createReviewMock(...args),

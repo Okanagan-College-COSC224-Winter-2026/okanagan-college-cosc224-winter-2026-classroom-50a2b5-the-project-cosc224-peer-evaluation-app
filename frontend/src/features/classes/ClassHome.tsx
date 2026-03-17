@@ -1,15 +1,16 @@
-import AssignmentCard from "../components/AssignmentCard";
-import Button from "../components/Button";
+import AssignmentCard from "../assignments/AssignmentCard";
+import Button from "../../ui/Button";
 import { useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { listAssignments, listClasses, createAssignment } from "../util/api";
-import TabNavigation from "../components/TabNavigation";
-import { importCSV } from "../util/csv";
-import Textbox from "../components/Textbox";
-import StatusMessage from "../components/StatusMessage";
-import { isTeacher } from "../util/login";
-import { formatDueDate, getAssignmentStatus } from "../util/assignmentDates";
-import Modal from "../components/Modal";
+import { useState, useMemo } from "react";
+import { useClasses } from "./useClasses";
+import { useAssignments, useCreateAssignment } from "../assignments/useAssignments";
+import TabNavigation from "../../ui/TabNavigation";
+import { importCSV } from "../../util/csv";
+import Textbox from "../../ui/Textbox";
+import StatusMessage from "../../ui/StatusMessage";
+import { isTeacher } from "../../util/login";
+import { formatDueDate, getAssignmentStatus } from "../../util/assignmentDates";
+import Modal from "../../ui/Modal";
 
 function getStatusClasses(status: string): string {
   const base = "text-xs font-medium rounded-full px-2.5 py-0.5 whitespace-nowrap"
@@ -22,45 +23,41 @@ function getStatusClasses(status: string): string {
 export default function ClassHome() {
   const { id } = useParams();
   const courseId = Number(id);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [newAssignmentName, setNewAssignmentName] = useState("");
   const [newAssignmentDescription, setNewAssignmentDescription] = useState("");
   const [newAssignmentStartDate, setNewAssignmentStartDate] = useState("");
   const [newAssignmentDueDate, setNewAssignmentDueDate] = useState("");
   const [newAssignmentAnonymous, setNewAssignmentAnonymous] = useState(true);
-  const [className, setClassName] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const resp = await listAssignments(String(id));
-      const classes = await listClasses();
-      const currentClass = classes.find((c: { id: number }) => c.id === Number(id));
-      setAssignments(resp);
-      setClassName(currentClass?.name || null);
-    })();
-  }, [id]);
+  const { data: assignments = [] } = useAssignments(String(id));
+  const { data: classes = [] } = useClasses();
+  const createAssignmentMutation = useCreateAssignment(String(id));
+
+  const className = useMemo(() => {
+    const currentClass = classes.find((c: { id: number }) => c.id === Number(id));
+    return currentClass?.name || null;
+  }, [classes, id]);
 
   const tryCreateAssignment = async () => {
     try {
       setStatusMessage('');
-      const response = await createAssignment(
-        courseId,
-        newAssignmentName,
-        newAssignmentDescription || undefined,
-        newAssignmentStartDate || undefined,
-        newAssignmentDueDate || undefined,
-        newAssignmentAnonymous,
-      );
+      const response = await createAssignmentMutation.mutateAsync({
+        courseID: courseId,
+        name: newAssignmentName,
+        description: newAssignmentDescription || undefined,
+        start_date: newAssignmentStartDate || undefined,
+        due_date: newAssignmentDueDate || undefined,
+        is_anonymous: newAssignmentAnonymous,
+      });
       const createdAssignment = response?.assignment;
 
       if (!createdAssignment?.id) {
         throw new Error('Failed to create assignment');
       }
 
-      setAssignments((prev) => [...prev, createdAssignment]);
       setNewAssignmentName("");
       setNewAssignmentDescription("");
       setNewAssignmentStartDate("");
@@ -124,7 +121,7 @@ export default function ClassHome() {
               <p className="m-0 text-text-secondary text-sm p-4">No assignments yet</p>
             ) : (
               <ul className="m-0 p-0 list-none flex flex-col divide-y divide-border">
-                {assignments.map((assignment) => {
+                {assignments.map((assignment: Assignment) => {
                   const status = getAssignmentStatus(assignment.due_date);
                   return (
                     <li key={assignment.id} className="p-3 bg-white hover:bg-bg-secondary transition-colors">

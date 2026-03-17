@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import Button from './Button';
-import StatusMessage from './StatusMessage';
-import { createCriteria, createRubric } from '../util/api';
+import Button from '../../ui/Button';
+import StatusMessage from '../../ui/StatusMessage';
+import { createCriteria, createRubric } from '../../util/api';
 
 interface RubricCreatorProps {
     onRubricCreated?: (rubricId: number) => void;

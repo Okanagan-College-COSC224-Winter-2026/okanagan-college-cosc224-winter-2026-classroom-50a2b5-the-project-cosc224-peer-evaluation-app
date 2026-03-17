@@ -1,20 +1,20 @@
-import { useCallback, useEffect, useState } from "react";
-import {
-  createGroup,
-  listGroupMembers,
-  listGroups,
-  listStuGroup,
-  listUnassignedStudents,
-  addGroupMember,
-  removeGroupMember,
-  deleteGroup,
-  listClasses,
-} from "../util/api";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
-import TabNavigation from "../components/TabNavigation";
-import StatusMessage from "../components/StatusMessage";
-import { isTeacher } from "../util/login";
-import Textbox from "../components/Textbox";
+import TabNavigation from "../../ui/TabNavigation";
+import StatusMessage from "../../ui/StatusMessage";
+import { isTeacher } from "../../util/login";
+import Textbox from "../../ui/Textbox";
+import { useClasses } from "../classes/useClasses";
+import {
+  useGroups,
+  useMyGroup,
+  useUnassignedStudents,
+  useGroupMembers,
+  useCreateGroup,
+  useDeleteGroup,
+  useAddGroupMember,
+  useRemoveGroupMember,
+} from "./useGroups";
 
 // Group member type for internal state
 interface GroupMember {
@@ -23,58 +23,67 @@ interface GroupMember {
   email: string;
 }
 
+function GroupMembersRow({
+  group,
+  selectedGroup,
+  groupMembers,
+  trClasses,
+  actionBtnClasses,
+  onRemove,
+}: {
+  group: CourseGroup;
+  selectedGroup: number;
+  groupMembers: GroupMember[];
+  trClasses: string;
+  actionBtnClasses: string;
+  onRemove: (userId: number, groupId: number) => void;
+}) {
+  const { data: members = [] } = useGroupMembers(group.id);
+
+  // Expose fetched members to parent via the groupMembers map isn't possible here,
+  // so we use the hook data directly for rendering
+  const displayMembers: GroupMember[] = members.length > 0 ? members : groupMembers;
+
+  return (
+    <>
+      {selectedGroup === group.id && (
+        displayMembers.map((member: GroupMember) => (
+          <tr key={member.id} className={`${trClasses} hover:bg-bg-secondary`}>
+            <td>
+              <span className="mx-2.5 ml-5">{member.name}</span>
+              <button className={actionBtnClasses} onClick={() => onRemove(member.id, group.id)}>
+                Remove
+              </button>
+            </td>
+          </tr>
+        ))
+      )}
+    </>
+  );
+}
+
 export default function Group() {
   const { id } = useParams();
   const courseId = Number(id);
 
-  const [className, setClassName] = useState<string>("");
-  const [groups, setGroups] = useState<CourseGroup[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<number>(-1);
-  const [groupMembers, setGroupMembers] = useState<{ [key: number]: GroupMember[] }>({});
-  const [unassignedStudents, setUnassignedStudents] = useState<GroupMember[]>([]);
   const [groupName, setGroupName] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
-  const [myGroup, setMyGroup] = useState<{ name: string; members: GroupMember[] } | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
+  const { data: classes = [] } = useClasses();
+  const className = classes.find((c: { id: number }) => c.id === courseId)?.name || "";
 
-      const classes = await listClasses();
-      const currentClass = classes.find((c: { id: number }) => c.id === courseId);
-      setClassName(currentClass?.name || "");
+  const { data: groups = [], isLoading: groupsLoading } = useGroups(courseId);
+  const { data: unassignedStudents = [], isLoading: unassignedLoading } = useUnassignedStudents(courseId);
+  const { data: myGroup = null, isLoading: myGroupLoading } = useMyGroup(courseId);
 
-      if (isTeacher()) {
-        const groupsData = await listGroups(courseId);
-        setGroups(groupsData);
+  const createGroupMutation = useCreateGroup(courseId);
+  const deleteGroupMutation = useDeleteGroup(courseId);
+  const addMemberMutation = useAddGroupMember(courseId);
+  const removeMemberMutation = useRemoveGroupMember(courseId);
 
-        const membersData: { [key: number]: GroupMember[] } = {};
-        for (const group of groupsData) {
-          const members = await listGroupMembers(group.id);
-          membersData[group.id] = members;
-        }
-        setGroupMembers(membersData);
-
-        const unassigned = await listUnassignedStudents(courseId);
-        setUnassignedStudents(unassigned);
-      } else {
-        const myGroupData = await listStuGroup(courseId);
-        setMyGroup(myGroupData);
-      }
-    } catch (error) {
-      console.error("Error loading group data:", error);
-      setStatusType('error');
-      setStatusMessage('Error loading group data');
-    } finally {
-      setLoading(false);
-    }
-  }, [courseId]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const loading = isTeacher() ? (groupsLoading || unassignedLoading) : myGroupLoading;
 
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
@@ -84,9 +93,7 @@ export default function Group() {
     }
 
     try {
-      const newGroup = await createGroup(courseId, groupName);
-      setGroups([...groups, newGroup]);
-      setGroupMembers({ ...groupMembers, [newGroup.id]: [] });
+      await createGroupMutation.mutateAsync(groupName);
       setGroupName('');
       setStatusType('success');
       setStatusMessage('Group created!');
@@ -105,18 +112,8 @@ export default function Group() {
     }
 
     try {
-      await deleteGroup(selectedGroup);
-
-      setGroups(groups.filter(g => g.id !== selectedGroup));
-      const newMembers = { ...groupMembers };
-
-      const removedMembers = newMembers[selectedGroup] || [];
-      setUnassignedStudents([...unassignedStudents, ...removedMembers]);
-
-      delete newMembers[selectedGroup];
-      setGroupMembers(newMembers);
+      await deleteGroupMutation.mutateAsync(selectedGroup);
       setSelectedGroup(-1);
-
       setStatusType('success');
       setStatusMessage('Group deleted!');
     } catch (error) {
@@ -134,17 +131,7 @@ export default function Group() {
     }
 
     try {
-      await addGroupMember(selectedGroup, userId);
-
-      const student = unassignedStudents.find(s => s.id === userId);
-      if (student) {
-        setUnassignedStudents(unassignedStudents.filter(s => s.id !== userId));
-        setGroupMembers({
-          ...groupMembers,
-          [selectedGroup]: [...(groupMembers[selectedGroup] || []), student]
-        });
-      }
-
+      await addMemberMutation.mutateAsync({ groupId: selectedGroup, userId });
       setStatusType('success');
       setStatusMessage('Student added to group!');
     } catch (error) {
@@ -156,17 +143,7 @@ export default function Group() {
 
   const handleRemoveFromGroup = async (userId: number, groupId: number) => {
     try {
-      await removeGroupMember(groupId, userId);
-
-      const student = groupMembers[groupId]?.find(s => s.id === userId);
-      if (student) {
-        setGroupMembers({
-          ...groupMembers,
-          [groupId]: groupMembers[groupId].filter(s => s.id !== userId)
-        });
-        setUnassignedStudents([...unassignedStudents, student]);
-      }
-
+      await removeMemberMutation.mutateAsync({ groupId, userId });
       setStatusType('success');
       setStatusMessage('Student removed from group!');
     } catch (error) {
@@ -226,7 +203,7 @@ export default function Group() {
                   {unassignedStudents.length === 0 ? (
                     <tr><td>No unassigned students</td></tr>
                   ) : (
-                    unassignedStudents.map((student) => (
+                    unassignedStudents.map((student: GroupMember) => (
                       <tr key={student.id} className={`${trClasses} hover:bg-bg-secondary`}>
                         <td>
                           <span className="mx-2.5 ml-5">{student.name}</span>
@@ -251,7 +228,7 @@ export default function Group() {
                   {groups.length === 0 ? (
                     <tr><td>No groups created yet</td></tr>
                   ) : (
-                    groups.map((group) => (
+                    groups.map((group: CourseGroup) => (
                       <>
                         <tr
                           key={group.id}
@@ -262,22 +239,18 @@ export default function Group() {
                             <div className={`absolute top-1 left-5 w-5 h-5 ${group.id === selectedGroup ? 'rotate-90' : ''}`}>
                               <img src="/icons/arrow.svg" alt="arrow" className="w-full h-full" />
                             </div>
-                            {group.name} ({groupMembers[group.id]?.length || 0} members)
+                            {group.name}
                           </td>
                         </tr>
 
-                        {selectedGroup === group.id && (
-                          groupMembers[group.id]?.map((member) => (
-                            <tr key={member.id} className={`${trClasses} hover:bg-bg-secondary`}>
-                              <td>
-                                <span className="mx-2.5 ml-5">{member.name}</span>
-                                <button className={actionBtnClasses} onClick={() => handleRemoveFromGroup(member.id, group.id)}>
-                                  Remove
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
+                        <GroupMembersRow
+                          group={group}
+                          selectedGroup={selectedGroup}
+                          groupMembers={[]}
+                          trClasses={trClasses}
+                          actionBtnClasses={actionBtnClasses}
+                          onRemove={handleRemoveFromGroup}
+                        />
                       </>
                     ))
                   )}
@@ -321,7 +294,7 @@ export default function Group() {
                     </tr>
                   </thead>
                   <tbody>
-                    {myGroup.members.map((member) => (
+                    {myGroup.members.map((member: GroupMember) => (
                       <tr key={member.id}>
                         <td>{member.name}</td>
                       </tr>

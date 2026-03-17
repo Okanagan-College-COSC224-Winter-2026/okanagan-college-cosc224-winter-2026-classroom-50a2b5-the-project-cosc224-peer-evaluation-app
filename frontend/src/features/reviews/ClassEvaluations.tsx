@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
-import TabNavigation from "../components/TabNavigation";
-import Modal from "../components/Modal";
-import { listClasses, getReviewsForAssignment, getCourseGradeSummary } from "../util/api";
+import TabNavigation from "../../ui/TabNavigation";
+import Modal from "../../ui/Modal";
+import { useClasses } from "../classes/useClasses";
+import { useCourseGradeSummary, useReviewsForAssignment } from "./useReviews";
 
 // Shape of a single review returned by GET /review/assignment/<id>
 interface ReviewCriterion {
@@ -35,50 +36,30 @@ interface AssignmentSummary {
 
 export default function ClassEvaluations() {
   const { id } = useParams();
-  const [className, setClassName] = useState<string | null>(null);
-  const [summaries, setSummaries] = useState<AssignmentSummary[]>([]);
-  const [courseAverage, setCourseAverage] = useState<number | null>(null);
-  const [courseMax, setCourseMax] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
 
   // Modal state
   const [selectedAssignment, setSelectedAssignment] = useState<AssignmentSummary | null>(null);
-  const [reviews, setReviews] = useState<ReviewData[]>([]);
-  const [modalLoading, setModalLoading] = useState(false);
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<number>(0);
 
-  // Load grade summary from backend
-  useEffect(() => {
-    (async () => {
-      try {
-        const [summary, classes] = await Promise.all([
-          getCourseGradeSummary(Number(id)),
-          listClasses(),
-        ]);
-        const currentClass = classes.find((c: { id: number }) => c.id === Number(id));
-        setClassName(currentClass?.name || null);
-        setSummaries(summary.assignments);
-        setCourseAverage(summary.courseAverage);
-        setCourseMax(summary.courseMax);
-      } catch (err) {
-        console.error("Failed to load evaluations:", err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [id]);
+  // React Query hooks
+  const { data: summaryData, isLoading: loading } = useCourseGradeSummary(Number(id));
+  const { data: classesData } = useClasses();
+  const { data: reviews = [], isLoading: modalLoading } = useReviewsForAssignment(selectedAssignmentId);
 
-  const openAssignment = async (summary: AssignmentSummary) => {
+  const summaries: AssignmentSummary[] = summaryData?.assignments ?? [];
+  const courseAverage: number | null = summaryData?.courseAverage ?? null;
+  const courseMax: number | null = summaryData?.courseMax ?? null;
+
+  const className = classesData?.find((c: { id: number }) => c.id === Number(id))?.name ?? null;
+
+  const openAssignment = (summary: AssignmentSummary) => {
     setSelectedAssignment(summary);
-    setModalLoading(true);
-    try {
-      const data: ReviewData[] = await getReviewsForAssignment(summary.id);
-      setReviews(data);
-    } catch (err) {
-      console.error("Failed to load reviews:", err);
-      setReviews([]);
-    } finally {
-      setModalLoading(false);
-    }
+    setSelectedAssignmentId(summary.id);
+  };
+
+  const closeModal = () => {
+    setSelectedAssignment(null);
+    setSelectedAssignmentId(0);
   };
 
   return (
@@ -156,16 +137,16 @@ export default function ClassEvaluations() {
       {/* Review detail modal */}
       <Modal
         isOpen={selectedAssignment !== null}
-        onClose={() => setSelectedAssignment(null)}
+        onClose={closeModal}
         title={`Reviews: ${selectedAssignment?.name || ""}`}
       >
         {modalLoading ? (
           <p className="text-text-secondary text-sm">Loading reviews...</p>
-        ) : reviews.length === 0 ? (
+        ) : (reviews as ReviewData[]).length === 0 ? (
           <p className="text-text-secondary text-sm">No reviews found.</p>
         ) : (
           <div className="flex flex-col gap-4">
-            {reviews.map((review, idx) => {
+            {(reviews as ReviewData[]).map((review, idx) => {
               const scoredCriteria = review.criteria.filter((c) => c.grade !== null);
               const total = scoredCriteria.reduce((sum, c) => sum + (c.grade ?? 0), 0);
               const totalMax = scoredCriteria

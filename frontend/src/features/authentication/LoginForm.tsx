@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Textbox from '../components/Textbox';
-import Button from '../components/Button';
-import StatusMessage from '../components/StatusMessage';
-import { tryLogin } from '../util/api';
+import Textbox from '../../ui/Textbox';
+import Button from '../../ui/Button';
+import StatusMessage from '../../ui/StatusMessage';
+import { tryLogin } from '../../util/api';
 
 // Shared layout classes for auth pages (Login, Register, ChangePassword, CreateTeacher)
 export const pageClasses = "flex flex-col items-center justify-center min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-slate-100 p-4"

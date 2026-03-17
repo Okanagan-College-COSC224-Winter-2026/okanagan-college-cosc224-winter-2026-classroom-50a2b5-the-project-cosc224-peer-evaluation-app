@@ -1,19 +1,29 @@
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
-import Home from "./pages/Home";
-import ProtectedRoute from "./components/ProtectedRoute";
-import Sidebar from "./components/Sidebar";
-import Profile from "./pages/Profile";
-import CreateClass from "./pages/CreateClass";
-import LoginPage from "./pages/LoginPage";
-import ClassHome from "./pages/ClassHome";
-import ClassMembers from "./pages/ClassMembers";
-import Assignment from "./pages/Assignment";
-import Group from "./pages/Group";
-import ClassEvaluations from "./pages/ClassEvaluations";
-import RegisterPage from "./pages/RegisterPage";
-import ChangePassword from "./pages/ChangePassword";
-import CreateTeacher from "./pages/CreateTeacher";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+import DashboardLayout from "./features/dashboard/DashboardLayout";
+import ProtectedRoute from "./features/authentication/ProtectedRoute";
+import Sidebar from "./ui/Sidebar";
+import UpdateAccount from "./features/account/UpdateAccount";
+import CreateClassForm from "./features/classes/CreateClassForm";
+import LoginForm from "./features/authentication/LoginForm";
+import ClassHome from "./features/classes/ClassHome";
+import ClassMembers from "./features/classes/ClassMembers";
+import AssignmentDetail from "./features/assignments/AssignmentDetail";
+import GroupManager from "./features/groups/GroupManager";
+import ClassEvaluations from "./features/reviews/ClassEvaluations";
+import SignupForm from "./features/authentication/SignupForm";
+import ChangePasswordForm from "./features/authentication/ChangePasswordForm";
+import CreateTeacher from "./features/account/CreateTeacher";
 import { logout } from "./util/login";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 0,
+    },
+  },
+});
 
 function MobileHeader() {
   return (
@@ -51,69 +61,20 @@ function AppContent() {
       <div className={`flex flex-col flex-1 min-w-0 ${showNav ? 'bg-bg-secondary' : ''}`}>
         {showNav && <MobileHeader />}
         <Routes>
-          <Route path="/" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/change-password" element={<ChangePassword />} />
+          <Route path="/" element={<LoginForm />} />
+          <Route path="/register" element={<SignupForm />} />
+          <Route path="/change-password" element={<ChangePasswordForm />} />
 
-          <Route path="/home" element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/admin/create-teacher" element={
-            <ProtectedRoute>
-              <CreateTeacher />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/classes/create" element={
-            <ProtectedRoute>
-              <CreateClass />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/profile/:id" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/classes/:id/home" element={
-            <ProtectedRoute>
-              <ClassHome />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/classes/:id/members" element={
-            <ProtectedRoute>
-              <ClassMembers />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/classes/:id/groups" element={
-            <ProtectedRoute>
-              <Group />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/classes/:id/evaluations" element={
-            <ProtectedRoute>
-              <ClassEvaluations />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/assignments/:id" element={
-            <ProtectedRoute>
-              <Assignment />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/assignments/:id/manage" element={
-            <ProtectedRoute>
-              <Assignment />
-            </ProtectedRoute>
-          } />
+          <Route path="/home" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>} />
+          <Route path="/admin/create-teacher" element={<ProtectedRoute><CreateTeacher /></ProtectedRoute>} />
+          <Route path="/classes/create" element={<ProtectedRoute><CreateClassForm /></ProtectedRoute>} />
+          <Route path="/profile/:id" element={<ProtectedRoute><UpdateAccount /></ProtectedRoute>} />
+          <Route path="/classes/:id/home" element={<ProtectedRoute><ClassHome /></ProtectedRoute>} />
+          <Route path="/classes/:id/members" element={<ProtectedRoute><ClassMembers /></ProtectedRoute>} />
+          <Route path="/classes/:id/groups" element={<ProtectedRoute><GroupManager /></ProtectedRoute>} />
+          <Route path="/classes/:id/evaluations" element={<ProtectedRoute><ClassEvaluations /></ProtectedRoute>} />
+          <Route path="/assignments/:id" element={<ProtectedRoute><AssignmentDetail /></ProtectedRoute>} />
+          <Route path="/assignments/:id/manage" element={<ProtectedRoute><AssignmentDetail /></ProtectedRoute>} />
         </Routes>
       </div>
     </div>
@@ -122,9 +83,11 @@ function AppContent() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 
