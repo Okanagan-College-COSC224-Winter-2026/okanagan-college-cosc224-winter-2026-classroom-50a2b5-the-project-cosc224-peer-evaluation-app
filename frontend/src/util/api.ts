@@ -888,3 +888,24 @@ export const exportReviewsCSV = (assignmentId: number) =>
   fetch(`${BASE_URL}/teacher/assignments/${assignmentId}/export`, {
     credentials: 'include',
   });
+
+// ── Announcements ─────────────────────────────────────────────────────────────
+
+export const getCourseAnnouncements = (courseId: number) =>
+  fetch(`${BASE_URL}/announcement/course/${courseId}/announcements`, {
+    credentials: 'include',
+  }).then((res) => { maybeHandleExpire(res); return res; });
+
+export const createAnnouncement = (courseId: number, data: { title: string; content: string }) =>
+  fetch(`${BASE_URL}/announcement/course/${courseId}/announcements`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).then((res) => { maybeHandleExpire(res); return res; });
+
+export const deleteAnnouncement = (id: number) =>
+  fetch(`${BASE_URL}/announcement/announcements/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  }).then((res) => { maybeHandleExpire(res); return res; });
