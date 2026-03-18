@@ -16,8 +16,8 @@ export default function ClassLayout() {
 
   return (
     <>
-      <div className="flex flex-row justify-between items-center px-4 py-3 border-b border-border gap-3">
-        <h2 className="text-xl font-semibold text-text-primary min-w-0 truncate">{className}</h2>
+      <div className="flex flex-row justify-between items-center px-5 md:px-8 py-4 border-b border-border gap-4 bg-white">
+        <h2 className="text-xl font-semibold text-text-primary min-w-0 truncate m-0">{className}</h2>
         <div className="flex-shrink-0">
           {isTeacher() ? (
             <Button onClick={() => importCSV(id as string)}>

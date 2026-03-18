@@ -24,29 +24,36 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, onCommentCh
 
     if (!rubricId || criteria.length === 0) {
         return (
-            <div className="p-5 bg-white rounded-[8px] shadow-[0_2px_4px_rgba(0,0,0,0.1)] my-5">
-                <p>No rubric available yet</p>
+            <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+                <div className="px-5 md:px-8 py-8 flex flex-col items-center gap-2">
+                    <span className="text-3xl">📋</span>
+                    <p className="text-text-secondary text-sm m-0">No rubric available yet.</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="p-5 bg-white rounded-[8px] shadow-[0_2px_4px_rgba(0,0,0,0.1)] my-5">
-            <h2 className="mb-5 text-[#333]">Rubric</h2>
-            <Criteria
-                questions={questions}
-                scoreMaxes={scoreMaxes}
-                canComment={rubricInfo?.canComment ?? false}
-                hasScores={hasScores}
-                onCriterionSelect={(row: number, value: number) => {
-                    const criterionId = criteria[row]?.id;
-                    if (criterionId !== undefined) {
-                        onCriterionSelect(criterionId, value);
-                    }
-                }}
-                onCommentChange={onCommentChange}
-                grades={grades}
-            />
+        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="px-5 md:px-8 py-4 border-b border-border">
+                <h3 className="text-base font-semibold text-text-primary m-0">Rubric</h3>
+            </div>
+            <div className="px-5 md:px-8 py-5">
+                <Criteria
+                    questions={questions}
+                    scoreMaxes={scoreMaxes}
+                    canComment={rubricInfo?.canComment ?? false}
+                    hasScores={hasScores}
+                    onCriterionSelect={(row: number, value: number) => {
+                        const criterionId = criteria[row]?.id;
+                        if (criterionId !== undefined) {
+                            onCriterionSelect(criterionId, value);
+                        }
+                    }}
+                    onCommentChange={onCommentChange}
+                    grades={grades}
+                />
+            </div>
         </div>
     );
 }

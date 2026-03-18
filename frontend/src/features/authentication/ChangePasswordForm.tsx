@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Button from '../../ui/Button';
 import Textbox from '../../ui/Textbox';
-import StatusMessage from '../../ui/StatusMessage';
+import toast from 'react-hot-toast';
 import { changePassword } from '../../util/api';
 import { pageClasses, blockClasses, innerClasses, inputsClasses, inputChunkClasses } from './LoginForm';
 
@@ -11,84 +10,70 @@ export default function ChangePassword() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [isPending, setIsPending] = useState(false);
 
   const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error('All fields are required');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters');
+      return;
+    }
+
+    setIsPending(true);
     try {
-      setError('');
-      setSuccess(false);
-
-      if (!currentPassword || !newPassword || !confirmPassword) {
-        setError('All fields are required');
-        return;
-      }
-
-      if (newPassword !== confirmPassword) {
-        setError('New passwords do not match');
-        return;
-      }
-
-      if (newPassword.length < 6) {
-        setError('New password must be at least 6 characters');
-        return;
-      }
-
       await changePassword(currentPassword, newPassword);
-      setSuccess(true);
-
-      setTimeout(() => {
-        navigate('/home');
-      }, 2000);
+      toast.success('Password changed successfully! Redirecting...');
+      setTimeout(() => navigate('/home'), 2000);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message || 'Failed to change password');
-      } else {
-        setError('Failed to change password');
-      }
+      toast.error(err instanceof Error ? err.message : 'Failed to change password');
+      setIsPending(false);
     }
   };
 
   return (
     <div className={pageClasses}>
       <div className={blockClasses}>
-        <h1 className="m-4">Change Password</h1>
-        <p className="text-text-secondary mb-4">
-          You must change your temporary password before continuing.
-        </p>
-
-        <StatusMessage message={error} type="error" />
-        {success && (
-          <StatusMessage
-            message="Password changed successfully! Redirecting..."
-            type="success"
-          />
-        )}
+        <div className="text-center w-full">
+          <img src="/oc_logo.png" alt="OC Logo" className="w-14 h-14 mx-auto mb-3 object-contain" />
+          <h1 className="text-2xl font-bold text-text-primary m-0">Change Password</h1>
+          <p className="text-text-secondary text-sm mt-1">You must change your temporary password before continuing.</p>
+        </div>
 
         <div className={innerClasses}>
           <div className={inputsClasses}>
             <div className={inputChunkClasses}>
-              <span>Current Password</span>
-              <Textbox type='password' placeholder='Current password...' onInput={setCurrentPassword} />
+              <label className="text-sm font-medium text-text-primary">Current Password</label>
+              <Textbox type='password' placeholder='••••••••' onInput={setCurrentPassword} />
             </div>
 
             <div className={inputChunkClasses}>
-              <span>New Password</span>
-              <Textbox type='password' placeholder='New password...' onInput={setNewPassword} />
+              <label className="text-sm font-medium text-text-primary">New Password</label>
+              <Textbox type='password' placeholder='••••••••' onInput={setNewPassword} />
             </div>
 
             <div className={inputChunkClasses}>
-              <span>Confirm New Password</span>
-              <Textbox type='password' placeholder='Confirm new password...' onInput={setConfirmPassword} />
+              <label className="text-sm font-medium text-text-primary">Confirm New Password</label>
+              <Textbox type='password' placeholder='••••••••' onInput={setConfirmPassword} />
             </div>
           </div>
         </div>
 
-        <div>
-          <Button onClick={handleChangePassword} disabled={success}>
-            Change Password
-          </Button>
-        </div>
+        <button
+          onClick={handleChangePassword}
+          disabled={isPending}
+          className="w-full px-5 py-2.5 rounded-lg bg-btn-primary text-white text-sm font-semibold hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer border-none disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {isPending ? 'Changing...' : 'Change Password'}
+        </button>
       </div>
     </div>
   );

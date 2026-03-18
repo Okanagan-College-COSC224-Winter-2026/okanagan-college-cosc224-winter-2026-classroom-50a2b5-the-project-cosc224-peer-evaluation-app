@@ -1,6 +1,5 @@
 import { useState } from 'react';
 
-// Component for a single criterion displayed as a card with a slider
 interface props {
     question: string;
     scoreMax: number;
@@ -20,8 +19,8 @@ export default function Criterion(props: props) {
     };
 
     return (
-        <div className="bg-white border border-border rounded-xl px-5 py-4 shadow-sm">
-            <p className="font-semibold text-text-primary text-sm mb-3 m-0">{props.question}</p>
+        <div className="rounded-xl border border-border px-5 py-4 transition-colors hover:border-btn-primary/20">
+            <p className="font-medium text-text-primary text-sm mb-3 m-0">{props.question}</p>
 
             {props.hasScore ? (
                 <div className="flex items-center gap-4">
@@ -31,15 +30,15 @@ export default function Criterion(props: props) {
                         max={props.scoreMax}
                         value={sliderValue}
                         onChange={handleSliderChange}
-                        className="flex-1 h-2 rounded-lg appearance-none cursor-pointer accent-btn-primary bg-gray-200"
+                        className="flex-1 h-2 rounded-lg appearance-none cursor-pointer accent-btn-primary bg-bg-secondary"
                     />
-                    <span className="text-sm font-semibold text-btn-primary whitespace-nowrap min-w-[3.5rem] text-right">
+                    <span className="text-sm font-semibold text-btn-primary bg-btn-primary/10 px-2.5 py-0.5 rounded-full whitespace-nowrap min-w-[3.5rem] text-center">
                         {sliderValue} / {props.scoreMax}
                     </span>
                 </div>
             ) : (
                 <textarea
-                    className="w-full min-h-[80px] px-3 py-2 border border-border rounded-lg bg-bg-secondary text-text-primary text-sm font-[inherit] resize-y focus:outline-none focus:ring-2 focus:ring-btn-primary focus:border-btn-primary transition-colors"
+                    className="w-full min-h-[80px] px-3.5 py-2.5 border border-border rounded-lg bg-bg-secondary text-text-primary text-sm font-[inherit] resize-y focus:outline-none focus:ring-2 focus:ring-btn-primary/30 focus:border-btn-primary transition-all"
                     placeholder="Write your comment here..."
                 />
             )}

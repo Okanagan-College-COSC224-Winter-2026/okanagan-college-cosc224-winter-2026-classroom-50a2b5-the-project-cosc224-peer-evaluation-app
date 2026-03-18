@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Button from '../../ui/Button';
 import Textbox from '../../ui/Textbox';
-import StatusMessage from '../../ui/StatusMessage';
+import toast from 'react-hot-toast';
 import { createTeacherAccount } from '../../util/api';
 import { pageClasses, blockClasses, innerClasses, inputsClasses, inputChunkClasses } from '../authentication/LoginForm';
 
@@ -11,85 +10,76 @@ export default function CreateTeacher() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const [createdTeacher, setCreatedTeacher] = useState<User | null>(null);
+  const [isPending, setIsPending] = useState(false);
 
   const handleCreateTeacher = async () => {
+    if (!name || !email || !password) {
+      toast.error('All fields are required');
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error('Temporary password must be at least 6 characters');
+      return;
+    }
+
+    setIsPending(true);
     try {
-      setError('');
-      setSuccess(false);
-
-      if (!name || !email || !password) {
-        setError('All fields are required');
-        return;
-      }
-
-      if (password.length < 6) {
-        setError('Temporary password must be at least 6 characters');
-        return;
-      }
-
       const result = await createTeacherAccount(name, email, password);
-      setCreatedTeacher(result.user);
-      setSuccess(true);
-
+      toast.success(`Teacher account created for ${result.user.name}`);
       setName('');
       setEmail('');
       setPassword('');
     } catch {
-      setError('Failed to create teacher account');
+      toast.error('Failed to create teacher account');
+    } finally {
+      setIsPending(false);
     }
   };
 
   return (
     <div className={pageClasses}>
       <div className={blockClasses}>
-        <h1 className="m-4">Create Teacher Account</h1>
-        <p className="text-text-secondary mb-4">
-          Create a new teacher account with a temporary password.
-        </p>
-
-        <StatusMessage message={error} type="error" />
-
-        {success && createdTeacher && (
-          <StatusMessage type="success">
-            <div>
-              <strong>Teacher account created successfully!</strong>
-              <div className="mt-2 text-[0.9rem]">
-                <div><strong>Name:</strong> {createdTeacher.name}</div>
-                <div><strong>Email:</strong> {createdTeacher.email}</div>
-                <div><strong>Temporary Password:</strong> (provided by you)</div>
-                <div className="mt-2 italic">
-                  The teacher will be prompted to change their password on first login.
-                </div>
-              </div>
-            </div>
-          </StatusMessage>
-        )}
+        <div className="text-center w-full">
+          <h1 className="text-2xl font-bold text-text-primary m-0">Create Teacher Account</h1>
+          <p className="text-text-secondary text-sm mt-1">Set up a new teacher with a temporary password.</p>
+        </div>
 
         <div className={innerClasses}>
           <div className={inputsClasses}>
             <div className={inputChunkClasses}>
-              <span>Teacher Name</span>
-              <Textbox placeholder='Full name...' onInput={setName} />
+              <label className="text-sm font-medium text-text-primary">Teacher Name</label>
+              <Textbox placeholder='Full name...' onInput={setName} value={name} />
             </div>
 
             <div className={inputChunkClasses}>
-              <span>Institutional Email</span>
-              <Textbox type='email' placeholder='teacher@institution.edu...' onInput={setEmail} />
+              <label className="text-sm font-medium text-text-primary">Institutional Email</label>
+              <Textbox type='email' placeholder='teacher@institution.edu' onInput={setEmail} value={email} />
             </div>
 
             <div className={inputChunkClasses}>
-              <span>Temporary Password</span>
-              <Textbox type='password' placeholder='Temporary password...' onInput={setPassword} />
+              <label className="text-sm font-medium text-text-primary">Temporary Password</label>
+              <Textbox type='password' placeholder='••••••••' onInput={setPassword} value={password} />
             </div>
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <Button onClick={handleCreateTeacher}>Create Teacher</Button>
-          <Button onClick={() => navigate('/home')} type='secondary'>Cancel</Button>
+        <p className="text-xs text-text-secondary m-0 text-center">The teacher will be prompted to change their password on first login.</p>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full">
+          <button
+            onClick={handleCreateTeacher}
+            disabled={isPending}
+            className="flex-1 px-5 py-2.5 rounded-lg bg-btn-primary text-white text-sm font-semibold hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer border-none disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isPending ? 'Creating...' : 'Create Teacher'}
+          </button>
+          <button
+            onClick={() => navigate('/home')}
+            className="flex-1 px-5 py-2.5 rounded-lg border border-border text-sm font-medium text-text-secondary hover:bg-bg-secondary transition-colors cursor-pointer bg-transparent"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     </div>

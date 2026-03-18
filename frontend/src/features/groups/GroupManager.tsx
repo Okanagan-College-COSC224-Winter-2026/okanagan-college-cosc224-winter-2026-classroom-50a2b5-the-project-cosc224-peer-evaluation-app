@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import StatusMessage from "../../ui/StatusMessage";
+import toast from "react-hot-toast";
+import Modal from "../../ui/Modal";
 import { isTeacher } from "../../util/login";
-import Textbox from "../../ui/Textbox";
 import {
   useGroups,
   useMyGroup,
@@ -14,7 +14,6 @@ import {
   useRemoveGroupMember,
 } from "./useGroups";
 
-// Group member type for internal state
 interface GroupMember {
   id: number;
   name: string;
@@ -35,12 +34,17 @@ function GroupMembersPanel({
   if (!isOpen || members.length === 0) return null;
 
   return (
-    <div className="flex flex-col divide-y divide-border">
+    <div className="divide-y divide-border bg-bg-secondary/50">
       {members.map((member: GroupMember) => (
-        <div key={member.id} className="flex items-center justify-between py-2 px-4 pl-8 hover:bg-bg-secondary transition-colors">
-          <span className="text-sm text-text-primary">{member.name}</span>
+        <div key={member.id} className="flex items-center justify-between py-3 px-5 md:px-8 pl-12">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-7 h-7 rounded-full bg-btn-primary/10 flex items-center justify-center text-xs font-semibold text-btn-primary flex-shrink-0">
+              {member.name.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-sm text-text-primary truncate">{member.name}</span>
+          </div>
           <button
-            className="text-xs text-red-600 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors"
+            className="text-xs px-2.5 py-1 rounded-md text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer font-medium"
             onClick={() => onRemove(member.id, group.id)}
           >
             Remove
@@ -57,8 +61,7 @@ export default function Group() {
 
   const [selectedGroup, setSelectedGroup] = useState<number>(-1);
   const [groupName, setGroupName] = useState('');
-  const [statusMessage, setStatusMessage] = useState('');
-  const [statusType, setStatusType] = useState<'error' | 'success'>('error');
+  const [deleteTarget, setDeleteTarget] = useState<CourseGroup | null>(null);
 
   const { data: groups = [], isLoading: groupsLoading } = useGroups(courseId);
   const { data: unassignedStudents = [], isLoading: unassignedLoading } = useUnassignedStudents(courseId);
@@ -73,202 +76,227 @@ export default function Group() {
 
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
-      setStatusType('error');
-      setStatusMessage('Please enter a group name');
+      toast.error('Please enter a group name');
       return;
     }
-
     try {
       await createGroupMutation.mutateAsync(groupName);
       setGroupName('');
-      setStatusType('success');
-      setStatusMessage('Group created!');
-    } catch (error) {
-      console.error("Error creating group:", error);
-      setStatusType('error');
-      setStatusMessage('Error creating group');
+      toast.success('Group created!');
+    } catch {
+      toast.error('Error creating group');
     }
   };
 
   const handleDeleteGroup = async () => {
-    if (selectedGroup === -1) {
-      setStatusType('error');
-      setStatusMessage('Please select a group first');
-      return;
-    }
-
+    if (!deleteTarget) return;
     try {
-      await deleteGroupMutation.mutateAsync(selectedGroup);
-      setSelectedGroup(-1);
-      setStatusType('success');
-      setStatusMessage('Group deleted!');
-    } catch (error) {
-      console.error("Error deleting group:", error);
-      setStatusType('error');
-      setStatusMessage('Error deleting group');
+      await deleteGroupMutation.mutateAsync(deleteTarget.id);
+      if (selectedGroup === deleteTarget.id) setSelectedGroup(-1);
+      toast.success('Group deleted!');
+    } catch {
+      toast.error('Error deleting group');
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
   const handleAddToGroup = async (userId: number) => {
     if (selectedGroup === -1) {
-      setStatusType('error');
-      setStatusMessage('Please select a group first');
+      toast.error('Please select a group first');
       return;
     }
-
     try {
       await addMemberMutation.mutateAsync({ groupId: selectedGroup, userId });
-      setStatusType('success');
-      setStatusMessage('Student added to group!');
-    } catch (error) {
-      console.error("Error adding member:", error);
-      setStatusType('error');
-      setStatusMessage('Error adding student to group');
+      toast.success('Student added to group!');
+    } catch {
+      toast.error('Error adding student to group');
     }
   };
 
   const handleRemoveFromGroup = async (userId: number, groupId: number) => {
     try {
       await removeMemberMutation.mutateAsync({ groupId, userId });
-      setStatusType('success');
-      setStatusMessage('Student removed from group!');
-    } catch (error) {
-      console.error("Error removing member:", error);
-      setStatusType('error');
-      setStatusMessage('Error removing student from group');
+      toast.success('Student removed from group!');
+    } catch {
+      toast.error('Error removing student from group');
     }
   };
 
   if (loading) {
     return (
-      <div className="p-4 md:p-6 w-full">
-        <div className="max-w-5xl mx-auto text-text-secondary text-sm">Loading...</div>
+      <div className="p-4 md:p-8 w-full max-w-260 mx-auto">
+        <p className="text-text-secondary text-sm">Loading...</p>
       </div>
     );
   }
 
-  return (
-    <div className="p-4 md:p-8 w-full">
-      {isTeacher() ? (
-        <div className="max-w-5xl mx-auto rounded-2xl bg-white shadow-sm border border-border p-5 md:p-8 flex flex-col gap-6">
-          {statusMessage && <StatusMessage message={statusMessage} type={statusType} className="mb-0" />}
+  /* ─── Student View ─── */
+  if (!isTeacher()) {
+    return (
+      <div className="p-4 md:p-8 w-full max-w-260 mx-auto flex flex-col gap-6">
+        <h2 className="text-2xl font-semibold text-text-primary m-0">My Group</h2>
 
-          {/* Create Group Form */}
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Textbox
-              placeholder="New group name..."
-              onInput={setGroupName}
-              value={groupName}
-              className="flex-1 sm:max-w-xs"
-            />
-            <button
-              className="px-4 py-2 bg-btn-primary text-white text-sm font-medium rounded-lg cursor-pointer transition-colors hover:brightness-90"
-              onClick={handleCreateGroup}
-            >
-              Create Group
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Unassigned Students */}
-            <div className="rounded-xl border border-border bg-bg-secondary overflow-hidden">
-              <div className="px-4 py-3 border-b border-border bg-slate-50">
-                <h3 className="m-0 text-sm font-semibold text-text-primary">
-                  Unassigned Students
-                  <span className="ml-2 text-text-secondary font-normal">({unassignedStudents.length})</span>
-                </h3>
-              </div>
-              {unassignedStudents.length === 0 ? (
-                <p className="text-text-secondary text-sm p-4 m-0">No unassigned students</p>
-              ) : (
-                <div className="flex flex-col divide-y divide-border">
-                  {unassignedStudents.map((student: GroupMember) => (
-                    <div key={student.id} className="flex items-center justify-between px-4 py-2.5 bg-white hover:bg-slate-50 transition-colors">
-                      <span className="text-sm text-text-primary">{student.name}</span>
-                      <button
-                        className="text-xs font-medium text-btn-primary hover:text-white px-3 py-1 rounded-md border border-btn-primary hover:bg-btn-primary transition-colors"
-                        onClick={() => handleAddToGroup(student.id)}
-                      >
-                        Add
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Groups */}
-            <div className="rounded-xl border border-border bg-bg-secondary overflow-hidden">
-              <div className="px-4 py-3 border-b border-border bg-slate-50 flex items-center justify-between">
-                <h3 className="m-0 text-sm font-semibold text-text-primary">
-                  Groups
-                  <span className="ml-2 text-text-secondary font-normal">({groups.length})</span>
-                </h3>
-                {selectedGroup !== -1 && (
-                  <button
-                    className="text-xs font-medium text-red-600 hover:text-white px-3 py-1 rounded-md border border-red-300 hover:bg-red-600 transition-colors"
-                    onClick={handleDeleteGroup}
-                  >
-                    Delete Selected
-                  </button>
-                )}
-              </div>
-              {groups.length === 0 ? (
-                <p className="text-text-secondary text-sm p-4 m-0">No groups created yet</p>
-              ) : (
-                <div className="flex flex-col">
-                  {groups.map((group: CourseGroup) => (
-                    <div key={group.id}>
-                      <div
-                        className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer transition-colors border-b border-border bg-white ${
-                          selectedGroup === group.id
-                            ? "bg-btn-primary/5 border-l-2 border-l-btn-primary"
-                            : "hover:bg-slate-50"
-                        }`}
-                        onClick={() => setSelectedGroup(selectedGroup === group.id ? -1 : group.id)}
-                      >
-                        <span className={`text-xs text-text-secondary transition-transform ${selectedGroup === group.id ? "rotate-90" : ""}`}>
-                          &#9654;
-                        </span>
-                        <span className="text-sm font-medium text-text-primary">{group.name}</span>
-                      </div>
-                      <GroupMembersPanel
-                        group={group}
-                        isOpen={selectedGroup === group.id}
-                        onRemove={handleRemoveFromGroup}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* Student View */
-        <div className="max-w-2xl mx-auto rounded-2xl bg-white shadow-sm border border-border p-5 md:p-8 flex flex-col gap-4">
-          {statusMessage && <StatusMessage message={statusMessage} type={statusType} className="mb-0" />}
+        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
           {myGroup ? (
-            <div className="rounded-xl border border-border overflow-hidden">
-              <div className="px-4 py-3 border-b border-border bg-slate-50">
-                <h3 className="m-0 text-sm font-semibold text-text-primary">My Group: {myGroup.name}</h3>
+            <>
+              <div className="px-5 md:px-8 py-4 border-b border-border">
+                <h3 className="text-base font-semibold text-text-primary m-0">{myGroup.name}</h3>
               </div>
-              <div className="flex flex-col divide-y divide-border">
+              <div className="divide-y divide-border">
                 {myGroup.members.map((member: GroupMember) => (
-                  <div key={member.id} className="flex items-center gap-3 px-4 py-2.5 bg-white">
-                    <div className="w-8 h-8 rounded-full bg-btn-primary/15 flex items-center justify-center text-xs font-semibold text-btn-primary flex-shrink-0">
+                  <div key={member.id} className="flex items-center gap-3 px-5 md:px-8 py-3.5">
+                    <div className="w-9 h-9 rounded-full bg-btn-primary/10 flex items-center justify-center text-sm font-semibold text-btn-primary flex-shrink-0">
                       {member.name.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-sm text-text-primary">{member.name}</span>
+                    <span className="text-sm font-medium text-text-primary">{member.name}</span>
                   </div>
                 ))}
               </div>
-            </div>
+            </>
           ) : (
-            <p className="text-text-secondary text-sm m-0">You are not assigned to any group yet.</p>
+            <div className="px-5 md:px-8 py-8 flex flex-col items-center gap-2">
+              <span className="text-3xl">👥</span>
+              <p className="text-text-secondary text-sm m-0">You are not assigned to any group yet.</p>
+            </div>
           )}
         </div>
-      )}
+      </div>
+    );
+  }
+
+  /* ─── Teacher View ─── */
+  return (
+    <div className="p-4 md:p-8 w-full max-w-260 mx-auto flex flex-col gap-6">
+      <h2 className="text-2xl font-semibold text-text-primary m-0">Groups</h2>
+
+      {/* Create group row */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          type="text"
+          placeholder="New group name..."
+          value={groupName}
+          onChange={(e) => setGroupName(e.target.value)}
+          className="flex-1 sm:max-w-xs px-3.5 py-2.5 border border-border rounded-lg bg-white text-text-primary text-sm font-[inherit] focus:outline-none focus:ring-2 focus:ring-btn-primary/30 focus:border-btn-primary transition-all"
+        />
+        <button
+          onClick={handleCreateGroup}
+          className="px-5 py-2.5 bg-btn-primary text-white text-sm font-semibold rounded-lg cursor-pointer transition-all hover:brightness-110 active:scale-[0.98] border-none"
+        >
+          Create Group
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Unassigned Students */}
+        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="px-5 md:px-8 py-4 border-b border-border flex items-center justify-between">
+            <h3 className="text-base font-semibold text-text-primary m-0">Unassigned Students</h3>
+            <span className="text-xs font-medium text-text-secondary bg-bg-secondary px-2.5 py-1 rounded-full">
+              {unassignedStudents.length}
+            </span>
+          </div>
+          {unassignedStudents.length === 0 ? (
+            <div className="px-5 md:px-8 py-8 flex flex-col items-center gap-2">
+              <p className="text-text-secondary text-sm m-0">All students are assigned.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {unassignedStudents.map((student: GroupMember) => (
+                <div key={student.id} className="flex items-center justify-between px-5 md:px-8 py-3 transition-colors hover:bg-btn-primary/[0.03]">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-btn-primary/10 flex items-center justify-center text-xs font-semibold text-btn-primary flex-shrink-0">
+                      {student.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-sm text-text-primary truncate">{student.name}</span>
+                  </div>
+                  <button
+                    className="text-xs font-medium text-btn-primary bg-btn-primary/10 hover:bg-btn-primary hover:text-white px-3 py-1.5 rounded-lg border-none transition-colors cursor-pointer"
+                    onClick={() => handleAddToGroup(student.id)}
+                  >
+                    Add
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Groups List */}
+        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="px-5 md:px-8 py-4 border-b border-border flex items-center justify-between">
+            <h3 className="text-base font-semibold text-text-primary m-0">Groups</h3>
+            <span className="text-xs font-medium text-text-secondary bg-bg-secondary px-2.5 py-1 rounded-full">
+              {groups.length}
+            </span>
+          </div>
+          {groups.length === 0 ? (
+            <div className="px-5 md:px-8 py-8 flex flex-col items-center gap-2">
+              <span className="text-3xl">📁</span>
+              <p className="text-text-secondary text-sm m-0">No groups created yet.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {groups.map((group: CourseGroup) => (
+                <div key={group.id}>
+                  <div
+                    className={`flex items-center justify-between px-5 md:px-8 py-3.5 cursor-pointer transition-colors ${
+                      selectedGroup === group.id
+                        ? "bg-btn-primary/[0.05]"
+                        : "hover:bg-btn-primary/[0.03]"
+                    }`}
+                    onClick={() => setSelectedGroup(selectedGroup === group.id ? -1 : group.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs text-text-secondary transition-transform duration-200 ${selectedGroup === group.id ? "rotate-90" : ""}`}>
+                        &#9654;
+                      </span>
+                      <span className="text-sm font-medium text-text-primary">{group.name}</span>
+                      {selectedGroup === group.id && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-btn-primary" />
+                      )}
+                    </div>
+                    <button
+                      className="text-xs px-2.5 py-1 rounded-md text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer font-medium"
+                      onClick={(e) => { e.stopPropagation(); setDeleteTarget(group); }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                  <GroupMembersPanel
+                    group={group}
+                    isOpen={selectedGroup === group.id}
+                    onRemove={handleRemoveFromGroup}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Delete Group Confirmation Modal */}
+      <Modal isOpen={deleteTarget !== null} onClose={() => setDeleteTarget(null)} title="Delete Group">
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-text-secondary m-0">
+            Are you sure you want to delete <strong className="text-text-primary">{deleteTarget?.name}</strong>? All students in this group will become unassigned. This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-end pt-2 border-t border-border">
+            <button
+              onClick={() => setDeleteTarget(null)}
+              className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-text-secondary hover:bg-bg-secondary transition-colors cursor-pointer bg-transparent"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteGroup}
+              className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold border-none cursor-pointer transition-all hover:bg-red-700 active:scale-[0.98]"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Textbox from '../../ui/Textbox';
 import Button from '../../ui/Button';
-import StatusMessage from '../../ui/StatusMessage';
+import toast from 'react-hot-toast';
 import { tryLogin } from '../../util/api';
 import { useAuth } from './AuthProvider';
 
@@ -18,7 +18,6 @@ export default function LoginPage() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
 
   const attemptLogin = async () => {
     try {
@@ -31,10 +30,10 @@ export default function LoginPage() {
           navigate('/home');
         }
       } else {
-        setError('Invalid email or password');
+        toast.error('Invalid email or password');
       }
     } catch {
-      setError('Invalid email or password');
+      toast.error('Invalid email or password');
     }
   }
 
@@ -46,8 +45,6 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-text-primary m-0">Welcome back</h1>
           <p className="text-text-secondary text-sm mt-1">Sign in to your account</p>
         </div>
-
-        {error && <StatusMessage message={error} type="error" className="w-full mb-0" />}
 
         <div className={innerClasses}>
           <div className={inputsClasses}>
