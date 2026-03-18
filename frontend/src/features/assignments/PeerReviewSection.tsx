@@ -1,4 +1,5 @@
 import { useState, ChangeEvent } from "react";
+import toast from "react-hot-toast";
 import Modal from "../../ui/Modal";
 import RubricDisplay from "../reviews/RubricDisplay";
 import { useSubmitReview } from "../reviews/useReviews";
@@ -17,10 +18,9 @@ interface Props {
   groupMembers: GroupMember[];
   revieweeID: number;
   setRevieweeID: (id: number) => void;
-  onStatus: (type: "error" | "success", message: string) => void;
 }
 
-export default function PeerReviewSection({ assignmentId, rubricId, review, groupMembers, revieweeID, setRevieweeID, onStatus }: Props) {
+export default function PeerReviewSection({ assignmentId, rubricId, review, groupMembers, revieweeID, setRevieweeID }: Props) {
   const [selectedCriteria, setSelectedCriteria] = useState<SelectedCriterion[]>([]);
   const [reviewComment, setReviewComment] = useState("");
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -56,10 +56,10 @@ export default function PeerReviewSection({ assignmentId, rubricId, review, grou
         onSuccess: () => {
           if (closeModal) setIsReviewModalOpen(false);
           setReviewedMembers((prev) => new Set(prev).add(revieweeID));
-          onStatus("success", "Review submitted successfully.");
+          toast.success("Review submitted successfully.");
         },
         onError: (error) => {
-          onStatus("error", error instanceof Error ? error.message : "Failed to submit review.");
+          toast.error(error instanceof Error ? error.message : "Failed to submit review.");
         },
       }
     );
@@ -68,33 +68,41 @@ export default function PeerReviewSection({ assignmentId, rubricId, review, grou
   return (
     <>
       <div className={cardClass}>
-        <h3 className="text-base font-semibold text-text-primary mt-0 mb-3">Select a group member to review</h3>
-        {groupMembers.length === 0 ? (
-          <p className="text-text-secondary text-sm m-0">No group members found. You may not be assigned to a group yet.</p>
-        ) : (
-          <div className="flex flex-col gap-2 mb-4">
-            {groupMembers.map((member) => (
-              <label key={member.id} className="flex items-center gap-2.5 cursor-pointer text-sm text-text-primary">
-                <input
-                  type="radio"
-                  id={member.id.toString()}
-                  value={member.id}
-                  name="groupMembers"
-                  onChange={handleRadioChange}
-                  className="w-4 h-4 accent-btn-primary"
-                />
-                {member.name}
-                {reviewedMembers.has(member.id) && (
-                  <span className="text-xs text-emerald-600 font-medium">(reviewed)</span>
-                )}
-              </label>
-            ))}
-          </div>
-        )}
+        <div className="px-5 md:px-8 py-4 border-b border-border">
+          <h3 className="text-base font-semibold text-text-primary m-0">Peer Review</h3>
+        </div>
 
-        <button className={btnPrimary} disabled={isSubmitting} onClick={() => handleSubmitReview()}>
-          {isSubmitting ? "Submitting..." : "Submit Review"}
-        </button>
+        <div className="px-5 md:px-8 py-5 flex flex-col gap-4">
+          <p className="text-sm text-text-secondary m-0">Select a group member to review</p>
+          {groupMembers.length === 0 ? (
+            <p className="text-text-secondary text-sm m-0">No group members found. You may not be assigned to a group yet.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {groupMembers.map((member) => (
+                <label key={member.id} className="flex items-center gap-2.5 cursor-pointer text-sm text-text-primary py-1">
+                  <input
+                    type="radio"
+                    id={member.id.toString()}
+                    value={member.id}
+                    name="groupMembers"
+                    onChange={handleRadioChange}
+                    className="w-4 h-4 accent-btn-primary"
+                  />
+                  {member.name}
+                  {reviewedMembers.has(member.id) && (
+                    <span className="text-xs text-emerald-600 font-medium">(reviewed)</span>
+                  )}
+                </label>
+              ))}
+            </div>
+          )}
+
+          <div className="pt-3 border-t border-border">
+            <button className={btnPrimary} disabled={isSubmitting} onClick={() => handleSubmitReview()}>
+              {isSubmitting ? "Submitting..." : "Submit Review"}
+            </button>
+          </div>
+        </div>
       </div>
 
       <Modal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} title={`Review: ${selectedMemberName}`}>

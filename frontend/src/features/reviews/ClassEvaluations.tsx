@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import Modal from "../../ui/Modal";
 import { useCourseGradeSummary, useReviewsForAssignment } from "./useReviews";
 
-// Shape of a single review returned by GET /review/assignment/<id>
 interface ReviewCriterion {
   id: number;
   reviewID: number;
@@ -23,7 +22,6 @@ interface ReviewData {
   criteria: ReviewCriterion[];
 }
 
-// Summary info displayed in the assignment list
 interface AssignmentSummary {
   id: number;
   name: string;
@@ -35,11 +33,9 @@ interface AssignmentSummary {
 export default function ClassEvaluations() {
   const { id } = useParams();
 
-  // Modal state
   const [selectedAssignment, setSelectedAssignment] = useState<AssignmentSummary | null>(null);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<number>(0);
 
-  // React Query hooks
   const { data: summaryData, isLoading: loading } = useCourseGradeSummary(Number(id));
   const { data: reviews = [], isLoading: modalLoading } = useReviewsForAssignment(selectedAssignmentId);
 
@@ -59,58 +55,90 @@ export default function ClassEvaluations() {
 
   return (
     <>
-      {/* Evaluations content */}
-      <div className="p-4 md:p-6 w-full max-w-4xl">
-        <h3 className="text-base font-semibold text-text-primary mt-0 mb-3">My Evaluations</h3>
+      <div className="p-4 md:p-8 w-full max-w-260 mx-auto flex flex-col gap-6">
+        {/* Header */}
+        <h2 className="text-2xl font-semibold text-text-primary m-0">Evaluations</h2>
 
         {loading ? (
           <p className="text-text-secondary text-sm">Loading evaluations...</p>
         ) : summaries.length === 0 ? (
-          <p className="text-text-secondary text-sm">No assignments in this course yet.</p>
+          <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="px-5 md:px-8 py-8 flex flex-col items-center gap-2">
+              <span className="text-3xl">📋</span>
+              <p className="text-text-secondary text-sm m-0">No assignments in this course yet.</p>
+            </div>
+          </div>
         ) : (
           <>
-            {/* Assignment list */}
-            <ul className="list-none m-0 p-0 flex flex-col gap-2 rounded-xl border border-border bg-bg-secondary p-3">
-              {summaries.map((s) => (
-                <li
-                  key={s.id}
-                  className={`flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 px-3 py-2.5 rounded-lg bg-white transition-colors ${
-                    s.reviewCount > 0
-                      ? "cursor-pointer hover:bg-blue-50"
-                      : ""
-                  }`}
-                  onClick={() => s.reviewCount > 0 && openAssignment(s)}
-                >
-                  <span className="font-medium text-text-primary text-sm">{s.name}</span>
-                  <div className="flex items-center gap-3 text-sm">
-                    {s.reviewCount === 0 ? (
-                      <span className="text-text-secondary italic">No reviews yet</span>
-                    ) : (
-                      <>
-                        <span className="text-text-secondary">
-                          {s.reviewCount} review{s.reviewCount !== 1 ? "s" : ""}
-                        </span>
-                        {s.averageScore !== null && (
-                          <span className="font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full text-xs">
-                            Avg: {s.averageScore.toFixed(1)}{s.maxScore !== null ? ` / ${s.maxScore}` : ""}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-
-            {/* Course total */}
+            {/* Course average banner */}
             {courseAverage !== null && (
-              <div className="flex justify-between items-center mt-3 px-3.5 py-2.5 rounded-lg bg-blue-50 border border-blue-200">
-                <span className="font-semibold text-sm text-text-primary">Course Average:</span>
-                <span className="font-bold text-lg text-blue-600">
-                  {courseAverage.toFixed(1)}{courseMax !== null ? ` / ${courseMax.toFixed(1)}` : ""}
-                </span>
+              <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+                <div className="px-5 md:px-8 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide m-0 mb-1">Course Average</p>
+                    <p className="text-2xl font-bold text-text-primary m-0">
+                      {courseAverage.toFixed(1)}
+                      {courseMax !== null && (
+                        <span className="text-base font-normal text-text-secondary"> / {courseMax.toFixed(1)}</span>
+                      )}
+                    </p>
+                  </div>
+                  {courseMax !== null && courseMax > 0 && (
+                    <div className="w-full sm:w-48">
+                      <div className="h-2.5 bg-bg-secondary rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-btn-primary rounded-full transition-all"
+                          style={{ width: `${Math.min((courseAverage / courseMax) * 100, 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-text-secondary m-0 mt-1 text-right">
+                        {((courseAverage / courseMax) * 100).toFixed(0)}%
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
+
+            {/* Assignment list card */}
+            <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+              <div className="px-5 md:px-8 py-4 border-b border-border">
+                <h3 className="text-base font-semibold text-text-primary m-0">Assignments</h3>
+              </div>
+
+              <div className="divide-y divide-border">
+                {summaries.map((s) => (
+                  <div
+                    key={s.id}
+                    className={`px-5 md:px-8 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 transition-colors ${
+                      s.reviewCount > 0 ? "cursor-pointer hover:bg-bg-secondary" : ""
+                    }`}
+                    onClick={() => s.reviewCount > 0 && openAssignment(s)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.reviewCount > 0 ? "bg-btn-primary" : "bg-gray-300"}`} />
+                      <span className="font-medium text-text-primary text-sm">{s.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm pl-5 sm:pl-0">
+                      {s.reviewCount === 0 ? (
+                        <span className="text-text-secondary text-xs">No reviews yet</span>
+                      ) : (
+                        <>
+                          <span className="text-text-secondary text-xs">
+                            {s.reviewCount} review{s.reviewCount !== 1 ? "s" : ""}
+                          </span>
+                          {s.averageScore !== null && (
+                            <span className="font-semibold text-btn-primary bg-btn-primary/10 px-2.5 py-0.5 rounded-full text-xs">
+                              {s.averageScore.toFixed(1)}{s.maxScore !== null ? ` / ${s.maxScore}` : ""}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </>
         )}
       </div>
@@ -135,62 +163,51 @@ export default function ClassEvaluations() {
                 .reduce((sum, c) => sum + (c.score_max ?? 0), 0);
 
               return (
-                <div key={review.id} className="border border-border rounded-xl p-3 sm:p-4 bg-bg-secondary">
+                <div key={review.id} className="rounded-xl border border-border overflow-hidden">
                   {/* Review header */}
-                  <div className="flex justify-between items-center mb-2">
+                  <div className="px-4 py-3 bg-bg-secondary flex justify-between items-center border-b border-border">
                     <span className="font-semibold text-sm text-text-primary">Review {idx + 1}</span>
                     <span className="text-xs text-text-secondary">by {review.reviewer.name}</span>
                   </div>
 
-                  {review.criteria.length === 0 ? (
-                    <p className="text-text-secondary text-xs m-0">No criteria scores recorded.</p>
-                  ) : (
-                    <>
-                      {/* Criteria table */}
-                      <table className="w-full text-sm border-collapse">
-                        <thead>
-                          <tr>
-                            <th className="text-left py-1.5 px-2 text-xs font-semibold text-text-secondary uppercase tracking-wide border-b border-border">
-                              Criteria
-                            </th>
-                            <th className="text-left py-1.5 px-2 text-xs font-semibold text-text-secondary uppercase tracking-wide border-b border-border w-16">
-                              Score
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {review.criteria.map((crit) => (
-                            <tr key={crit.id}>
-                              <td className="py-1.5 px-2 text-text-primary border-b border-border/50">
-                                {crit.criterion_name || `Criterion ${crit.criterionRowID}`}
-                              </td>
-                              <td className="py-1.5 px-2 font-semibold border-b border-border/50 w-16">
-                                {crit.grade !== null
-                                  ? `${crit.grade}${crit.score_max !== null ? ` / ${crit.score_max}` : ""}`
-                                  : "\u2014"}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                  <div className="p-4">
+                    {review.criteria.length === 0 ? (
+                      <p className="text-text-secondary text-xs m-0">No criteria scores recorded.</p>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {review.criteria.map((crit) => (
+                          <div key={crit.id} className="flex justify-between items-center py-1.5">
+                            <span className="text-sm text-text-primary">
+                              {crit.criterion_name || `Criterion ${crit.criterionRowID}`}
+                            </span>
+                            <span className="text-sm font-semibold text-text-primary">
+                              {crit.grade !== null
+                                ? `${crit.grade}${crit.score_max !== null ? ` / ${crit.score_max}` : ""}`
+                                : "\u2014"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                      {/* Review-level comments */}
-                      {review.comments && review.comments.trim() !== "" && (
-                        <div className="mt-2.5 pt-2 border-t border-border">
-                          <span className="font-semibold text-xs text-text-secondary">Comments:</span>
-                          <p className="mt-1 text-sm text-text-primary leading-relaxed m-0">
-                            {review.comments}
-                          </p>
-                        </div>
-                      )}
-                    </>
-                  )}
+                    {scoredCriteria.length > 0 && (
+                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-border">
+                        <span className="text-sm font-semibold text-text-primary">Total</span>
+                        <span className="text-sm font-bold text-btn-primary">
+                          {total}{totalMax > 0 ? ` / ${totalMax}` : ""}
+                        </span>
+                      </div>
+                    )}
 
-                  {scoredCriteria.length > 0 && (
-                    <div className="text-right mt-2 text-sm text-text-primary">
-                      Total: <strong>{total}{totalMax > 0 ? ` / ${totalMax}` : ""}</strong>
-                    </div>
-                  )}
+                    {review.comments && review.comments.trim() !== "" && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Comments</span>
+                        <p className="mt-1.5 text-sm text-text-primary leading-relaxed m-0">
+                          {review.comments}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}

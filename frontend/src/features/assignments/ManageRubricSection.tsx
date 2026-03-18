@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 import RubricCreator from "../reviews/RubricCreator";
 import RubricDisplay from "../reviews/RubricDisplay";
 import Modal from "../../ui/Modal";
@@ -11,10 +12,9 @@ interface Props {
   review: number[];
   onCriterionSelect: (row: number, column: number) => void;
   onCommentChange: (comment: string) => void;
-  onStatus: (type: "error" | "success", message: string) => void;
 }
 
-export default function ManageRubricSection({ assignmentId, rubricId, review, onCriterionSelect, onCommentChange, onStatus }: Props) {
+export default function ManageRubricSection({ assignmentId, rubricId, review, onCriterionSelect, onCommentChange }: Props) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const { mutate: deleteRubric, isPending: isDeleting } = useDeleteRubric(assignmentId);
 
@@ -22,12 +22,16 @@ export default function ManageRubricSection({ assignmentId, rubricId, review, on
     return (
       <>
         <div className={cardClass}>
-          <h3 className="text-base font-semibold text-text-primary mt-0 mb-3">Rubric Preview</h3>
-          <RubricDisplay rubricId={rubricId} onCriterionSelect={onCriterionSelect} onCommentChange={onCommentChange} grades={review} />
-          <div className="mt-4 pt-3 border-t border-border">
-            <button className={btnDanger} onClick={() => setIsDeleteModalOpen(true)}>
-              Delete Rubric
-            </button>
+          <div className="px-5 md:px-8 py-4 border-b border-border">
+            <h3 className="text-base font-semibold text-text-primary m-0">Rubric</h3>
+          </div>
+          <div className="px-5 md:px-8 py-5">
+            <RubricDisplay rubricId={rubricId} onCriterionSelect={onCriterionSelect} onCommentChange={onCommentChange} grades={review} />
+            <div className="mt-5 pt-4 border-t border-border">
+              <button className={btnDanger} onClick={() => setIsDeleteModalOpen(true)}>
+                Delete Rubric
+              </button>
+            </div>
           </div>
         </div>
 
@@ -49,11 +53,11 @@ export default function ManageRubricSection({ assignmentId, rubricId, review, on
                   deleteRubric(rubricId, {
                     onSuccess: () => {
                       setIsDeleteModalOpen(false);
-                      onStatus("success", "Rubric deleted successfully.");
+                      toast.success("Rubric deleted successfully.");
                     },
                     onError: (error) => {
                       setIsDeleteModalOpen(false);
-                      onStatus("error", error instanceof Error ? error.message : "Failed to delete rubric.");
+                      toast.error(error instanceof Error ? error.message : "Failed to delete rubric.");
                     },
                   });
                 }}
@@ -70,10 +74,12 @@ export default function ManageRubricSection({ assignmentId, rubricId, review, on
 
   return (
     <div className={cardClass}>
-      <RubricCreator
-        id={assignmentId}
-        onRubricCreated={() => onStatus("success", "Rubric created successfully.")}
-      />
+      <div className="px-5 md:px-8 py-4 border-b border-border">
+        <h3 className="text-base font-semibold text-text-primary m-0">Rubric</h3>
+      </div>
+      <div className="px-5 md:px-8 py-5">
+        <RubricCreator id={assignmentId} />
+      </div>
     </div>
   );
 }

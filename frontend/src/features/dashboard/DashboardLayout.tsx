@@ -3,6 +3,7 @@ import ClassCard from "../classes/ClassCard";
 import { useClassesWithAssignments } from "../classes/useClasses";
 import { useDebounce } from "../../hooks/useDebounce";
 import { isTeacher, isAdmin } from "../../util/login";
+import { getCourseImageUrl } from "../../services/classApi";
 
 export default function DashboardLayout() {
   const {
@@ -59,7 +60,7 @@ export default function DashboardLayout() {
         {filteredCourses.map((course: CourseWithAssignments) => (
           <ClassCard
             key={course.id}
-            image="https://crc.losrios.edu//shared/img/social-1200-630/programs/general-science-social.jpg"
+            image={course.image_path ? getCourseImageUrl(course.id) : "https://crc.losrios.edu//shared/img/social-1200-630/programs/general-science-social.jpg"}
             name={course.name}
             subtitle={`${course.assignmentCount || 0} assignments`}
             href={`/classes/${course.id}/home`}

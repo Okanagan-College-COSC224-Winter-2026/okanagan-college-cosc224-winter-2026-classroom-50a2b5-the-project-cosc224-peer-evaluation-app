@@ -15,6 +15,7 @@ class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     teacherID = db.Column(db.Integer, db.ForeignKey("User.id"), nullable=False, index=True)
     name = db.Column(db.String(255), nullable=True)
+    image_path = db.Column(db.String(255), nullable=True)
 
     # relationships
     teacher = db.relationship("User", back_populates="teaching_courses", foreign_keys=[teacherID])

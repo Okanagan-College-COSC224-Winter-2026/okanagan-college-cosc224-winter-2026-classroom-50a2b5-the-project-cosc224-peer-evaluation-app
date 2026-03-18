@@ -1,7 +1,5 @@
 import TabNavigation from "../../ui/TabNavigation";
-import StatusMessage from "../../ui/StatusMessage";
 import { useAssignmentDetail } from "./useAssignmentDetail";
-import { cardClass } from "./assignmentStyles";
 import ManageAssignmentCard from "./ManageAssignmentCard";
 import ManageResourcesCard from "./ManageResourcesCard";
 import ManageRubricSection from "./ManageRubricSection";
@@ -23,10 +21,6 @@ export default function AssignmentDetail() {
     mySubmission,
     revieweeID,
     setRevieweeID,
-    statusMessage,
-    statusType,
-    showStatus,
-    clearStatus,
   } = useAssignmentDetail();
 
   return (
@@ -38,34 +32,93 @@ export default function AssignmentDetail() {
         ]}
       />
 
-      <div className="flex flex-row justify-between items-center px-4 md:px-6 py-3 border-b border-border bg-white">
-        <h2 className="text-xl font-semibold text-text-primary m-0 min-w-0 truncate">
-          {assignment?.name ? assignment.name : `Assignment ${id}`}
-        </h2>
-      </div>
+      <div className="p-4 md:p-8 w-full max-w-260 mx-auto flex flex-col gap-6">
+        {/* Header row — Wild Oasis style: title + tag side by side */}
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-2xl font-semibold text-text-primary m-0">
+            {assignment?.name ? assignment.name : `Assignment ${id}`}
+          </h2>
+          {assignment && (
+            <span className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide bg-btn-primary/10 text-btn-primary">
+              {isManageTab ? "Managing" : teacherMode ? "Reviewing" : "Active"}
+            </span>
+          )}
+        </div>
 
-      <div className="p-4 md:p-6 w-full max-w-260 mx-auto flex flex-col gap-4">
-        {assignment?.description && (
-          <p className="px-4 py-3 bg-bg-secondary rounded-lg text-sm whitespace-pre-wrap border border-border text-text-primary m-0">
-            {assignment.description}
-          </p>
+        {/* Detail card — colored header strip + data rows */}
+        {!isManageTab && assignment && (
+          <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="bg-btn-primary px-5 md:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <span className="text-white font-medium text-sm">
+                {assignment.name}
+              </span>
+              {(assignment.start_date || assignment.due_date) && (
+                <span className="text-white/80 text-xs">
+                  {assignment.start_date && new Date(assignment.start_date).toLocaleDateString()}
+                  {assignment.start_date && assignment.due_date && " — "}
+                  {assignment.due_date && new Date(assignment.due_date).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+
+            <div className="px-5 md:px-8 py-5 flex flex-col gap-4">
+              {assignment.description && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Description</span>
+                  <p className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap m-0">
+                    {assignment.description}
+                  </p>
+                </div>
+              )}
+
+              {resourceList.length > 0 && (
+                <div className="flex flex-col gap-2 pt-3 border-t border-border">
+                  <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
+                    {teacherMode ? "Documents (Student Preview)" : "Supporting Documents"}
+                  </span>
+                  <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
+                    {resourceList.map((resource) => (
+                      <li key={resource.id}>
+                        <a href={resource.download_url} target="_blank" rel="noreferrer" className="text-btn-primary text-sm hover:underline">
+                          {resource.original_name}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {resourceList.length === 0 && teacherMode && (
+                <div className="flex flex-col gap-1 pt-3 border-t border-border">
+                  <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Documents</span>
+                  <p className="text-text-secondary text-sm m-0">No supporting documents available.</p>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
-        {statusMessage && <StatusMessage message={statusMessage} type={statusType} />}
+        {/* Rubric preview on review tab */}
+        {teacherMode && !isManageTab && rubricId && (
+          <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="px-5 md:px-8 py-4 border-b border-border">
+              <h3 className="text-base font-semibold text-text-primary m-0">Rubric Preview</h3>
+            </div>
+            <div className="px-5 md:px-8 py-5">
+              <RubricDisplay rubricId={rubricId} onCriterionSelect={() => {}} grades={review} />
+            </div>
+          </div>
+        )}
 
+        {/* Management tab — cards */}
         {teacherMode && assignment && isManageTab && (
           <>
             <ManageAssignmentCard
               assignmentId={assignmentId}
               assignment={assignment}
-              onStatus={showStatus}
-              onClearStatus={clearStatus}
             />
             <ManageResourcesCard
               assignmentId={assignmentId}
               resources={resourceList}
-              onStatus={showStatus}
-              onClearStatus={clearStatus}
             />
             <ManageRubricSection
               assignmentId={assignmentId}
@@ -73,46 +126,17 @@ export default function AssignmentDetail() {
               review={review}
               onCriterionSelect={() => {}}
               onCommentChange={() => {}}
-              onStatus={showStatus}
             />
           </>
         )}
 
-        {teacherMode && !isManageTab && (
-          <div className={cardClass}>
-            <h3 className="text-base font-semibold text-text-primary mt-0 mb-3">Supporting Documents (Student Preview)</h3>
-            {resourceList.length === 0 ? (
-              <p className="text-text-secondary text-sm m-0">No supporting documents available.</p>
-            ) : (
-              <ul className="m-0 p-0 list-none flex flex-col gap-2">
-                {resourceList.map((resource) => (
-                  <li key={resource.id} className="py-1.5 border-b border-border last:border-0">
-                    <a href={resource.download_url} target="_blank" rel="noreferrer" className="text-btn-primary text-sm hover:underline">
-                      {resource.original_name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
-        {teacherMode && !isManageTab && rubricId && (
-          <div className={cardClass}>
-            <h3 className="text-base font-semibold text-text-primary mt-0 mb-3">Rubric Preview</h3>
-            <RubricDisplay rubricId={rubricId} onCriterionSelect={() => {}} grades={review} />
-          </div>
-        )}
-
-
+        {/* Student view */}
         {!teacherMode && (
           <>
             <StudentSubmissionCard
               assignmentId={assignmentId}
               resources={resourceList}
               mySubmission={mySubmission}
-              onStatus={showStatus}
-              onClearStatus={clearStatus}
             />
             <PeerReviewSection
               assignmentId={assignmentId}
@@ -121,7 +145,6 @@ export default function AssignmentDetail() {
               groupMembers={groupMembers}
               revieweeID={revieweeID}
               setRevieweeID={setRevieweeID}
-              onStatus={showStatus}
             />
           </>
         )}

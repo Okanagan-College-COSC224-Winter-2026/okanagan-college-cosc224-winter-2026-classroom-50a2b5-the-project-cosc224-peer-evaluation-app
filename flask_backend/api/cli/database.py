@@ -241,6 +241,25 @@ def migrate_review_comments_command():
     click.echo("Added column 'comments' to Review")
 
 
+@click.command("migrate_course_image")
+@with_appcontext
+def migrate_course_image_command():
+    """Add image_path column to Course table for existing databases (idempotent)."""
+    inspector = inspect(db.engine)
+    if not inspector.has_table("Course"):
+        click.echo("Course table does not exist. Run 'flask init_db' first.", err=True)
+        return
+
+    existing_columns = {col["name"] for col in inspector.get_columns("Course")}
+    if "image_path" in existing_columns:
+        click.echo("Column 'image_path' already exists on Course — no changes needed.")
+        return
+
+    db.session.execute(text('ALTER TABLE "Course" ADD COLUMN image_path VARCHAR(255)'))
+    db.session.commit()
+    click.echo("Added column 'image_path' to Course table.")
+
+
 def init_app(app):
     """Register CLI commands with the Flask app"""
     app.cli.add_command(init_db_command)
@@ -251,6 +270,7 @@ def init_app(app):
     app.cli.add_command(create_admin_command)
     app.cli.add_command(ensure_admin_command)
     app.cli.add_command(add_sample_courses_command)
+    app.cli.add_command(migrate_course_image_command)
 
 
 @click.command("migrate_user_avatar")

@@ -1,4 +1,4 @@
-export const cardClass = "p-5 bg-white rounded-xl border border-border shadow-sm";
+export const cardClass = "bg-white rounded-2xl border border-border shadow-sm overflow-hidden";
 export const btnPrimary =
   "inline-flex items-center px-4 py-2 rounded-lg bg-btn-primary text-white text-sm font-semibold hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer border-none";
 export const btnSecondary =

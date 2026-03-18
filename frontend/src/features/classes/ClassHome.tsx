@@ -1,4 +1,3 @@
-import AssignmentCard from "../assignments/AssignmentCard";
 import Button from "../../ui/Button";
 import { useParams, Link } from "react-router-dom";
 import { useState } from "react";
@@ -97,33 +96,44 @@ export default function ClassHome() {
             )}
           </div>
 
-          <div className="rounded-xl border border-border bg-bg-secondary overflow-hidden">
+          <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="px-5 md:px-8 py-4 border-b border-border">
+              <h3 className="text-base font-semibold text-text-primary m-0">All Assignments</h3>
+            </div>
+
             {assignments.length === 0 ? (
-              <p className="m-0 text-text-secondary text-sm p-4">No assignments yet</p>
+              <div className="px-5 md:px-8 py-8 flex flex-col items-center gap-2">
+                <span className="text-3xl">📝</span>
+                <p className="text-text-secondary text-sm m-0">No assignments yet.</p>
+              </div>
             ) : (
-              <ul className="m-0 p-0 list-none flex flex-col divide-y divide-border">
+              <div className="divide-y divide-border">
                 {assignments.map((assignment: Assignment) => {
                   const status = getAssignmentStatus(assignment.due_date);
                   return (
-                    <li key={assignment.id}>
-                      <Link
-                        to={`/assignments/${assignment.id}`}
-                        className="block p-3 bg-white hover:bg-gray-100 transition-colors no-underline text-inherit"
-                      >
-                        <div className="flex justify-between items-center gap-3">
-                          <AssignmentCard className="flex-1 p-0">
+                    <Link
+                      key={assignment.id}
+                      to={`/assignments/${assignment.id}`}
+                      className="px-5 md:px-8 py-4 flex items-center justify-between gap-4 no-underline text-inherit transition-colors hover:bg-btn-primary/[0.03] group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                          status === "Upcoming" ? "bg-emerald-500" : status === "Overdue" ? "bg-red-400" : "bg-gray-300"
+                        }`} />
+                        <div className="min-w-0">
+                          <span className="font-medium text-sm text-text-primary group-hover:text-btn-primary transition-colors block truncate">
                             {assignment.name}
-                          </AssignmentCard>
-                          <span className={getStatusClasses(status)}>{status}</span>
+                          </span>
+                          <span className="text-xs text-text-secondary mt-0.5 block">
+                            Due: {formatDueDate(assignment.due_date)}
+                          </span>
                         </div>
-                        <div className="text-text-secondary text-xs mt-1 ml-11">
-                          Due: {formatDueDate(assignment.due_date)}
-                        </div>
-                      </Link>
-                    </li>
+                      </div>
+                      <span className={getStatusClasses(status)}>{status}</span>
+                    </Link>
                   );
                 })}
-              </ul>
+              </div>
             )}
           </div>
         </div>

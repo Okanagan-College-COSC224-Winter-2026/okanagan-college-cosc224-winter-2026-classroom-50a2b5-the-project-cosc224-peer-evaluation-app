@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
+
 import { isTeacher, getUserId } from "../../util/login";
 import {
   useAssignment,
@@ -30,8 +31,6 @@ export function useAssignmentDetail() {
   const assignmentId = Number(id);
   const location = useLocation();
 
-  const [statusMessage, setStatusMessage] = useState("");
-  const [statusType, setStatusType] = useState<"error" | "success">("error");
   const [revieweeID, setRevieweeID] = useState<number>(0);
 
   const teacherMode = isTeacher();
@@ -52,15 +51,6 @@ export function useAssignmentDetail() {
     ? myGroupData.members.filter((m: GroupMember) => m.id !== currentUserId)
     : [];
 
-  function showStatus(type: "error" | "success", message: string) {
-    setStatusType(type);
-    setStatusMessage(message);
-  }
-
-  function clearStatus() {
-    setStatusMessage("");
-  }
-
   return {
     id,
     assignmentId,
@@ -74,9 +64,5 @@ export function useAssignmentDetail() {
     mySubmission,
     revieweeID,
     setRevieweeID,
-    statusMessage,
-    statusType,
-    showStatus,
-    clearStatus,
   };
 }

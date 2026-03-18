@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listClasses, createClass, listCourseMembers, searchCourses } from "../../services/classApi";
+import { listClasses, createClass, listCourseMembers, searchCourses, updateCourse, uploadCourseImage, deleteCourse } from "../../services/classApi";
 import { listAssignments } from "../../services/assignmentApi";
 import { useDebounce } from "../../hooks/useDebounce";
 
@@ -52,6 +52,36 @@ export function useCreateClass() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (name: string) => createClass(name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
+    },
+  });
+}
+
+export function useUpdateCourse(courseId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name?: string }) => updateCourse(courseId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
+    },
+  });
+}
+
+export function useUploadCourseImage(courseId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => uploadCourseImage(courseId, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
+    },
+  });
+}
+
+export function useDeleteCourse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (courseId: number) => deleteCourse(courseId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["classes"] });
     },

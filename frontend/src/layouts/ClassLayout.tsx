@@ -34,6 +34,7 @@ export default function ClassLayout() {
           { label: "Members", path: `/classes/${id}/members` },
           { label: "Groups", path: `/classes/${id}/groups` },
           { label: "Evaluations", path: `/classes/${id}/evaluations` },
+          ...(isTeacher() ? [{ label: "Settings", path: `/classes/${id}/settings` }] : []),
         ]}
       />
 

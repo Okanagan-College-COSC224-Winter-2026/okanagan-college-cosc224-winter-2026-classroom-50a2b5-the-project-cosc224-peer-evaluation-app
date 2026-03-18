@@ -11,15 +11,36 @@ import UpdateAccount from "./features/account/UpdateAccount";
 import CreateTeacher from "./features/account/CreateTeacher";
 import CreateClassForm from "./features/classes/CreateClassForm";
 import DashboardLayout from "./features/dashboard/DashboardLayout";
+import ClassSettings from "./features/classes/ClassSettings";
 import ClassEvaluations from "./features/reviews/ClassEvaluations";
 import AssignmentDetail from "./features/assignments/AssignmentDetail";
 import ChangePasswordForm from "./features/authentication/ChangePasswordForm";
 import { AuthProvider } from "./features/authentication/AuthProvider";
+import { Toaster } from "react-hot-toast";
 
 
 function App() {
   return (
     <AuthProvider>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            borderRadius: "12px",
+            padding: "12px 16px",
+            fontSize: "14px",
+            fontWeight: 500,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+          },
+          success: {
+            iconTheme: { primary: "#10b981", secondary: "#fff" },
+          },
+          error: {
+            iconTheme: { primary: "#ef4444", secondary: "#fff" },
+          },
+        }}
+      />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LoginForm />} />
@@ -29,14 +50,15 @@ function App() {
           <Route element={<ProtectedLayout />}>
             <Route path="/home" element={<DashboardLayout />} />
             <Route path="/admin/create-teacher" element={<CreateTeacher />} />
-            <Route path="/classes/create" element={<CreateClassForm />} />
             <Route path="/profile/:id" element={<UpdateAccount />} />
+            <Route path="/classes/create" element={<CreateClassForm />} />
 
             <Route path="/classes/:id" element={<ClassLayout />}>
               <Route path="home" element={<ClassHome />} />
               <Route path="members" element={<ClassMembers />} />
               <Route path="groups" element={<GroupManager />} />
               <Route path="evaluations" element={<ClassEvaluations />} />
+              <Route path="settings" element={<ClassSettings />} />
             </Route>
 
             <Route path="/assignments/:id" element={<AssignmentDetail />} />

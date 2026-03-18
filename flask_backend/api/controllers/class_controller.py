@@ -1,13 +1,22 @@
-from flask import Blueprint, jsonify, request
+import csv
+import io
+import os
+import re
+from typing import List, Dict, Tuple
+
+from flask import Blueprint, current_app, jsonify, request, send_from_directory
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from werkzeug.security import generate_password_hash
+from werkzeug.utils import secure_filename
 
 from ..models import Course, User, User_Course
 from .auth_controller import jwt_teacher_required
-import re
-import csv
-import io
-from typing import List, Dict, Tuple
+
+ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
+
+
+def _allowed_image(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
 
 bp = Blueprint("class", __name__, url_prefix="/class")
 
@@ -93,7 +102,7 @@ def search_classes():
     lower_query = query.lower()
     results = [c for c in user_courses if c and lower_query in c.name.lower()]
 
-    return jsonify([{"id": c.id, "name": c.name} for c in results]), 200
+    return jsonify([{"id": c.id, "name": c.name, "image_path": c.image_path} for c in results]), 200
 
 
 @bp.route("/browse_classes", methods=["GET"])
@@ -105,7 +114,7 @@ def get_classes():
     if not user:
         return jsonify({"msg": "User not found"}), 404
     classes = Course.get_all_courses()
-    return jsonify([{"id": c.id, "name": c.name} for c in classes]), 200
+    return jsonify([{"id": c.id, "name": c.name, "image_path": c.image_path} for c in classes]), 200
 
 
 @bp.route("/classes", methods=["GET"])
@@ -127,7 +136,100 @@ def get_user_classes():
     else:
         courses = []
 
-    return jsonify([{"id": c.id, "name": c.name} for c in courses]), 200
+    return jsonify([{"id": c.id, "name": c.name, "image_path": c.image_path} for c in courses]), 200
+
+@bp.route("/<int:course_id>", methods=["PUT"])
+@jwt_teacher_required
+def update_course(course_id):
+    """Update a course's name (teacher who owns it only)."""
+    course = Course.get_by_id(course_id)
+    if not course:
+        return jsonify({"msg": "Course not found"}), 404
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if course.teacherID != user.id:
+        return jsonify({"msg": "Unauthorized"}), 403
+
+    data = request.get_json()
+    if "name" in data and data["name"].strip():
+        course.name = data["name"].strip()
+
+    course.update()
+    return jsonify({"id": course.id, "name": course.name, "image_path": course.image_path}), 200
+
+
+@bp.route("/<int:course_id>/image", methods=["POST"])
+@jwt_teacher_required
+def upload_course_image(course_id):
+    """Upload or replace a course cover image."""
+    course = Course.get_by_id(course_id)
+    if not course:
+        return jsonify({"msg": "Course not found"}), 404
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if course.teacherID != user.id:
+        return jsonify({"msg": "Unauthorized"}), 403
+
+    if "image" not in request.files:
+        return jsonify({"msg": "No image file provided"}), 400
+
+    file = request.files["image"]
+    if not file or not file.filename:
+        return jsonify({"msg": "No file selected"}), 400
+
+    if not _allowed_image(file.filename):
+        allowed = ", ".join(sorted(ALLOWED_IMAGE_EXTENSIONS))
+        return jsonify({"msg": f"File type not allowed. Allowed: {allowed}"}), 400
+
+    ext = file.filename.rsplit(".", 1)[1].lower()
+    filename = secure_filename(f"course_{course.id}.{ext}")
+
+    images_dir = os.path.join(current_app.instance_path, "uploads", "courses")
+    os.makedirs(images_dir, exist_ok=True)
+
+    # Remove previous image if extension changed
+    if course.image_path and course.image_path != filename:
+        old_path = os.path.join(images_dir, course.image_path)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    file.save(os.path.join(images_dir, filename))
+    course.image_path = filename
+    course.update()
+
+    return jsonify({"id": course.id, "name": course.name, "image_path": course.image_path}), 200
+
+
+@bp.route("/<int:course_id>/image", methods=["GET"])
+@jwt_required()
+def get_course_image(course_id):
+    """Serve the cover image for a course."""
+    course = Course.get_by_id(course_id)
+    if not course or not course.image_path:
+        return jsonify({"msg": "No image found"}), 404
+
+    images_dir = os.path.join(current_app.instance_path, "uploads", "courses")
+    return send_from_directory(images_dir, course.image_path)
+
+
+@bp.route("/<int:course_id>", methods=["DELETE"])
+@jwt_teacher_required
+def delete_course(course_id):
+    """Delete a course and all associated data (teacher who owns it only)."""
+    course = Course.get_by_id(course_id)
+    if not course:
+        return jsonify({"msg": "Course not found"}), 404
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if course.teacherID != user.id:
+        return jsonify({"msg": "Unauthorized"}), 403
+
+    course.delete()
+    return jsonify({"msg": "Course deleted"}), 200
+
 
 REQUIRED_HEADERS = {"id", "name", "email"}
 def csv_to_list(csv_text):

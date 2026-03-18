@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import toast from 'react-hot-toast'
 import { useUser, useUpdateProfile, useUploadAvatar, useChangePassword, useDeleteAccount, getUserAvatarUrl } from './useUser'
 import { getUserId, logout } from '../../util/login'
-import StatusMessage from '../../ui/StatusMessage'
 import Modal from '../../ui/Modal'
 
 interface UserProfile {
@@ -23,20 +23,15 @@ export default function Profile() {
   const [email, setEmail] = useState('')
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [profileStatus, setProfileStatus] = useState('')
-  const [profileStatusType, setProfileStatusType] = useState<'error' | 'success'>('error')
   const [profileLoading, setProfileLoading] = useState(false)
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [pwStatus, setPwStatus] = useState('')
-  const [pwStatusType, setPwStatusType] = useState<'error' | 'success'>('error')
   const [pwLoading, setPwLoading] = useState(false)
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
-  const [deleteStatus, setDeleteStatus] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -57,16 +52,13 @@ export default function Profile() {
   }
 
   const handleProfileUpdate = async () => {
-    setProfileStatus('')
     setProfileLoading(true)
     try {
-      // Upload avatar first if one was selected
       if (avatarFile) {
         await uploadAvatarMutation.mutateAsync(avatarFile)
         setAvatarFile(null)
       }
 
-      // Update name/email if changed
       const payload: { name?: string; email?: string } = {}
       if (name !== profile?.name) payload.name = name
       if (email !== profile?.email) payload.email = email
@@ -75,11 +67,9 @@ export default function Profile() {
         await updateProfileMutation.mutateAsync(payload)
       }
 
-      setProfileStatusType('success')
-      setProfileStatus('Account updated successfully.')
+      toast.success('Account updated successfully.')
     } catch (err) {
-      setProfileStatusType('error')
-      setProfileStatus(err instanceof Error ? err.message : 'Failed to update account.')
+      toast.error(err instanceof Error ? err.message : 'Failed to update account.')
     } finally {
       setProfileLoading(false)
     }
@@ -90,33 +80,27 @@ export default function Profile() {
     setEmail(profile?.email ?? '')
     setAvatarFile(null)
     setAvatarPreview(null)
-    setProfileStatus('')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handlePasswordUpdate = async () => {
-    setPwStatus('')
     if (newPassword.length < 6) {
-      setPwStatusType('error')
-      setPwStatus('Password must be at least 6 characters.')
+      toast.error('Password must be at least 6 characters.')
       return
     }
     if (newPassword !== confirmPassword) {
-      setPwStatusType('error')
-      setPwStatus('Passwords do not match.')
+      toast.error('Passwords do not match.')
       return
     }
     setPwLoading(true)
     try {
       await changePasswordMutation.mutateAsync({ currentPassword, newPassword })
-      setPwStatusType('success')
-      setPwStatus('Password updated successfully.')
+      toast.success('Password updated successfully.')
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
     } catch (err) {
-      setPwStatusType('error')
-      setPwStatus(err instanceof Error ? err.message : 'Failed to update password.')
+      toast.error(err instanceof Error ? err.message : 'Failed to update password.')
     } finally {
       setPwLoading(false)
     }
@@ -126,21 +110,20 @@ export default function Profile() {
     setCurrentPassword('')
     setNewPassword('')
     setConfirmPassword('')
-    setPwStatus('')
   }
 
   const handleDeleteAccount = async () => {
     if (!deletePassword) {
-      setDeleteStatus('Please enter your password.')
+      toast.error('Please enter your password.')
       return
     }
     setDeleteLoading(true)
-    setDeleteStatus('')
     try {
       await deleteAccountMutation.mutateAsync(deletePassword)
+      toast.success('Account deleted.')
       logout()
     } catch (err) {
-      setDeleteStatus(err instanceof Error ? err.message : 'Failed to delete account.')
+      toast.error(err instanceof Error ? err.message : 'Failed to delete account.')
     } finally {
       setDeleteLoading(false)
     }
@@ -149,7 +132,6 @@ export default function Profile() {
   const closeDeleteModal = () => {
     setDeleteModalOpen(false)
     setDeletePassword('')
-    setDeleteStatus('')
   }
 
   const inputClass =
@@ -172,8 +154,6 @@ export default function Profile() {
         </div>
 
         <div className="px-6 py-5 flex flex-col gap-5">
-          {profileStatus && <StatusMessage message={profileStatus} type={profileStatusType} />}
-
           {/* Avatar */}
           <div className="flex items-center gap-5">
             <div className="w-20 h-20 rounded-full bg-bg-secondary flex items-center justify-center overflow-hidden border border-border flex-shrink-0">
@@ -267,8 +247,6 @@ export default function Profile() {
         </div>
 
         <div className="px-6 py-5 flex flex-col gap-4">
-          {pwStatus && <StatusMessage message={pwStatus} type={pwStatusType} />}
-
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-primary">Current password</label>
             <input
@@ -352,7 +330,6 @@ export default function Profile() {
           <p className="text-sm text-text-secondary m-0">
             This will permanently delete your account and all your data. Please enter your password to confirm.
           </p>
-          {deleteStatus && <StatusMessage message={deleteStatus} type="error" />}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-primary">Password</label>
             <input

@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 import Modal from "../../ui/Modal";
 import { useEditAssignment, useDeleteAssignment } from "./useAssignments";
 import { cardClass, btnPrimary, btnDanger, inputClass, labelClass } from "./assignmentStyles";
-import { useState } from "react";
 
 interface ManageFormData {
   name: string;
@@ -25,11 +25,9 @@ function toDatetimeLocal(value?: string) {
 interface Props {
   assignmentId: number;
   assignment: { name: string; description?: string; start_date?: string; due_date?: string; is_anonymous?: boolean; courseID: number };
-  onStatus: (type: "error" | "success", message: string) => void;
-  onClearStatus: () => void;
 }
 
-export default function ManageAssignmentCard({ assignmentId, assignment, onStatus, onClearStatus }: Props) {
+export default function ManageAssignmentCard({ assignmentId, assignment }: Props) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const { register, handleSubmit, reset } = useForm<ManageFormData>({
@@ -50,7 +48,6 @@ export default function ManageAssignmentCard({ assignmentId, assignment, onStatu
   }, [assignment, reset]);
 
   function onSubmit(data: ManageFormData) {
-    onClearStatus();
     const payload: {
       name?: string;
       description?: string;
@@ -66,17 +63,19 @@ export default function ManageAssignmentCard({ assignmentId, assignment, onStatu
     if (data.due_date) payload.due_date = new Date(data.due_date).toISOString();
 
     editAssignment(payload, {
-      onSuccess: () => onStatus("success", "Assignment updated successfully."),
-      onError: (error) => onStatus("error", error instanceof Error ? error.message : "Failed to update assignment."),
+      onSuccess: () => toast.success("Assignment updated successfully."),
+      onError: (error) => toast.error(error instanceof Error ? error.message : "Failed to update assignment."),
     });
   }
 
   return (
     <>
       <div className={cardClass}>
-        <h3 className="text-base font-semibold text-text-primary mt-0 mb-4">Manage Assignment</h3>
+        <div className="px-5 md:px-8 py-4 border-b border-border">
+          <h3 className="text-base font-semibold text-text-primary m-0">Manage Assignment</h3>
+        </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="px-5 md:px-8 py-5 flex flex-col gap-4">
           <label className={labelClass}>
             Name
             <input type="text" className={inputClass} disabled={isSaving} {...register("name")} />
@@ -98,11 +97,11 @@ export default function ManageAssignmentCard({ assignmentId, assignment, onStatu
           </label>
 
           <label className="flex flex-row items-center gap-2 cursor-pointer text-sm text-text-primary">
-            <input type="checkbox" className="w-4 h-4" disabled={isSaving} {...register("is_anonymous")} />
+            <input type="checkbox" className="w-4 h-4 accent-btn-primary" disabled={isSaving} {...register("is_anonymous")} />
             Anonymous submissions/reviews
           </label>
 
-          <div className="flex gap-3 flex-wrap pt-2 border-t border-border">
+          <div className="flex gap-3 flex-wrap pt-4 border-t border-border">
             <button type="submit" disabled={isSaving} className={btnPrimary}>
               {isSaving ? "Saving..." : "Save Changes"}
             </button>
@@ -128,13 +127,13 @@ export default function ManageAssignmentCard({ assignmentId, assignment, onStatu
             <button
               disabled={isDeleting}
               onClick={() => {
-                onClearStatus();
                 deleteAssignment(assignmentId, {
                   onSuccess: () => {
+                    toast.success("Assignment deleted.");
                     window.location.href = `/classes/${assignment.courseID}/home`;
                   },
                   onError: (error) => {
-                    onStatus("error", error instanceof Error ? error.message : "Failed to delete assignment.");
+                    toast.error(error instanceof Error ? error.message : "Failed to delete assignment.");
                     setIsDeleteModalOpen(false);
                   },
                 });
