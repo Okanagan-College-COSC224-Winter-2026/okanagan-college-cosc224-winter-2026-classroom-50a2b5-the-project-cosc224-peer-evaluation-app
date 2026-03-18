@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import TabNavigation from "../../ui/TabNavigation";
 import Modal from "../../ui/Modal";
-import { useClasses } from "../classes/useClasses";
 import { useCourseGradeSummary, useReviewsForAssignment } from "./useReviews";
 
 // Shape of a single review returned by GET /review/assignment/<id>
@@ -43,14 +41,11 @@ export default function ClassEvaluations() {
 
   // React Query hooks
   const { data: summaryData, isLoading: loading } = useCourseGradeSummary(Number(id));
-  const { data: classesData } = useClasses();
   const { data: reviews = [], isLoading: modalLoading } = useReviewsForAssignment(selectedAssignmentId);
 
   const summaries: AssignmentSummary[] = summaryData?.assignments ?? [];
   const courseAverage: number | null = summaryData?.courseAverage ?? null;
   const courseMax: number | null = summaryData?.courseMax ?? null;
-
-  const className = classesData?.find((c: { id: number }) => c.id === Number(id))?.name ?? null;
 
   const openAssignment = (summary: AssignmentSummary) => {
     setSelectedAssignment(summary);
@@ -64,20 +59,6 @@ export default function ClassEvaluations() {
 
   return (
     <>
-      {/* Header */}
-      <div className="flex flex-row justify-between items-center px-4 py-3 border-b border-border">
-        <h2 className="text-xl font-semibold text-text-primary m-0">{className}</h2>
-      </div>
-
-      <TabNavigation
-        tabs={[
-          { label: "Home", path: `/classes/${id}/home` },
-          { label: "Members", path: `/classes/${id}/members` },
-          { label: "Groups", path: `/classes/${id}/groups` },
-          { label: "Evaluations", path: `/classes/${id}/evaluations` },
-        ]}
-      />
-
       {/* Evaluations content */}
       <div className="p-4 md:p-6 w-full max-w-4xl">
         <h3 className="text-base font-semibold text-text-primary mt-0 mb-3">My Evaluations</h3>

@@ -4,6 +4,7 @@ import Textbox from '../../ui/Textbox';
 import Button from '../../ui/Button';
 import StatusMessage from '../../ui/StatusMessage';
 import { tryLogin } from '../../util/api';
+import { useAuth } from './AuthProvider';
 
 // Shared layout classes for auth pages (Login, Register, ChangePassword, CreateTeacher)
 export const pageClasses = "flex flex-col items-center justify-center min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-slate-100 p-4"
@@ -14,6 +15,7 @@ export const inputChunkClasses = "flex flex-col gap-1.5 w-full"
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,6 +27,7 @@ export default function LoginPage() {
         if (result.must_change_password) {
           navigate('/change-password');
         } else {
+          login();
           navigate('/home');
         }
       } else {

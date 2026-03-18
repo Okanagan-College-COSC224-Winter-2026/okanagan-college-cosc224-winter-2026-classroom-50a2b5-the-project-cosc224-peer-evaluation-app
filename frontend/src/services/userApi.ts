@@ -50,5 +50,20 @@ export const uploadUserAvatar = async (file: File) => {
   return updated;
 };
 
+export const deleteAccount = async (password: string) => {
+  const response = await fetch(`${BASE_URL}/user/`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ password }),
+  });
+  maybeHandleExpire(response);
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.msg || `Response status: ${response.status}`);
+  }
+  return response.json();
+};
+
 export const getUserAvatarUrl = (userId: number) =>
   `${BASE_URL}/user/avatar/${userId}`;

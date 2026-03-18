@@ -75,6 +75,11 @@ class Course(db.Model):
         return cls.query.filter_by(teacherID=teacher_id).all()
 
     @classmethod
+    def search_by_name(cls, query):
+        """Search courses by name (case-insensitive partial match)"""
+        return cls.query.filter(cls.name.ilike(f"%{query}%")).all()
+
+    @classmethod
     def get_by_name(cls, name):
         """Get course by name"""
         return cls.query.filter_by(name=name).first()

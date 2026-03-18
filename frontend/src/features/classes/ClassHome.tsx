@@ -1,13 +1,9 @@
 import AssignmentCard from "../assignments/AssignmentCard";
 import Button from "../../ui/Button";
-import { useParams } from "react-router-dom";
-import { useState, useMemo } from "react";
-import { useClasses } from "./useClasses";
+import { useParams, Link } from "react-router-dom";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { useAssignments, useCreateAssignment } from "../assignments/useAssignments";
-import TabNavigation from "../../ui/TabNavigation";
-import { importCSV } from "../../util/csv";
-import Textbox from "../../ui/Textbox";
-import StatusMessage from "../../ui/StatusMessage";
 import { isTeacher } from "../../util/login";
 import { formatDueDate, getAssignmentStatus } from "../../util/assignmentDates";
 import Modal from "../../ui/Modal";
@@ -20,99 +16,84 @@ function getStatusClasses(status: string): string {
   return `${base} bg-slate-100 text-text-secondary border border-border`
 }
 
+interface AssignmentFormData {
+  name: string;
+  description: string;
+  start_date: string;
+  due_date: string;
+  is_anonymous: boolean;
+}
+
+const inputClass =
+  "px-3 py-2 border border-border rounded-lg bg-bg-secondary text-text-primary text-sm w-full focus:outline-none focus:ring-2 focus:ring-btn-primary focus:border-btn-primary transition-colors";
+
 export default function ClassHome() {
   const { id } = useParams();
   const courseId = Number(id);
-  const [newAssignmentName, setNewAssignmentName] = useState("");
-  const [newAssignmentDescription, setNewAssignmentDescription] = useState("");
-  const [newAssignmentStartDate, setNewAssignmentStartDate] = useState("");
-  const [newAssignmentDueDate, setNewAssignmentDueDate] = useState("");
-  const [newAssignmentAnonymous, setNewAssignmentAnonymous] = useState(true);
-  const [statusMessage, setStatusMessage] = useState('');
-  const [statusType, setStatusType] = useState<'error' | 'success'>('error');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data: assignments = [] } = useAssignments(String(id));
-  const { data: classes = [] } = useClasses();
-  const createAssignmentMutation = useCreateAssignment(String(id));
+  const { mutate: createAssignment, isPending, isSuccess, isError, error } = useCreateAssignment(String(id));
 
-  const className = useMemo(() => {
-    const currentClass = classes.find((c: { id: number }) => c.id === Number(id));
-    return currentClass?.name || null;
-  }, [classes, id]);
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<AssignmentFormData>({
+    defaultValues: {
+      name: "",
+      description: "",
+      start_date: "",
+      due_date: "",
+      is_anonymous: true,
+    },
+  });
 
-  const tryCreateAssignment = async () => {
-    try {
-      setStatusMessage('');
-      const response = await createAssignmentMutation.mutateAsync({
+  function onSubmit(data: AssignmentFormData) {
+    createAssignment(
+      {
         courseID: courseId,
-        name: newAssignmentName,
-        description: newAssignmentDescription || undefined,
-        start_date: newAssignmentStartDate || undefined,
-        due_date: newAssignmentDueDate || undefined,
-        is_anonymous: newAssignmentAnonymous,
-      });
-      const createdAssignment = response?.assignment;
-
-      if (!createdAssignment?.id) {
-        throw new Error('Failed to create assignment');
+        name: data.name,
+        description: data.description || undefined,
+        start_date: data.start_date || undefined,
+        due_date: data.due_date || undefined,
+        is_anonymous: data.is_anonymous,
+      },
+      {
+        onSuccess: () => {
+          reset();
+          setIsModalOpen(false);
+        },
       }
+    );
+  }
 
-      setNewAssignmentName("");
-      setNewAssignmentDescription("");
-      setNewAssignmentStartDate("");
-      setNewAssignmentDueDate("");
-      setNewAssignmentAnonymous(true);
-      setStatusType('success');
-      setStatusMessage('Assignment created successfully!');
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Error creating assignment:', error);
-      setStatusType('error');
-      setStatusMessage(error instanceof Error ? error.message : 'Error creating assignment.');
-    }
-  };
+  function handleOpenModal() {
+    reset();
+    setIsModalOpen(true);
+  }
+
+  function handleCloseModal() {
+    reset();
+    setIsModalOpen(false);
+  }
 
   return (
     <>
-      <div className="flex flex-row justify-between items-center px-4 py-3 border-b border-border">
-        <h2 className="text-xl font-semibold text-text-primary">{className}</h2>
-        <div>
-          {isTeacher() ? (
-            <Button onClick={() => importCSV(id as string)}>
-              Add Students via CSV
-            </Button>
-          ) : null}
+      {isSuccess && !isModalOpen && (
+        <div className="mx-4 md:mx-6 mt-4 px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">
+          Assignment created successfully!
         </div>
-      </div>
+      )}
 
-      <TabNavigation
-        tabs={[
-          {
-            label: "Home",
-            path: `/classes/${id}/home`,
-          },
-          {
-            label: "Members",
-            path: `/classes/${id}/members`,
-          },
-          {
-            label: "Groups",
-            path: `/classes/${id}/groups`,
-          },
-        ]}
-      />
-
-      <StatusMessage message={statusMessage} type={statusType} />
+      {isError && (
+        <div className="mx-4 md:mx-6 mt-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+          {error instanceof Error ? error.message : "Error creating assignment."}
+        </div>
+      )}
 
       <div className="p-4 md:p-6 w-full">
-        <div className="flex flex-col items-stretch w-full gap-5 max-w-260 mx-auto">
+        <div className="flex flex-col items-stretch w-full gap-5">
           <div className="flex justify-between items-center gap-4">
             <h3 className="m-0 text-text-primary text-base font-semibold">Assignments</h3>
             {isTeacher() && (
-              <Button onClick={() => setIsModalOpen(true)}>
-                + New Assignment
-              </Button>
+              <Button onClick={handleOpenModal}>+ New Assignment</Button>
             )}
           </div>
 
@@ -124,18 +105,21 @@ export default function ClassHome() {
                 {assignments.map((assignment: Assignment) => {
                   const status = getAssignmentStatus(assignment.due_date);
                   return (
-                    <li key={assignment.id} className="p-3 bg-white hover:bg-bg-secondary transition-colors">
-                      <div className="flex justify-between items-center gap-3">
-                        <AssignmentCard id={assignment.id} className="flex-1 p-0">
-                          {assignment.name}
-                        </AssignmentCard>
-                        <span className={getStatusClasses(status)}>
-                          {status}
-                        </span>
-                      </div>
-                      <div className="text-text-secondary text-xs mt-1 ml-11">
-                        Due: {formatDueDate(assignment.due_date)}
-                      </div>
+                    <li key={assignment.id}>
+                      <Link
+                        to={`/assignments/${assignment.id}`}
+                        className="block p-3 bg-white hover:bg-gray-100 transition-colors no-underline text-inherit"
+                      >
+                        <div className="flex justify-between items-center gap-3">
+                          <AssignmentCard className="flex-1 p-0">
+                            {assignment.name}
+                          </AssignmentCard>
+                          <span className={getStatusClasses(status)}>{status}</span>
+                        </div>
+                        <div className="text-text-secondary text-xs mt-1 ml-11">
+                          Due: {formatDueDate(assignment.due_date)}
+                        </div>
+                      </Link>
                     </li>
                   );
                 })}
@@ -144,69 +128,58 @@ export default function ClassHome() {
           </div>
         </div>
 
-        <Modal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          title="Create New Assignment"
-        >
-          <div className="flex flex-col gap-4">
+        <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Create New Assignment">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <label className="flex flex-col gap-1.5">
               <span className="text-text-primary text-sm font-medium">Assignment Name</span>
-              <Textbox
+              <input
+                type="text"
                 placeholder="Enter assignment name..."
-                onInput={setNewAssignmentName}
-                value={newAssignmentName}
+                className={inputClass}
+                disabled={isPending}
+                {...register("name", { required: "Assignment name is required" })}
               />
+              {errors.name && <span className="text-red-500 text-xs">{errors.name.message}</span>}
             </label>
 
             <label className="flex flex-col gap-1.5">
               <span className="text-text-primary text-sm font-medium">Description</span>
               <textarea
-                className="px-3 py-2 border border-border rounded-lg bg-bg-secondary text-text-primary font-[inherit] text-sm min-h-[110px] resize-y focus:outline-none focus:ring-2 focus:ring-btn-primary focus:border-btn-primary transition-colors"
+                className={`${inputClass} min-h-[110px] resize-y font-[inherit]`}
                 placeholder="Enter assignment description..."
-                onChange={(e) => setNewAssignmentDescription(e.target.value)}
-                value={newAssignmentDescription}
+                disabled={isPending}
+                {...register("description")}
               />
             </label>
 
             <label className="flex flex-col gap-1.5">
               <span className="text-text-primary text-sm font-medium">Start Date</span>
-              <Textbox
-                type="datetime-local"
-                onInput={setNewAssignmentStartDate}
-                value={newAssignmentStartDate}
-              />
+              <input type="datetime-local" className={inputClass} disabled={isPending} {...register("start_date")} />
             </label>
 
             <label className="flex flex-col gap-1.5">
               <span className="text-text-primary text-sm font-medium">Due Date</span>
-              <Textbox
-                type="datetime-local"
-                onInput={setNewAssignmentDueDate}
-                value={newAssignmentDueDate}
-              />
+              <input type="datetime-local" className={inputClass} disabled={isPending} {...register("due_date")} />
             </label>
 
-            <label className="flex flex-row items-center gap-2">
-              <input
-                type="checkbox"
-                className="w-auto p-0 m-0"
-                checked={newAssignmentAnonymous}
-                onChange={(e) => setNewAssignmentAnonymous(e.target.checked)}
-              />
-              <span>Anonymous submissions/reviews</span>
+            <label className="flex flex-row items-center gap-2 cursor-pointer">
+              <input type="checkbox" className="w-4 h-4" disabled={isPending} {...register("is_anonymous")} />
+              <span className="text-sm text-text-primary">Anonymous submissions/reviews</span>
             </label>
 
-            <div className="flex gap-3 mt-2 justify-end">
-              <Button onClick={() => setIsModalOpen(false)} type="secondary">
-                Cancel
-              </Button>
-              <Button onClick={tryCreateAssignment}>
-                Create Assignment
-              </Button>
+            <div className="flex gap-3 mt-2 justify-end pt-2 border-t border-border">
+              <Button onClick={handleCloseModal} type="secondary">Cancel</Button>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg bg-btn-primary text-white text-sm font-semibold border-none cursor-pointer transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isPending ? "Creating..." : "Create Assignment"}
+              </button>
             </div>
-          </div>
+          </form>
         </Modal>
+
       </div>
     </>
   );

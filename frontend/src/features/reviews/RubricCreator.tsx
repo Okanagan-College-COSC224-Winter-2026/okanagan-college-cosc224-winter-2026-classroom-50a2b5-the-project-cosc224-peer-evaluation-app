@@ -60,52 +60,58 @@ export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProp
     const handleRemoveSection = (index: number) => setNewCriteria(prev => prev.filter((_, i) => i !== index));
 
     return (
-        <div className="p-5 bg-[#f5f5f5] rounded-[8px] my-5">
-            <h2 className="mb-5 text-[#333]">Create New Criteria</h2>
+        <div className="p-4 md:p-5 bg-bg-secondary rounded-xl">
+            <h2 className="mb-4 text-base font-semibold text-text-primary m-0">Create New Criteria</h2>
 
             <StatusMessage message={statusMessage} type={statusType} />
 
-            <label className="block mb-5">
-                Reviewer can comment:
+            <label className="flex items-center gap-2 mb-4 text-sm text-text-primary cursor-pointer">
                 <input
                     type="checkbox"
                     checked={canComment}
                     onChange={() => setCanComment(prev => !prev)}
+                    className="w-4 h-4"
                 />
+                Reviewer can comment
             </label>
 
-            {newCriteria.map((item, index) => (
-                <div key={index} className="flex gap-2.5 items-center mb-[15px] p-2.5 bg-white rounded shadow-[0_1px_3px_rgba(0,0,0,0.1)]">
-                    <input
-                        type="text"
-                        value={item.question}
-                        onChange={(e) => handleQuestionChange(index, e.target.value)}
-                        placeholder="Enter question"
-                        className="flex-1 p-2 border border-[#ddd] rounded"
-                    />
-                    <label>
-                        Has score:
+            <div className="flex flex-col gap-3">
+                {newCriteria.map((item, index) => (
+                    <div key={index} className="flex flex-col sm:flex-row gap-3 sm:items-center p-3 bg-white rounded-lg border border-border">
                         <input
-                            type="checkbox"
-                            checked={item.hasScore}
-                            onChange={(e) => handleHasScoreChange(index, e.target.checked)}
+                            type="text"
+                            value={item.question}
+                            onChange={(e) => handleQuestionChange(index, e.target.value)}
+                            placeholder="Enter question"
+                            className="flex-1 px-3 py-2 border border-border rounded-lg bg-bg-secondary text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-btn-primary focus:border-btn-primary transition-colors"
                         />
-                    </label>
-                    {item.hasScore && (
-                        <input
-                            type="number"
-                            min="0"
-                            value={item.scoreMax}
-                            onChange={(e) => handleScoreMaxChange(index, Number(e.target.value))}
-                            placeholder="Enter score max"
-                            className="w-[100px] p-2 border border-[#ddd] rounded"
-                        />
-                    )}
-                    <Button onClick={() => handleRemoveSection(index)}>Remove Criterion</Button>
-                </div>
-            ))}
+                        <div className="flex flex-wrap items-center gap-3">
+                            <label className="flex items-center gap-1.5 text-sm text-text-primary cursor-pointer whitespace-nowrap">
+                                <input
+                                    type="checkbox"
+                                    checked={item.hasScore}
+                                    onChange={(e) => handleHasScoreChange(index, e.target.checked)}
+                                    className="w-4 h-4"
+                                />
+                                Has score
+                            </label>
+                            {item.hasScore && (
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={item.scoreMax}
+                                    onChange={(e) => handleScoreMaxChange(index, Number(e.target.value))}
+                                    placeholder="Max"
+                                    className="w-20 px-3 py-2 border border-border rounded-lg bg-bg-secondary text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-btn-primary focus:border-btn-primary transition-colors"
+                                />
+                            )}
+                            <Button onClick={() => handleRemoveSection(index)}>Remove</Button>
+                        </div>
+                    </div>
+                ))}
+            </div>
 
-            <div className="flex gap-2.5 mt-5">
+            <div className="flex flex-wrap gap-2.5 mt-4 pt-4 border-t border-border">
                 <Button onClick={handleAddNewSection}>Add New Criterion</Button>
                 <Button onClick={handleCreate}>Create</Button>
             </div>

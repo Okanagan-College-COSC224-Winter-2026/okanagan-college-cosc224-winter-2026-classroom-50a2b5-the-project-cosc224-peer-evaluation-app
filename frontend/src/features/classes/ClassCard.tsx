@@ -1,15 +1,19 @@
+import { Link } from "react-router-dom"
+
 interface Props {
   image: string
   name: string
   subtitle: string
-  onclick?: () => void
+  href: string
+  onClick?: () => void
 }
 
 export default function ClassCard(props: Props) {
   return (
-    <div
+    <Link
+      to={props.href}
       className="w-full flex flex-col rounded-xl overflow-hidden select-none cursor-pointer bg-white border border-border shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-      onClick={props.onclick}
+      onClick={props.onClick}
     >
       <img
         src={props.image}
@@ -26,6 +30,6 @@ export default function ClassCard(props: Props) {
           {props.subtitle}
         </p>
       </div>
-    </div>
+    </Link>
   )
 }

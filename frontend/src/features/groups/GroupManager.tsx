@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import TabNavigation from "../../ui/TabNavigation";
 import StatusMessage from "../../ui/StatusMessage";
 import { isTeacher } from "../../util/login";
 import Textbox from "../../ui/Textbox";
-import { useClasses } from "../classes/useClasses";
 import {
   useGroups,
   useMyGroup,
@@ -23,42 +21,33 @@ interface GroupMember {
   email: string;
 }
 
-function GroupMembersRow({
+function GroupMembersPanel({
   group,
-  selectedGroup,
-  groupMembers,
-  trClasses,
-  actionBtnClasses,
+  isOpen,
   onRemove,
 }: {
   group: CourseGroup;
-  selectedGroup: number;
-  groupMembers: GroupMember[];
-  trClasses: string;
-  actionBtnClasses: string;
+  isOpen: boolean;
   onRemove: (userId: number, groupId: number) => void;
 }) {
   const { data: members = [] } = useGroupMembers(group.id);
 
-  // Expose fetched members to parent via the groupMembers map isn't possible here,
-  // so we use the hook data directly for rendering
-  const displayMembers: GroupMember[] = members.length > 0 ? members : groupMembers;
+  if (!isOpen || members.length === 0) return null;
 
   return (
-    <>
-      {selectedGroup === group.id && (
-        displayMembers.map((member: GroupMember) => (
-          <tr key={member.id} className={`${trClasses} hover:bg-bg-secondary`}>
-            <td>
-              <span className="mx-2.5 ml-5">{member.name}</span>
-              <button className={actionBtnClasses} onClick={() => onRemove(member.id, group.id)}>
-                Remove
-              </button>
-            </td>
-          </tr>
-        ))
-      )}
-    </>
+    <div className="flex flex-col divide-y divide-border">
+      {members.map((member: GroupMember) => (
+        <div key={member.id} className="flex items-center justify-between py-2 px-4 pl-8 hover:bg-bg-secondary transition-colors">
+          <span className="text-sm text-text-primary">{member.name}</span>
+          <button
+            className="text-xs text-red-600 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors"
+            onClick={() => onRemove(member.id, group.id)}
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -70,9 +59,6 @@ export default function Group() {
   const [groupName, setGroupName] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
-
-  const { data: classes = [] } = useClasses();
-  const className = classes.find((c: { id: number }) => c.id === courseId)?.name || "";
 
   const { data: groups = [], isLoading: groupsLoading } = useGroups(courseId);
   const { data: unassignedStudents = [], isLoading: unassignedLoading } = useUnassignedStudents(courseId);
@@ -154,160 +140,135 @@ export default function Group() {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="p-4 md:p-6 w-full">
+        <div className="max-w-5xl mx-auto text-text-secondary text-sm">Loading...</div>
+      </div>
+    );
   }
 
-  const tableClasses = "w-1/2 h-full flex flex-col items-center border border-bg-secondary mx-2.5"
-  const trClasses = "w-full flex flex-row items-center justify-between transition-all duration-100"
-  const actionBtnClasses = "p-2 border-none bg-btn-primary text-white text-base cursor-pointer transition-all duration-100 hover:brightness-90 mx-2.5 ml-5"
-
   return (
-    <>
-      <div className="flex flex-row justify-between items-center p-3">
-        <div className="flex flex-row justify-between items-center p-3">
-          <h2>{className}</h2>
-        </div>
-      </div>
+    <div className="p-4 md:p-8 w-full">
+      {isTeacher() ? (
+        <div className="max-w-5xl mx-auto rounded-2xl bg-white shadow-sm border border-border p-5 md:p-8 flex flex-col gap-6">
+          {statusMessage && <StatusMessage message={statusMessage} type={statusType} className="mb-0" />}
 
-      <TabNavigation
-        tabs={[
-          {
-            label: "Home",
-            path: `/classes/${id}/home`,
-          },
-          {
-            label: "Members",
-            path: `/classes/${id}/members`,
-          },
-          {
-            label: "Groups",
-            path: `/classes/${id}/groups`,
-          }
-        ]}
-      />
-
-      <StatusMessage message={statusMessage} type={statusType} />
-
-      <div>
-        {isTeacher() ? (
-          <>
-            <div className="flex flex-row items-start">
-              {/* Unassigned Students Table */}
-              <table className={tableClasses}>
-                <thead>
-                  <tr>
-                    <th>Unassigned Students</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {unassignedStudents.length === 0 ? (
-                    <tr><td>No unassigned students</td></tr>
-                  ) : (
-                    unassignedStudents.map((student: GroupMember) => (
-                      <tr key={student.id} className={`${trClasses} hover:bg-bg-secondary`}>
-                        <td>
-                          <span className="mx-2.5 ml-5">{student.name}</span>
-                          <button className={actionBtnClasses} onClick={() => handleAddToGroup(student.id)}>
-                            Add to Group
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-
-              {/* Groups Table */}
-              <table className={tableClasses}>
-                <thead>
-                  <tr>
-                    <th>Groups</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {groups.length === 0 ? (
-                    <tr><td>No groups created yet</td></tr>
-                  ) : (
-                    groups.map((group: CourseGroup) => (
-                      <>
-                        <tr
-                          key={group.id}
-                          className={`flex flex-row items-center justify-center w-full relative items-center justify-center bg-[#eee] py-1 cursor-pointer ${group.id === selectedGroup ? '' : ''}`}
-                          onClick={() => setSelectedGroup(group.id)}
-                        >
-                          <td>
-                            <div className={`absolute top-1 left-5 w-5 h-5 ${group.id === selectedGroup ? 'rotate-90' : ''}`}>
-                              <img src="/icons/arrow.svg" alt="arrow" className="w-full h-full" />
-                            </div>
-                            {group.name}
-                          </td>
-                        </tr>
-
-                        <GroupMembersRow
-                          group={group}
-                          selectedGroup={selectedGroup}
-                          groupMembers={[]}
-                          trClasses={trClasses}
-                          actionBtnClasses={actionBtnClasses}
-                          onRemove={handleRemoveFromGroup}
-                        />
-                      </>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="p-2">
-              <button
-                className={`${actionBtnClasses} disabled:bg-btn-disabled disabled:cursor-not-allowed`}
-                onClick={handleDeleteGroup}
-                disabled={selectedGroup === -1}
-              >
-                Delete Selected Group
-              </button>
-            </div>
-
-            {/* Create Group Form */}
-            <div className="p-2 flex gap-2 items-center">
-              <Textbox
-                placeholder="New group name..."
-                onInput={setGroupName}
-                className="w-[15%]"
-              />
-              <button className={actionBtnClasses} onClick={handleCreateGroup}>
-                Create New Group
-              </button>
-            </div>
-          </>
-        ) : (
-          /* Student View */
-          <div className="p-4">
-            {myGroup ? (
-              <>
-                <h3>My Group: {myGroup.name}</h3>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Group Members</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {myGroup.members.map((member: GroupMember) => (
-                      <tr key={member.id}>
-                        <td>{member.name}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </>
-            ) : (
-              <p>You are not assigned to any group yet.</p>
-            )}
+          {/* Create Group Form */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Textbox
+              placeholder="New group name..."
+              onInput={setGroupName}
+              value={groupName}
+              className="flex-1 sm:max-w-xs"
+            />
+            <button
+              className="px-4 py-2 bg-btn-primary text-white text-sm font-medium rounded-lg cursor-pointer transition-colors hover:brightness-90"
+              onClick={handleCreateGroup}
+            >
+              Create Group
+            </button>
           </div>
-        )}
-      </div>
-    </>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Unassigned Students */}
+            <div className="rounded-xl border border-border bg-bg-secondary overflow-hidden">
+              <div className="px-4 py-3 border-b border-border bg-slate-50">
+                <h3 className="m-0 text-sm font-semibold text-text-primary">
+                  Unassigned Students
+                  <span className="ml-2 text-text-secondary font-normal">({unassignedStudents.length})</span>
+                </h3>
+              </div>
+              {unassignedStudents.length === 0 ? (
+                <p className="text-text-secondary text-sm p-4 m-0">No unassigned students</p>
+              ) : (
+                <div className="flex flex-col divide-y divide-border">
+                  {unassignedStudents.map((student: GroupMember) => (
+                    <div key={student.id} className="flex items-center justify-between px-4 py-2.5 bg-white hover:bg-slate-50 transition-colors">
+                      <span className="text-sm text-text-primary">{student.name}</span>
+                      <button
+                        className="text-xs font-medium text-btn-primary hover:text-white px-3 py-1 rounded-md border border-btn-primary hover:bg-btn-primary transition-colors"
+                        onClick={() => handleAddToGroup(student.id)}
+                      >
+                        Add
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Groups */}
+            <div className="rounded-xl border border-border bg-bg-secondary overflow-hidden">
+              <div className="px-4 py-3 border-b border-border bg-slate-50 flex items-center justify-between">
+                <h3 className="m-0 text-sm font-semibold text-text-primary">
+                  Groups
+                  <span className="ml-2 text-text-secondary font-normal">({groups.length})</span>
+                </h3>
+                {selectedGroup !== -1 && (
+                  <button
+                    className="text-xs font-medium text-red-600 hover:text-white px-3 py-1 rounded-md border border-red-300 hover:bg-red-600 transition-colors"
+                    onClick={handleDeleteGroup}
+                  >
+                    Delete Selected
+                  </button>
+                )}
+              </div>
+              {groups.length === 0 ? (
+                <p className="text-text-secondary text-sm p-4 m-0">No groups created yet</p>
+              ) : (
+                <div className="flex flex-col">
+                  {groups.map((group: CourseGroup) => (
+                    <div key={group.id}>
+                      <div
+                        className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer transition-colors border-b border-border bg-white ${
+                          selectedGroup === group.id
+                            ? "bg-btn-primary/5 border-l-2 border-l-btn-primary"
+                            : "hover:bg-slate-50"
+                        }`}
+                        onClick={() => setSelectedGroup(selectedGroup === group.id ? -1 : group.id)}
+                      >
+                        <span className={`text-xs text-text-secondary transition-transform ${selectedGroup === group.id ? "rotate-90" : ""}`}>
+                          &#9654;
+                        </span>
+                        <span className="text-sm font-medium text-text-primary">{group.name}</span>
+                      </div>
+                      <GroupMembersPanel
+                        group={group}
+                        isOpen={selectedGroup === group.id}
+                        onRemove={handleRemoveFromGroup}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Student View */
+        <div className="max-w-2xl mx-auto rounded-2xl bg-white shadow-sm border border-border p-5 md:p-8 flex flex-col gap-4">
+          {statusMessage && <StatusMessage message={statusMessage} type={statusType} className="mb-0" />}
+          {myGroup ? (
+            <div className="rounded-xl border border-border overflow-hidden">
+              <div className="px-4 py-3 border-b border-border bg-slate-50">
+                <h3 className="m-0 text-sm font-semibold text-text-primary">My Group: {myGroup.name}</h3>
+              </div>
+              <div className="flex flex-col divide-y divide-border">
+                {myGroup.members.map((member: GroupMember) => (
+                  <div key={member.id} className="flex items-center gap-3 px-4 py-2.5 bg-white">
+                    <div className="w-8 h-8 rounded-full bg-btn-primary/15 flex items-center justify-center text-xs font-semibold text-btn-primary flex-shrink-0">
+                      {member.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-sm text-text-primary">{member.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-text-secondary text-sm m-0">You are not assigned to any group yet.</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

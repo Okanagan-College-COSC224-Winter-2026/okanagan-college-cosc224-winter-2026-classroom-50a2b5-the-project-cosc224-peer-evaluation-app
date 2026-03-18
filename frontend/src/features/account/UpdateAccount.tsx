@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { useUser, useUpdateProfile, useUploadAvatar, useChangePassword, getUserAvatarUrl } from './useUser'
+import { useUser, useUpdateProfile, useUploadAvatar, useChangePassword, useDeleteAccount, getUserAvatarUrl } from './useUser'
 import { getUserId, logout } from '../../util/login'
 import StatusMessage from '../../ui/StatusMessage'
+import Modal from '../../ui/Modal'
 
 interface UserProfile {
   id: number
@@ -16,6 +17,7 @@ export default function Profile() {
   const updateProfileMutation = useUpdateProfile()
   const uploadAvatarMutation = useUploadAvatar()
   const changePasswordMutation = useChangePassword()
+  const deleteAccountMutation = useDeleteAccount()
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -31,6 +33,11 @@ export default function Profile() {
   const [pwStatus, setPwStatus] = useState('')
   const [pwStatusType, setPwStatusType] = useState<'error' | 'success'>('error')
   const [pwLoading, setPwLoading] = useState(false)
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteStatus, setDeleteStatus] = useState('')
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const userId = getUserId()
@@ -122,12 +129,35 @@ export default function Profile() {
     setPwStatus('')
   }
 
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      setDeleteStatus('Please enter your password.')
+      return
+    }
+    setDeleteLoading(true)
+    setDeleteStatus('')
+    try {
+      await deleteAccountMutation.mutateAsync(deletePassword)
+      logout()
+    } catch (err) {
+      setDeleteStatus(err instanceof Error ? err.message : 'Failed to delete account.')
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false)
+    setDeletePassword('')
+    setDeleteStatus('')
+  }
+
   const inputClass =
     'px-3 py-2.5 border border-border rounded-lg bg-bg-secondary text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-btn-primary focus:border-btn-primary transition-colors w-full'
 
   const currentAvatarSrc =
     avatarPreview ??
-    (profile?.avatar_url ? `http://localhost:5001${profile.avatar_url}` : null) ??
+    (profile?.avatar_url ? `http://localhost:5000${profile.avatar_url}` : null) ??
     (userId ? getUserAvatarUrl(userId) : null)
 
   return (
@@ -291,24 +321,66 @@ export default function Profile() {
         </div>
       </section>
 
-      {/* Section 3: Session / Logout */}
-      <section className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-border">
-          <h2 className="text-base font-semibold text-text-primary m-0">Session</h2>
+      {/* Section 3: Danger Zone */}
+      <section className="bg-white rounded-2xl border border-red-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-red-200 bg-red-50/50">
+          <h2 className="text-base font-semibold text-red-700 m-0">Danger Zone</h2>
         </div>
-        <div className="px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-text-primary m-0 mb-0.5">Log out of your account</p>
-            <p className="text-xs text-text-secondary m-0">You will need to sign in again to access the dashboard.</p>
+        <div className="px-6 py-5 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-text-primary m-0 mb-0.5">Delete your account</p>
+              <p className="text-xs text-text-secondary m-0">Permanently remove your account and all associated data. This action cannot be undone.</p>
+            </div>
+            <button
+              onClick={() => setDeleteModalOpen(true)}
+              className="flex-shrink-0 px-4 py-2 rounded-lg border border-red-300 text-sm font-medium text-red-600 hover:bg-red-600 hover:text-white transition-colors cursor-pointer bg-transparent"
+            >
+              Delete account
+            </button>
           </div>
-          <button
-            onClick={() => logout()}
-            className="flex-shrink-0 px-4 py-2 rounded-lg border border-red-200 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer bg-transparent"
-          >
-            Log out
-          </button>
         </div>
       </section>
+
+      {/* Delete Account Confirmation Modal */}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={closeDeleteModal}
+        title="Delete Account"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-text-secondary m-0">
+            This will permanently delete your account and all your data. Please enter your password to confirm.
+          </p>
+          {deleteStatus && <StatusMessage message={deleteStatus} type="error" />}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-text-primary">Password</label>
+            <input
+              type="password"
+              placeholder="Enter your password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div className="flex gap-3 justify-end pt-2 border-t border-border">
+            <button
+              onClick={closeDeleteModal}
+              disabled={deleteLoading}
+              className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-text-secondary hover:bg-bg-secondary transition-colors cursor-pointer bg-transparent disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deleteLoading || !deletePassword}
+              className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors cursor-pointer border-none disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {deleteLoading ? 'Deleting…' : 'Delete my account'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

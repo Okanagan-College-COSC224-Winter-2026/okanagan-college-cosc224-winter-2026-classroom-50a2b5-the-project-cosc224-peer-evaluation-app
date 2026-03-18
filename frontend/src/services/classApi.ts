@@ -57,6 +57,21 @@ export async function importStudentsForCourse(
   return data;
 }
 
+export async function searchCourses(query: string) {
+  const response = await fetch(
+    `${BASE_URL}/class/search?q=${encodeURIComponent(query)}`,
+    { credentials: "include" }
+  );
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    throw new Error(`Response status: ${response.status}`);
+  }
+
+  return await response.json();
+}
+
 export async function listCourseMembers(classId: string) {
   const response = await fetch(`${BASE_URL}/class/members`, {
     method: "POST",

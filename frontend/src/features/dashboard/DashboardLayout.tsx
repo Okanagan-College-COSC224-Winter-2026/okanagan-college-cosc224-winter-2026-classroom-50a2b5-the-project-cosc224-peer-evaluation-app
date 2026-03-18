@@ -1,9 +1,25 @@
+import { useState, useMemo } from "react";
 import ClassCard from "../classes/ClassCard";
 import { useClassesWithAssignments } from "../classes/useClasses";
+import { useDebounce } from "../../hooks/useDebounce";
 import { isTeacher, isAdmin } from "../../util/login";
 
-export default function Home() {
-  const { data: courses = [], isLoading } = useClassesWithAssignments();
+export default function DashboardLayout() {
+  const {
+    data: courses = [],
+    isLoading
+  } = useClassesWithAssignments();
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedQuery = useDebounce(searchQuery, 300);
+
+  const filteredCourses = useMemo(() => {
+    const q = debouncedQuery.trim().toLowerCase();
+    if (!q) return courses;
+    return courses.filter((course: CourseWithAssignments) =>
+      course.name.toLowerCase().includes(q)
+    );
+  }, [courses, debouncedQuery]);
 
   if (isLoading) {
     return (
@@ -15,23 +31,44 @@ export default function Home() {
   }
 
   return (
-    <div className="p-6 md:p-8 w-full">
-      <h1 className="text-2xl font-bold text-text-primary border-b border-border pb-3 mb-6">Peer Review Dashboard</h1>
+    <div className="p-6 md:p-8 w-full max-w-[85vw] sm:max-w-260 mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-4 mb-6">
+        <h1 className="text-2xl font-bold text-text-primary m-0">Peer Review Dashboard</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {courses.map((course: CourseWithAssignments) => (
+        {/* Search bar */}
+        <div className="relative w-full sm:w-80">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search..."
+            className="w-full px-4 py-2.5 rounded-lg bg-white text-sm text-text-primary placeholder:text-text-secondary border border-border shadow-sm focus:outline-none focus:border-btn-primary focus:shadow-md transition-all duration-200"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary bg-transparent border-none cursor-pointer text-xs transition-colors"
+            >
+              &#10005;
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
+        {filteredCourses.map((course: CourseWithAssignments) => (
           <ClassCard
             key={course.id}
             image="https://crc.losrios.edu//shared/img/social-1200-630/programs/general-science-social.jpg"
             name={course.name}
             subtitle={`${course.assignmentCount || 0} assignments`}
-            onclick={() => { window.location.href = `/classes/${course.id}/home` }}
+            href={`/classes/${course.id}/home`}
           />
         ))}
 
-        {isTeacher() && (
+        {isTeacher() && !debouncedQuery && (
           <div
-            className="w-full h-52 flex flex-col items-center justify-center gap-2 bg-bg-secondary text-text-secondary rounded-xl border-2 border-dashed border-bg-tertiary transition-all duration-150 hover:border-btn-primary hover:text-btn-primary hover:bg-emerald-50 cursor-pointer"
+            className="size-full min-h-[13rem] flex flex-col items-center justify-center gap-2 bg-bg-secondary text-text-secondary rounded-xl border-2 border-dashed border-bg-tertiary transition-all duration-150 hover:border-btn-primary hover:text-btn-primary hover:bg-emerald-50 cursor-pointer"
             onClick={() => window.location.href = '/classes/create'}
           >
             <span className="text-2xl font-light">+</span>
@@ -39,9 +76,9 @@ export default function Home() {
           </div>
         )}
 
-        {isAdmin() && (
+        {isAdmin() && !debouncedQuery && (
           <div
-            className="w-full h-52 flex flex-col items-center justify-center gap-2 bg-bg-secondary text-text-secondary rounded-xl border-2 border-dashed border-bg-tertiary transition-all duration-150 hover:border-btn-secondary hover:text-btn-secondary hover:bg-slate-200 cursor-pointer"
+            className="size-full min-h-[13rem] flex flex-col items-center justify-center gap-2 bg-bg-secondary text-text-secondary rounded-xl border-2 border-dashed border-bg-tertiary transition-all duration-150 hover:border-btn-secondary hover:text-btn-secondary hover:bg-slate-200 cursor-pointer"
             onClick={() => window.location.href = '/admin/create-teacher'}
           >
             <span className="text-2xl font-light">+</span>
@@ -49,6 +86,10 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {debouncedQuery && filteredCourses.length === 0 && (
+        <p className="text-text-secondary text-sm mt-6 text-center">No courses matching "{debouncedQuery}"</p>
+      )}
     </div>
   );
 }

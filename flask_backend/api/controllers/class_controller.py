@@ -65,6 +65,37 @@ def create_class():
     return jsonify({"msg": "Class created", "class": {"id": new_class.id}}), 201
 
 
+@bp.route("/search", methods=["GET"])
+@jwt_required()
+def search_classes():
+    """Search classes by name for the authenticated user"""
+    query = request.args.get("q", "").strip()
+    if not query:
+        return jsonify([]), 200
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    # Get user's courses based on role
+    if user.is_teacher():
+        user_courses = Course.get_courses_by_teacher(user.id)
+    elif user.is_admin():
+        user_courses = Course.get_all_courses()
+    elif user.is_student():
+        user_course_entries = User_Course.get_courses_by_student(user.id)
+        user_courses = [Course.get_by_id(uc.courseID) for uc in user_course_entries]
+    else:
+        user_courses = []
+
+    # Filter by search query (case-insensitive)
+    lower_query = query.lower()
+    results = [c for c in user_courses if c and lower_query in c.name.lower()]
+
+    return jsonify([{"id": c.id, "name": c.name} for c in results]), 200
+
+
 @bp.route("/browse_classes", methods=["GET"])
 @jwt_required()
 def get_classes():

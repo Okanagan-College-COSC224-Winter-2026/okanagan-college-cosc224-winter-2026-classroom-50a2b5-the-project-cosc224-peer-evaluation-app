@@ -1,6 +1,6 @@
 import { didExpire, removeToken } from "../util/login";
 
-export const BASE_URL = "http://localhost:5001";
+export const BASE_URL = "http://localhost:5000";
 
 export const maybeHandleExpire = (response: Response) => {
   if (didExpire(response)) {

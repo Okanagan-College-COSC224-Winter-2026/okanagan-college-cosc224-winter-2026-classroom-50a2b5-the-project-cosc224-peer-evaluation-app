@@ -31,7 +31,7 @@ export default function Criterion(props: props) {
                         max={props.scoreMax}
                         value={sliderValue}
                         onChange={handleSliderChange}
-                        className="flex-1 h-2 rounded-lg appearance-none cursor-pointer accent-btn-primary"
+                        className="flex-1 h-2 rounded-lg appearance-none cursor-pointer accent-btn-primary bg-gray-200"
                     />
                     <span className="text-sm font-semibold text-btn-primary whitespace-nowrap min-w-[3.5rem] text-right">
                         {sliderValue} / {props.scoreMax}

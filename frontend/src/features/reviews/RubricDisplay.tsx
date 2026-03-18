@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
 import Criteria from './Criteria';
-import { getCriteria, getRubric } from '../../util/api';
+import { useRubric, useCriteria } from './useRubric';
 
 interface RubricDisplayProps {
     rubricId: number | null;
@@ -9,35 +8,15 @@ interface RubricDisplayProps {
     grades: number[];
 }
 
-interface RubricInfo {
-    id: number;
-    assignmentID: number;
-    canComment: boolean;
-    grades: number[];
-}
-
 export default function RubricDisplay({ rubricId, onCriterionSelect, onCommentChange, grades }: RubricDisplayProps) {
-    const [criteria, setCriteria] = useState<Criterion[]>([]);
-    const [rubricInfo, setRubricInfo] = useState<RubricInfo | null>(null);
+    const { data: criteria = [] } = useCriteria(rubricId);
+    const { data: rubricInfo } = useRubric(rubricId);
+
     const questions: string[] = [];
     const scoreMaxes: number[] = [];
     const hasScores: boolean[] = [];
 
-    useEffect(() => {
-        const loadData = async () => {
-            if (rubricId) {
-                const [criteriaResp, rubricResp] = await Promise.all([
-                    getCriteria(rubricId),
-                    getRubric(rubricId)
-                ]);
-                setCriteria(criteriaResp);
-                setRubricInfo(rubricResp);
-            }
-        };
-        loadData();
-    }, [rubricId]);
-
-    criteria.forEach((crit) => {
+    criteria.forEach((crit: Criterion) => {
         questions.push(crit.question);
         scoreMaxes.push(crit.scoreMax);
         hasScores.push(crit.hasScore);
@@ -60,8 +39,6 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, onCommentCh
                 canComment={rubricInfo?.canComment ?? false}
                 hasScores={hasScores}
                 onCriterionSelect={(row: number, value: number) => {
-                    // Map the array index to the actual CriteriaDescription.id
-                    // so the backend receives the real DB ID, not a positional index
                     const criterionId = criteria[row]?.id;
                     if (criterionId !== undefined) {
                         onCriterionSelect(criterionId, value);

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getUser, updateUserProfile, uploadUserAvatar, getUserAvatarUrl } from "../../services/userApi";
+import { getUser, updateUserProfile, uploadUserAvatar, deleteAccount, getUserAvatarUrl } from "../../services/userApi";
 import { changePassword } from "../../services/authApi";
 
 export function useUser() {
@@ -34,6 +34,12 @@ export function useChangePassword() {
   return useMutation({
     mutationFn: (params: { currentPassword: string; newPassword: string }) =>
       changePassword(params.currentPassword, params.newPassword),
+  });
+}
+
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: (password: string) => deleteAccount(password),
   });
 }
 

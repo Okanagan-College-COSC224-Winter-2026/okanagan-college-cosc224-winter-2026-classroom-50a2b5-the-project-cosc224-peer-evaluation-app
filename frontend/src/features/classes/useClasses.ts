@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listClasses, createClass, listCourseMembers } from "../../services/classApi";
+import { listClasses, createClass, listCourseMembers, searchCourses } from "../../services/classApi";
 import { listAssignments } from "../../services/assignmentApi";
+import { useDebounce } from "../../hooks/useDebounce";
 
 export function useClasses() {
   return useQuery({
@@ -34,6 +35,16 @@ export function useCourseMembers(classId: string) {
     queryKey: ["classes", classId, "members"],
     queryFn: () => listCourseMembers(classId),
     enabled: !!classId,
+  });
+}
+
+export function useSearchCourses(query: string) {
+  const debouncedQuery = useDebounce(query.trim(), 300);
+
+  return useQuery({
+    queryKey: ["classes", "search", debouncedQuery],
+    queryFn: () => searchCourses(debouncedQuery),
+    enabled: debouncedQuery.length > 0,
   });
 }
 

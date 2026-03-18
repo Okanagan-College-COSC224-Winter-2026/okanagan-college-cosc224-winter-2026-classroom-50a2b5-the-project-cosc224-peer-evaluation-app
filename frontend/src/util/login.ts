@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:5001';
+const BASE_URL = 'http://localhost:5000';
 // Token is now stored in httponly cookie, so we don't need getToken anymore
 // But we keep user info (role, name, user_id) in localStorage for UI purposes
 export const getToken = () => {

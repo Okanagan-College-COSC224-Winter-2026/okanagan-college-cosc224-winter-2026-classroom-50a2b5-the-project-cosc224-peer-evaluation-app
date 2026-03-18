@@ -77,7 +77,7 @@ export function useDeleteAssignment() {
   });
 }
 
-// --- Assignment Resources ---
+
 
 export function useAssignmentResources(assignmentId: number) {
   return useQuery({
