@@ -1,7 +1,6 @@
-import { logout } from '../util/login'
+import { useState, useEffect } from 'react'
+import { logout, isAdmin, isTeacher } from '../util/login'
 import './Sidebar.css'
-<<<<<<< Updated upstream
-=======
 import AvatarInitials from './AvatarInitials'
 import NotificationBell from './NotificationBell'
 
@@ -12,26 +11,27 @@ function getLoggedInUser() {
     return {};
   }
 }
->>>>>>> Stashed changes
 
 export default function Sidebar() {
-  // Check which page we are on
   const location = window.location.pathname
+  const [user, setUser] = useState(getLoggedInUser);
+
+  useEffect(() => {
+    const handleStorage = () => setUser(getLoggedInUser());
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  const nameParts = (user.name || '').trim().split(/\s+/);
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
 
   return (
     <div className="Sidebar">
       <div className="SidebarLogo">
         <img src="/oc_logo.png" alt="OC Logo" />
       </div>
-
       <div className="SidebarTop">
-<<<<<<< Updated upstream
-        <SidebarRow
-          onClick={() => logout()}
-          href='#'
-          selected={false}
-        >
-=======
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '10px 0' }}>
           <AvatarInitials
             firstName={firstName}
@@ -42,18 +42,35 @@ export default function Sidebar() {
           <NotificationBell />
         </div>
         <SidebarRow onClick={() => logout()} href='#' selected={false}>
->>>>>>> Stashed changes
           Logout
         </SidebarRow>
-
         <SidebarRow selected={location === '/home'} href="/home">
           Home
         </SidebarRow>
-        
-        { /* TODO: make this ID match who is logged in */ }
-        <SidebarRow selected={location.includes('/profile')} href="/profile/1">
+        <SidebarRow selected={location.includes('/profile')} href={`/profile/${user.id || 0}`}>
           My Info
         </SidebarRow>
+        <SidebarRow
+          selected={location === '/student/review-history'}
+          href="/student/review-history"
+        >
+          My Review History
+        </SidebarRow>
+        {(isTeacher() || isAdmin()) && (
+          <SidebarRow selected={location === '/classes/create'} href="/classes/create">
+            Create Class
+          </SidebarRow>
+        )}
+        {isAdmin() && (
+          <>
+            <SidebarRow selected={location === '/admin/users'} href="/admin/users">
+              User Management
+            </SidebarRow>
+            <SidebarRow selected={location === '/admin/create-teacher'} href="/admin/create-teacher">
+              Create Teacher
+            </SidebarRow>
+          </>
+        )}
       </div>
     </div>
   )
@@ -68,7 +85,10 @@ interface SidebarRowProps {
 
 function SidebarRow(props: SidebarRowProps) {
   return (
-    <div className={`SidebarRow ${props.selected ? 'selected' : ''}`} onClick={props.onClick}>
+    <div
+      className={`SidebarRow ${props.selected ? 'selected' : ''}`}
+      onClick={props.onClick}
+    >
       <a href={props.selected ? '#' : props.href}>{props.children}</a>
     </div>
   )
