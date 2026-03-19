@@ -28,7 +28,6 @@ export default function Feedback() {
         );
         const reviewData = await reviewResponse.json();
         setReviewId(reviewData.id);
-
         const filesData = await getReviewFiles(reviewData.id);
         setFiles(filesData.files ?? []);
       } catch (err) {
@@ -46,7 +45,6 @@ export default function Feedback() {
   return (
     <div className="feedback-page">
       <h1>Feedback</h1>
-
       {files.length === 0 ? (
         <p>No files were attached to this review.</p>
       ) : (
@@ -55,7 +53,7 @@ export default function Feedback() {
           <ul>
             {files.map((file) => (
               <li key={file.file_id}>
-                <a
+                
                   href={downloadReviewFile(file.file_id)}
                   target="_blank"
                   rel="noreferrer"

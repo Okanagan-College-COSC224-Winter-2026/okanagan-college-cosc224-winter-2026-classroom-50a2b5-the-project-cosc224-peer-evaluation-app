@@ -15,7 +15,6 @@ export default function ReviewFileUpload({ files, onChange }: Props) {
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     setError(null);
     const selected = Array.from(e.target.files ?? []);
-
     for (const file of selected) {
       if (!ACCEPTED_TYPES.includes(file.type)) {
         setError(`"${file.name}" is not an accepted file type. Allowed: PDF, PNG, JPG, DOCX.`);
@@ -28,7 +27,6 @@ export default function ReviewFileUpload({ files, onChange }: Props) {
         return;
       }
     }
-
     onChange([...files, ...selected]);
     e.target.value = "";
   };

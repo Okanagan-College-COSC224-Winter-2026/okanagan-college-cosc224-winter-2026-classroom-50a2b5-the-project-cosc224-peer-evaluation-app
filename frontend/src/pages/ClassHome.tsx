@@ -1,15 +1,17 @@
-﻿import AssignmentCard from "../components/AssignmentCard"
+import AssignmentCard from "../components/AssignmentCard"
 import Button from "../components/Button"
 import "./ClassHome.css"
 import { useParams } from "react-router-dom"
 import { useState, useEffect } from "react"
-import { listAssignments, listClasses, createAssignment } from "../util/api"
+import { listAssignments, listClasses, createAssignment, getCourseAnnouncements, createAnnouncement, deleteAnnouncement } from "../util/api"
 import TabNavigation from "../components/TabNavigation"
 import { importCSV } from "../util/csv"
 import Textbox from "../components/Textbox"
 import StatusMessage from "../components/StatusMessage"
-import { isTeacher } from "../util/login"
+import { isTeacher, isAdmin } from "../util/login"
 import RichTextEditor from "../components/RichTextEditor"
+import AnnouncementCard from "../components/AnnouncementCard"
+import AnnouncementForm from "../components/AnnouncementForm"
 
 export default function ClassHome() {
   const { id } = useParams()
@@ -20,6 +22,7 @@ export default function ClassHome() {
   const [className, setClassName] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState("")
   const [statusType, setStatusType] = useState<"error" | "success">("error")
+  const [announcements, setAnnouncements] = useState<any[]>([])
 
   useEffect(() => {
     (async () => {
@@ -28,10 +31,16 @@ export default function ClassHome() {
       const currentClass = classes.find((c: { id: number }) => c.id === Number(id))
       setAssignments(resp)
       setClassName(currentClass?.name || null)
+
+      const annResp = await getCourseAnnouncements(Number(id))
+      if (annResp && annResp.ok) {
+        const annData = await annResp.json()
+        setAnnouncements(annData.announcements)
+      }
     })()
   }, [id])
 
-  const tryCreateAssingment = async () => {
+  const tryCreateAssignment = async () => {
     try {
       setStatusMessage("")
       const response = await createAssignment(idNew, newAssignmentName, newAssignmentDescription)
@@ -49,79 +58,91 @@ export default function ClassHome() {
     }
   }
 
-        setAssignments((prev) => [...prev, createdAssignment]);
-        setNewAssignmentName("");
-        setStatusType('success');
-        setStatusMessage('Assignment created successfully!');
-      } catch (error) {
-        console.error('Error creating assignment:', error);
-        setStatusType('error');
-        setStatusMessage('Error creating assignment.');
-      }
-    };
-    
-    return (
-      <>
-        <div className="ClassHeader">
-          <div className="ClassHeaderLeft">
-            <h2>{className}</h2>
-          </div>
+  const handlePost = async (title: string, content: string) => {
+    const resp = await createAnnouncement(idNew, { title, content })
+    if (resp && resp.ok) {
+      const data = await resp.json()
+      setAnnouncements((prev) => [data.announcement, ...prev])
+    }
+  }
 
+  const handleDelete = async (announcementId: number) => {
+    const resp = await deleteAnnouncement(announcementId)
+    if (resp && resp.ok) {
+      setAnnouncements((prev) => prev.filter((a) => a.id !== announcementId))
+    }
+  }
+
+  return (
+    <div className="ClassHome">
+      <div className="ClassHeader">
+        <div className="ClassHeaderLeft">
+          <h2>{className}</h2>
+        </div>
         <div className="ClassHeaderRight">
-          {isTeacher() ? (
+          {isTeacher() && (
             <Button onClick={() => importCSV(id as string)}>
               Add Students via CSV
             </Button>
-          ) : null}
-      <h2>{className}</h2>
-      {isTeacher() && (
-        <Button onClick={() => importCSV(id as string)}>Add Students via CSV</Button>
-      )}
-      {assignments.map((assignment) => (
-        <AssignmentCard key={assignment.id} id={assignment.id}>{assignment.name}</AssignmentCard>
-      ))}
-      {isTeacher() && (
-        <div>
-          <h3>New Assignment</h3>
-          <label>Name:</label>
-          <Textbox onInput={(val) => setNewAssignmentName(val)} placeholder="Assignment name" />
-          <label>Description:</label>
-          <RichTextEditor value={newAssignmentDescription} onChange={setNewAssignmentDescription} placeholder="Write assignment instructions..." />
-          <Button onClick={() => tryCreateAssingment()}>Add</Button>
-          <StatusMessage message={statusMessage} type={statusType} />
+          )}
         </div>
       </div>
 
       <TabNavigation
         tabs={[
-          {
-            label: "Home",
-            path: `/classes/${id}/home`,
-          },
-          {
-            label: "Members",
-            path: `/classes/${id}/members`,
-          },
+          { label: "Home",    path: `/classes/${id}/home` },
+          { label: "Members", path: `/classes/${id}/members` },
         ]}
       />
 
-      <StatusMessage message={statusMessage} type={statusType} />
+      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        {assignments.map((assignment) => (
+          <li key={assignment.id}>
+            <AssignmentCard id={assignment.id}>
+              {assignment.name}
+            </AssignmentCard>
+          </li>
+        ))}
+      </ul>
 
-      <div className="Class">
-        <div className="Assignments">
-          <ul className="Assignment">
-            {assignments.map((assignment) => {
-              return (
-                <li key={assignment.id}>
-                  <AssignmentCard id={assignment.id}>
-                    {assignment.name}
-                  </AssignmentCard>
-                </li>
-              );
-            })}
-          </ul>
+      {isTeacher() && (
+        <div className="NewAssignment">
+          <h3>New Assignment</h3>
+          <label>Name:</label>
+          <Textbox
+            onInput={(val) => setNewAssignmentName(val)}
+            placeholder="Assignment name"
+          />
+          <label>Description:</label>
+          <RichTextEditor
+            value={newAssignmentDescription}
+            onChange={setNewAssignmentDescription}
+            placeholder="Write assignment instructions..."
+          />
+          <Button onClick={tryCreateAssignment}>Add</Button>
+          <StatusMessage message={statusMessage} type={statusType} />
         </div>
       )}
+
+      <section className="announcements-section">
+        <h2>Announcements</h2>
+        {isTeacher() && <AnnouncementForm onSubmit={handlePost} />}
+        {announcements.map((a) => (
+          <AnnouncementCard
+            key={a.id}
+            id={a.id}
+            title={a.title}
+            content={a.content}
+            author_name={a.author_name}
+            created_at={a.created_at}
+            canDelete={isTeacher() || isAdmin()}
+            onDelete={handleDelete}
+          />
+        ))}
+        {announcements.length === 0 && (
+          <p className="announcements-empty">No announcements yet.</p>
+        )}
+      </section>
     </div>
   )
 }

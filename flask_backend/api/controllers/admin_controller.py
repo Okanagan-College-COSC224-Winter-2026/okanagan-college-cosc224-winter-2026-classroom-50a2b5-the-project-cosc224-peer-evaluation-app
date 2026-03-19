@@ -29,6 +29,7 @@ class AdminUserUpdateSchema(Schema):
     name = fields.Str(validate=validate.Length(min=1, max=255))
     email = fields.Email()
     role = fields.Str(validate=validate.OneOf(["student", "teacher", "admin"]))
+    password = fields.Str(validate=validate.Length(min=6))
 
 
 # ---- Endpoints ----
@@ -109,7 +110,7 @@ def create_user():
 @bp.route("/users/<int:user_id>", methods=["PUT"])
 @jwt_admin_required
 def update_user(user_id):
-    """Update a user's name, email, or role (admin only)"""
+    """Update a user's name, email, role, or password (admin only)"""
     if not request.is_json:
         return jsonify({"msg": "Missing JSON in request"}), 400
 
@@ -138,7 +139,10 @@ def update_user(user_id):
             return jsonify({"msg": "Cannot demote yourself from admin role"}), 400
 
     for field, value in data.items():
-        setattr(user, field, value)
+        if field == "password":
+            user.hash_pass = generate_password_hash(value)
+        else:
+            setattr(user, field, value)
 
     user.update()
 

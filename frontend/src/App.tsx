@@ -14,7 +14,10 @@ import Group from "./pages/Group";
 import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
+import ReviewHistoryPage from "./pages/ReviewHistoryPage";
 import TeacherReviewsPage from "./pages/TeacherReviewsPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
+import AssignmentAnalytics from "./pages/AssignmentAnalytics";
 
 function AppContent() {
   const location = useLocation();
@@ -102,6 +105,15 @@ function AppContent() {
           />
 
           <Route
+            path="/student/review-history"
+            element={
+              <ProtectedRoute>
+                <ReviewHistoryPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/assignments/:id/reviews"
             element={
               <ProtectedRoute>
@@ -110,6 +122,23 @@ function AppContent() {
             }
           />
 
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <AdminUsersPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/assignments/:id/analytics"
+            element={
+              <ProtectedRoute>
+                <AssignmentAnalytics />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
     </div>

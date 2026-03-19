@@ -20,6 +20,7 @@ from .controllers import (
     review_file_controller,
     teacher_controller,
     notification_controller,
+    review_history_controller,
 )
 from .models.db import db, ma
 
@@ -75,10 +76,9 @@ def create_app(test_config=None):
     def unauthorized_callback(reason):
         return jsonify({"msg": f"Unauthorized: {reason}"}), 401
 
-    @jwt.invalid_token_loader  
+    @jwt.invalid_token_loader
     def invalid_token_callback(reason):
         return jsonify({"msg": f"Invalid token: {reason}"}), 422
-
 
     jwt.init_app(app)
 
@@ -114,5 +114,6 @@ def create_app(test_config=None):
     app.register_blueprint(review_file_controller.review_file_bp)
     app.register_blueprint(teacher_controller.teacher_bp)
     app.register_blueprint(notification_controller.notification_bp)
+    app.register_blueprint(review_history_controller.review_history_bp)
 
     return app

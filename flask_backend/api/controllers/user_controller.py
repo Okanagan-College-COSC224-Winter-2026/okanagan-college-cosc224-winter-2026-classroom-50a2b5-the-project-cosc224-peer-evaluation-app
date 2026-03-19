@@ -26,6 +26,8 @@ class ProfileUpdateSchema(Schema):
     class Meta:
         unknown = EXCLUDE
     name = fields.Str(validate=validate.Length(min=1, max=255))
+    first_name = fields.Str(validate=validate.Length(min=1, max=255))
+    last_name = fields.Str(validate=validate.Length(min=1, max=255))
 
 
 profile_update_schema = ProfileUpdateSchema()
@@ -126,6 +128,12 @@ def update_profile():
         return jsonify({"msg": "User not found"}), 404
     if "name" in data:
         user.name = data["name"]
+    elif "first_name" in data or "last_name" in data:
+        # Frontend may send first_name/last_name separately — combine into name
+        parts = (user.name or "").split(" ", 1)
+        first = data.get("first_name", parts[0])
+        last = data.get("last_name", parts[1] if len(parts) > 1 else "")
+        user.name = f"{first} {last}".strip()
     user.update()
     return jsonify({
         "id":         user.id,
