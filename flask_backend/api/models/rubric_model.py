@@ -13,6 +13,8 @@ class Rubric(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     assignmentID = db.Column(db.Integer, db.ForeignKey("Assignment.id"), nullable=False, index=True)
     canComment = db.Column(db.Boolean, nullable=False, default=True)
+    is_template = db.Column(db.Boolean, default=False, nullable=False)
+    template_name = db.Column(db.String(200), nullable=True)
 
     # relationships
     assignment = db.relationship("Assignment", back_populates="rubrics")

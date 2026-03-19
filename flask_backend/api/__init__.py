@@ -21,6 +21,7 @@ from .controllers import (
     teacher_controller,
     notification_controller,
     review_history_controller,
+    rubric_builder_controller,
 )
 from .models.db import db, ma
 
@@ -115,5 +116,6 @@ def create_app(test_config=None):
     app.register_blueprint(teacher_controller.teacher_bp)
     app.register_blueprint(notification_controller.notification_bp)
     app.register_blueprint(review_history_controller.review_history_bp)
+    app.register_blueprint(rubric_builder_controller.rubric_builder_bp)
 
     return app
