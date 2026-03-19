@@ -1,5 +1,18 @@
 import { logout } from '../util/login'
 import './Sidebar.css'
+<<<<<<< Updated upstream
+=======
+import AvatarInitials from './AvatarInitials'
+import NotificationBell from './NotificationBell'
+
+function getLoggedInUser() {
+  try {
+    return JSON.parse(localStorage.getItem('user') || '{}');
+  } catch {
+    return {};
+  }
+}
+>>>>>>> Stashed changes
 
 export default function Sidebar() {
   // Check which page we are on
@@ -12,11 +25,24 @@ export default function Sidebar() {
       </div>
 
       <div className="SidebarTop">
+<<<<<<< Updated upstream
         <SidebarRow
           onClick={() => logout()}
           href='#'
           selected={false}
         >
+=======
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '10px 0' }}>
+          <AvatarInitials
+            firstName={firstName}
+            lastName={lastName}
+            userId={user.id || 0}
+            size={36}
+          />
+          <NotificationBell />
+        </div>
+        <SidebarRow onClick={() => logout()} href='#' selected={false}>
+>>>>>>> Stashed changes
           Logout
         </SidebarRow>
 

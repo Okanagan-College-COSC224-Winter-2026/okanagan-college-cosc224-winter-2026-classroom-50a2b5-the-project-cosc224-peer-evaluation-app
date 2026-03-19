@@ -14,6 +14,15 @@ import Group from "./pages/Group";
 import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
+<<<<<<< Updated upstream
+=======
+import ReviewHistoryPage from "./pages/ReviewHistoryPage";
+import TeacherReviewsPage from "./pages/TeacherReviewsPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
+import AssignmentAnalytics from "./pages/AssignmentAnalytics";
+import ActivityFeedPage from "./pages/ActivityFeedPage";
+import RubricBuilderPage from "./pages/RubricBuilderPage";
+>>>>>>> Stashed changes
 
 function AppContent() {
   const location = useLocation();
@@ -70,11 +79,76 @@ function AppContent() {
             </ProtectedRoute>
           } />
 
+<<<<<<< Updated upstream
           <Route path="/assignments/:id/group" element={
             <ProtectedRoute>
               <Group />
             </ProtectedRoute>
           } />
+=======
+          <Route
+            path="/assignments/:id/group"
+            element={
+              <ProtectedRoute>
+                <Group />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/student/review-history"
+            element={
+              <ProtectedRoute>
+                <ReviewHistoryPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/assignments/:id/reviews"
+            element={
+              <ProtectedRoute>
+                <TeacherReviewsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <AdminUsersPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/assignments/:id/analytics"
+            element={
+              <ProtectedRoute>
+                <AssignmentAnalytics />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/activity"
+            element={
+              <ProtectedRoute>
+                <ActivityFeedPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/teacher/assignments/:assignmentId/rubric"
+            element={
+              <ProtectedRoute>
+                <RubricBuilderPage />
+              </ProtectedRoute>
+            }
+          />
+>>>>>>> Stashed changes
         </Routes>
       </div>
     </div>
