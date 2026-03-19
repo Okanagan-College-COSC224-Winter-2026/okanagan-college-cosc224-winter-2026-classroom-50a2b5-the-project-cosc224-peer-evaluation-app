@@ -14,6 +14,7 @@ import Group from "./pages/Group";
 import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
+import ReviewHistoryPage from "./pages/ReviewHistoryPage";
 import TeacherReviewsPage from "./pages/TeacherReviewsPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AssignmentAnalytics from "./pages/AssignmentAnalytics";
@@ -99,6 +100,15 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <Group />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/student/review-history"
+            element={
+              <ProtectedRoute>
+                <ReviewHistoryPage />
               </ProtectedRoute>
             }
           />

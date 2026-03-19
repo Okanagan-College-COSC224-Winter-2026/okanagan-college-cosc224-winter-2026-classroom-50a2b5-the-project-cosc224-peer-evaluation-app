@@ -15,7 +15,6 @@ export default function Sidebar() {
   const location = window.location.pathname
   const [user, setUser] = useState(getLoggedInUser);
 
-  // Re-read user from localStorage whenever it's updated (e.g. after name change)
   useEffect(() => {
     const handleStorage = () => setUser(getLoggedInUser());
     window.addEventListener('storage', handleStorage);
@@ -31,7 +30,6 @@ export default function Sidebar() {
       <div className="SidebarLogo">
         <img src="/oc_logo.png" alt="OC Logo" />
       </div>
-
       <div className="SidebarTop">
         <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}>
           <AvatarInitials
@@ -41,25 +39,26 @@ export default function Sidebar() {
             size={36}
           />
         </div>
-
         <SidebarRow onClick={() => logout()} href='#' selected={false}>
           Logout
         </SidebarRow>
-
         <SidebarRow selected={location === '/home'} href="/home">
           Home
         </SidebarRow>
-
         <SidebarRow selected={location.includes('/profile')} href={`/profile/${user.id || 0}`}>
           My Info
         </SidebarRow>
-
+        <SidebarRow
+          selected={location === '/student/review-history'}
+          href="/student/review-history"
+        >
+          My Review History
+        </SidebarRow>
         {(isTeacher() || isAdmin()) && (
           <SidebarRow selected={location === '/classes/create'} href="/classes/create">
             Create Class
           </SidebarRow>
         )}
-
         {isAdmin() && (
           <>
             <SidebarRow selected={location === '/admin/users'} href="/admin/users">
@@ -84,7 +83,10 @@ interface SidebarRowProps {
 
 function SidebarRow(props: SidebarRowProps) {
   return (
-    <div className={`SidebarRow ${props.selected ? 'selected' : ''}`} onClick={props.onClick}>
+    <div
+      className={`SidebarRow ${props.selected ? 'selected' : ''}`}
+      onClick={props.onClick}
+    >
       <a href={props.selected ? '#' : props.href}>{props.children}</a>
     </div>
   )

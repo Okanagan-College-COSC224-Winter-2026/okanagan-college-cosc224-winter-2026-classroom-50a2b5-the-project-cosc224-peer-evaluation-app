@@ -300,7 +300,12 @@ export const createReview = async (assignmentID: number, reviewerID: number, rev
   return response
 }
 
-export const createCriterion = async (reviewID: number, criterionRowID: number, grade: number, comments: string) => {
+export const createCriterion = async (
+  reviewID: number,
+  criterionRowID: number,
+  grade: number,
+  comments: string
+) => {
   const response = await fetch(`${BASE_URL}/create_criterion`, {
     method: 'POST',
     body: JSON.stringify({ reviewID, criterionRowID, grade, comments }),
@@ -396,7 +401,27 @@ export const changePassword = async (currentPassword: string, newPassword: strin
   return await response.json();
 }
 
-// ── Review file attachments ──────────────────────────────────────────────────
+// ── Review history ────────────────────────────────────────────────────────────
+
+export const getMyReviews = async (): Promise<Response> => {
+  const response = await fetch(`${BASE_URL}/review-history/my-reviews`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  maybeHandleExpire(response);
+  return response;
+};
+
+export const getMyTrends = async (): Promise<Response> => {
+  const response = await fetch(`${BASE_URL}/review-history/my-trends`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  maybeHandleExpire(response);
+  return response;
+};
+
+// ── Review file attachments ───────────────────────────────────────────────────
 
 export const uploadReviewFiles = async (reviewID: number, files: File[]) => {
   const formData = new FormData();
