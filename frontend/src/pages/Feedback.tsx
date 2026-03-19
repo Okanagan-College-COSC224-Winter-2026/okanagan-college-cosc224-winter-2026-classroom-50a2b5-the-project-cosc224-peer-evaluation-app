@@ -53,7 +53,7 @@ export default function Feedback() {
           <ul>
             {files.map((file) => (
               <li key={file.file_id}>
-                
+                <a
                   href={downloadReviewFile(file.file_id)}
                   target="_blank"
                   rel="noreferrer"

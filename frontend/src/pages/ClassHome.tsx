@@ -22,7 +22,7 @@ export default function ClassHome() {
   const [className, setClassName] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState("")
   const [statusType, setStatusType] = useState<"error" | "success">("error")
-  const [announcements, setAnnouncements] = useState<any[]>([])
+  const [announcements, setAnnouncements] = useState<string[]>([])
 
   useEffect(() => {
     (async () => {

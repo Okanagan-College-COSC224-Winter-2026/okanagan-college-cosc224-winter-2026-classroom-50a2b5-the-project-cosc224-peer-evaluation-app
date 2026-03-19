@@ -5,7 +5,10 @@ import './RubricDisplay.css';
 interface RubricCriterion {
   id: number;
   title: string;
+  question?: string;
   description: string;
+  score_max?: number;
+  scoreMax?: number;
   levels: RubricLevel[];
 }
 
@@ -51,7 +54,7 @@ export default function RubricDisplay({ rubricId }: RubricDisplayProps) {
           {rubric.criteria.map((criterion) => (
             <tr key={criterion.id}>
               <td className="RubricDisplay__criterion-title">
-                {(criterion as any).title || (criterion as any).question}
+                {criterion.title || criterion.question}
               </td>
               {criterion.levels ? criterion.levels.map((level) => (
                 <td key={level.id} className="RubricDisplay__level">
@@ -61,7 +64,7 @@ export default function RubricDisplay({ rubricId }: RubricDisplayProps) {
               )) : (
                 <td className="RubricDisplay__level">
                   <div className="RubricDisplay__level-score">
-                    {(criterion as any).score_max || (criterion as any).scoreMax}
+                    {criterion.score_max || criterion.scoreMax}
                   </div>
                 </td>
               )}

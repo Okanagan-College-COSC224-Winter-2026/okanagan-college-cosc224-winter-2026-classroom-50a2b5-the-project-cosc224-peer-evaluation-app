@@ -100,7 +100,8 @@ export default function ConclusionSection({
     }
   };
 
-  const handleDownload = async (fileId: number, filename: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleDownload = async (fileId: number, _filename: string) => {
     setDownloadingId(fileId);
     try {
       await downloadConclusionFile(assignmentId, fileId);
