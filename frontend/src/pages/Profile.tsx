@@ -71,7 +71,7 @@ export default function Profile() {
         try {
           const stored = JSON.parse(localStorage.getItem('user') || '{}');
           localStorage.setItem('user', JSON.stringify({ ...stored, name: newName }));
-        } catch {}
+        } catch { /* localStorage may be unavailable */ }
         setEditing(false); setSuccess(true);
         // Force sidebar to re-render by triggering a storage event
         window.dispatchEvent(new Event('storage'));

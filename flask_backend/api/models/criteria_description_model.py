@@ -15,6 +15,9 @@ class CriteriaDescription(db.Model):
     question = db.Column(db.String(255), nullable=True)
     scoreMax = db.Column(db.Integer, nullable=True)
     hasScore = db.Column(db.Boolean, nullable=False, default=True)
+    description = db.Column(db.String(255), nullable=True, default="")
+    weight = db.Column(db.Float, nullable=True, default=0)
+    position = db.Column(db.Integer, default=0, nullable=False)
 
     # relationships
     rubric = db.relationship("Rubric", back_populates="criteria_descriptions")

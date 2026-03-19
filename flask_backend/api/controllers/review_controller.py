@@ -92,4 +92,14 @@ def submit_review():
         )
         Criterion.create_criterion(criterion)
 
+    # Notify the reviewee about the new peer review
+    from api.services.notification_service import create_notification
+    create_notification(
+        user_id=reviewee_id,
+        type="review_received",
+        title="New Peer Review",
+        message=f"{reviewer.name} submitted a peer review for you in {assignment.name}.",
+        link=f"/student/feedback/{assignment_id}",
+    )
+
     return jsonify({"msg": "Review submitted successfully", "review_id": review.id}), 201
