@@ -53,15 +53,15 @@ export default function Assignment() {
         console.error("Failed to load assignment details:", e);
       }
 
-        // Load rubric criteria for RubricForm
-        try {
-          const rubricData = await getRubricByAssignment(Number(id));
-          setRubricCriteria(rubricData.criteria || []);
-        } catch {
-          // No rubric yet
-        }
+      // Load rubric criteria for RubricForm
+      try {
+        const rubricData = await getRubricByAssignment(Number(id));
+        setRubricCriteria(rubricData.criteria || []);
+      } catch {
+        // No rubric yet
+      }
 
-        // Load student's own group members
+      // Load student's own group members
       try {
         const uid = await getUserId();
         setStuID(uid);
