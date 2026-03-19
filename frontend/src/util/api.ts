@@ -401,7 +401,7 @@ export const changePassword = async (currentPassword: string, newPassword: strin
   return await response.json();
 }
 
-// ===== REVIEW HISTORY =====
+// ── Review history ────────────────────────────────────────────────────────────
 
 export const getMyReviews = async (): Promise<Response> => {
   const response = await fetch(`${BASE_URL}/review-history/my-reviews`, {
@@ -421,7 +421,37 @@ export const getMyTrends = async (): Promise<Response> => {
   return response;
 };
 
-// ===== TEACHER REVIEWS =====
+// ── Review file attachments ───────────────────────────────────────────────────
+
+export const uploadReviewFiles = async (reviewID: number, files: File[]) => {
+  const formData = new FormData();
+  files.forEach((file) => formData.append("files", file));
+  const response = await fetch(`${BASE_URL}/review/${reviewID}/upload`, {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+  });
+  maybeHandleExpire(response);
+  if (!response.ok) {
+    throw new Error(`Response status: ${response.status}`);
+  }
+  return await response.json();
+};
+
+export const getReviewFiles = async (reviewId: number) => {
+  const resp = await fetch(`${BASE_URL}/review/${reviewId}/files`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  maybeHandleExpire(resp);
+  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
+  return await resp.json();
+};
+
+export const downloadReviewFile = (fileId: number): string =>
+  `${BASE_URL}/review/file/${fileId}`;
+
+// ── Teacher reviews ───────────────────────────────────────────────────────────
 
 export interface TeacherReviewRow {
   review_id: number;
@@ -510,6 +540,8 @@ export const listAllGroups = async (assignmentId: number) => {
   return await resp.json();
 };
 
+// ── Assignment file attachment ────────────────────────────────────────────────
+
 export const uploadAssignmentFile = async (assignmentId: number, file: File) => {
   const formData = new FormData();
   formData.append('file', file);
@@ -554,6 +586,8 @@ export const deleteAssignmentAttachment = async (assignmentId: number) => {
   return await resp.json();
 };
 
+// ── Assignment detail ─────────────────────────────────────────────────────────
+
 export const getAssignment = async (assignmentId: number) => {
   const resp = await fetch(`${BASE_URL}/assignment/detail/${assignmentId}`, {
     method: 'GET',
@@ -564,6 +598,8 @@ export const getAssignment = async (assignmentId: number) => {
   return await resp.json();
 };
 
+// ── Rubric by assignment ──────────────────────────────────────────────────────
+
 export const getRubricByAssignment = async (assignmentId: number) => {
   const resp = await fetch(`${BASE_URL}/assignment/${assignmentId}/rubric`, {
     method: 'GET',
@@ -573,6 +609,8 @@ export const getRubricByAssignment = async (assignmentId: number) => {
   if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
   return await resp.json();
 };
+
+// ── Submit review ─────────────────────────────────────────────────────────────
 
 interface CriterionSubmission {
   criteria_description_id: number;
@@ -601,18 +639,7 @@ export const submitReview = async (payload: ReviewSubmissionPayload) => {
   return await resp.json();
 };
 
-export const getReviewFiles = async (reviewId: number) => {
-  const resp = await fetch(`${BASE_URL}/review/${reviewId}/files`, {
-    method: 'GET',
-    credentials: 'include',
-  });
-  maybeHandleExpire(resp);
-  if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
-  return await resp.json();
-};
-
-export const downloadReviewFile = (fileId: number): string =>
-  `${BASE_URL}/review/file/${fileId}`;
+// ── Student grades & feedback ─────────────────────────────────────────────────
 
 export const getStudentGrades = async () => {
   const resp = await fetch(`${BASE_URL}/student/grades`, {
@@ -633,6 +660,8 @@ export const getStudentFeedback = async (assignmentId: number) => {
   if (!resp.ok) throw new Error(`Response status: ${resp.status}`);
   return await resp.json();
 };
+
+// ── Conclusion file attachments ───────────────────────────────────────────────
 
 export const uploadConclusionFile = async (assignmentId: number, file: File) => {
   const formData = new FormData();
@@ -675,6 +704,8 @@ export const downloadConclusionFile = async (assignmentId: number, fileId: numbe
   window.URL.revokeObjectURL(url);
 };
 
+// ── User profile ──────────────────────────────────────────────────────────────
+
 export const getUserProfile = () =>
   fetch(`${BASE_URL}/user/profile`, { credentials: 'include' }).then(res => {
     maybeHandleExpire(res);
@@ -691,6 +722,8 @@ export const updateUserProfile = (data: { name?: string; first_name?: string; la
     maybeHandleExpire(res);
     return res;
   });
+
+// ── Admin user management ─────────────────────────────────────────────────────
 
 export interface AdminUserPayload {
   name: string;
@@ -732,6 +765,8 @@ export const adminReactivateUser = (id: number) =>
     credentials: 'include',
   }).then(res => { maybeHandleExpire(res); return res; });
 
+// ── Teacher analytics ─────────────────────────────────────────────────────────
+
 export interface CriterionStat {
   criterion_id: number;
   criterion_name: string;
@@ -765,3 +800,24 @@ export const exportReviewsCSV = (assignmentId: number) =>
   fetch(`${BASE_URL}/teacher/assignments/${assignmentId}/export`, {
     credentials: 'include',
   });
+
+// ── Announcements ─────────────────────────────────────────────────────────────
+
+export const getCourseAnnouncements = (courseId: number) =>
+  fetch(`${BASE_URL}/announcement/course/${courseId}/announcements`, {
+    credentials: 'include',
+  }).then((res) => { maybeHandleExpire(res); return res; });
+
+export const createAnnouncement = (courseId: number, data: { title: string; content: string }) =>
+  fetch(`${BASE_URL}/announcement/course/${courseId}/announcements`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).then((res) => { maybeHandleExpire(res); return res; });
+
+export const deleteAnnouncement = (id: number) =>
+  fetch(`${BASE_URL}/announcement/announcements/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  }).then((res) => { maybeHandleExpire(res); return res; });
