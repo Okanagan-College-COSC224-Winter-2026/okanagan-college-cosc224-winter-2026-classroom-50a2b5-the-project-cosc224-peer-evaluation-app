@@ -1,7 +1,7 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useUploadAssignmentResource, useDeleteAssignmentResource } from "./useAssignments";
-import { cardClass, btnSecondary, btnOutline, fileInputClass } from "./assignmentStyles";
+import { cardClass, btnSecondary } from "./assignmentStyles";
 import type { AssignmentResourceItem } from "./useAssignmentDetail";
 
 interface Props {
