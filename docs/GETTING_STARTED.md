@@ -95,7 +95,7 @@ npm install
 ```
 
 **What this does:**
-- Installs all frontend dependencies (React, Vite, TypeScript, etc.)
+- Installs all frontend dependencies (React, Vite, TypeScript, Tailwind CSS, etc.)
 
 ### Step 5: Start the Frontend Server
 

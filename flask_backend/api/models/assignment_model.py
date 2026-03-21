@@ -33,6 +33,9 @@ class Assignment(db.Model):
     reviews = db.relationship(
         "Review", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
     )
+    resources = db.relationship(
+        "AssignmentResource", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
+    )
 
     def __init__(
         self,

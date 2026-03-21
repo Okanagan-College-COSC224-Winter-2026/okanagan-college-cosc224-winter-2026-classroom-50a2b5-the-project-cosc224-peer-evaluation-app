@@ -3,6 +3,11 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from ..models import Course, Assignment, User, AssignmentSchema, User_Course
+from ..models.db import db
+from ..models.criterion_model import Criterion
+from ..models.review_model import Review
+from ..models.rubric_model import Rubric
+from ..models.criteria_description_model import CriteriaDescription
 from .auth_controller import jwt_teacher_required
 
 bp = Blueprint("assignment", __name__, url_prefix="/assignment")
@@ -167,7 +172,22 @@ def delete_assignment(assignment_id):
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
-    assignment.delete()
+    try:
+        # Criterion has FKs to both Review and CriteriaDescription.
+        # Delete all Criterion rows for this assignment first to avoid
+        # FK constraint conflicts during cascade.
+        review_ids = [r.id for r in assignment.reviews.all()]
+        if review_ids:
+            Criterion.query.filter(Criterion.reviewID.in_(review_ids)).delete(
+                synchronize_session="fetch"
+            )
+
+        db.session.delete(assignment)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": f"Failed to delete assignment: {str(e)}"}), 500
+
     return jsonify({"msg": "Assignment deleted"}), 200
 
 

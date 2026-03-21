@@ -19,7 +19,7 @@ class AssignmentResource(db.Model):
     path = db.Column(db.String(512), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
-    assignment = db.relationship("Assignment", lazy="joined")
+    assignment = db.relationship("Assignment", back_populates="resources", lazy="joined")
     uploader = db.relationship("User", lazy="joined")
 
     def __init__(self, assignmentID, uploaderID, original_name, path):
