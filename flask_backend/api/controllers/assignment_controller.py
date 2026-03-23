@@ -1,5 +1,3 @@
-# api/controllers/assignment_controller.py
-
 import os
 from datetime import datetime
 
@@ -34,25 +32,23 @@ def ensure_upload_dir(path):
 
 def allowed_file(filename):
     allowed_extensions = {
-    "pdf",
-    "doc",
-    "docx",
-    "txt",
-    "png",
-    "jpg",
-    "jpeg",
-    "zip",
-    "py",
-    "java",
-    "c",
-    "cpp",
-    "ppt",
-    "pptx",
-    "xls",
-    "xlsx",
-    "csv",
-    "js",
-    "ts",
+        "pdf",
+        "doc",
+        "docx",
+        "txt",
+        "png",
+        "jpg",
+        "jpeg",
+        "zip",
+        "py",
+        "java",
+        "c",
+        "cpp",
+        "ppt",
+        "pptx",
+        "xls",
+        "xlsx",
+        "csv",
     }
     return (
         "." in filename
@@ -368,7 +364,9 @@ def submit_assignment(assignment_id):
         return jsonify(
             {
                 "msg": "Submission updated",
-                "submission": SubmissionSchema().dump(existing_submission),
+                "submission": SubmissionSchema().dump(
+                    existing_submission
+                ),
             }
         ), 200
 
@@ -378,6 +376,7 @@ def submit_assignment(assignment_id):
         studentID=user.id,
         assignmentID=assignment.id,
     )
+    new_submission.submitted_at = datetime.utcnow()
     Submission.create_submission(new_submission)
 
     return jsonify(
