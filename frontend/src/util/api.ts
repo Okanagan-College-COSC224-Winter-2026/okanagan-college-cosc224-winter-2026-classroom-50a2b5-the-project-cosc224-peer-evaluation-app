@@ -821,3 +821,64 @@ export const deleteAnnouncement = (id: number) =>
     method: 'DELETE',
     credentials: 'include',
   }).then((res) => { maybeHandleExpire(res); return res; });
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+export const getNotifications = (page = 1, perPage = 20, type?: string) => {
+  const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+  if (type) params.append('type', type);
+  return fetch(`${BASE_URL}/notification/notifications?${params}`, {
+    credentials: 'include',
+  }).then(res => { maybeHandleExpire(res); return res; });
+};
+
+export const getUnreadCount = () =>
+  fetch(`${BASE_URL}/notification/notifications/unread-count`, {
+    credentials: 'include',
+  }).then(res => { maybeHandleExpire(res); return res; });
+
+export const markNotificationRead = (id: number) =>
+  fetch(`${BASE_URL}/notification/notifications/${id}/read`, {
+    method: 'PUT',
+    credentials: 'include',
+  }).then(res => { maybeHandleExpire(res); return res; });
+
+export const markAllNotificationsRead = () =>
+  fetch(`${BASE_URL}/notification/notifications/read-all`, {
+    method: 'PUT',
+    credentials: 'include',
+  }).then(res => { maybeHandleExpire(res); return res; });
+
+// ── Rubric Builder ────────────────────────────────────────────────────────────
+
+export const getRubricBuilder = (assignmentId: number) =>
+  fetch(`${BASE_URL}/rubric-builder/assignment/${assignmentId}/rubric`, {
+    credentials: 'include',
+  }).then(res => { maybeHandleExpire(res); return res; });
+
+export const upsertRubric = (assignmentId: number, data: any) =>
+  fetch(`${BASE_URL}/rubric-builder/assignment/${assignmentId}/rubric`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).then(res => { maybeHandleExpire(res); return res; });
+
+export const reorderCriteria = (rubricId: number, order: number[]) =>
+  fetch(`${BASE_URL}/rubric-builder/rubric/${rubricId}/reorder`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ order }),
+  }).then(res => { maybeHandleExpire(res); return res; });
+
+export const getRubricTemplates = () =>
+  fetch(`${BASE_URL}/rubric-builder/templates`, {
+    credentials: 'include',
+  }).then(res => { maybeHandleExpire(res); return res; });
+
+export const applyRubricTemplate = (templateId: number, assignmentId: number) =>
+  fetch(`${BASE_URL}/rubric-builder/templates/${templateId}/apply/${assignmentId}`, {
+    method: 'POST',
+    credentials: 'include',
+  }).then(res => { maybeHandleExpire(res); return res; });

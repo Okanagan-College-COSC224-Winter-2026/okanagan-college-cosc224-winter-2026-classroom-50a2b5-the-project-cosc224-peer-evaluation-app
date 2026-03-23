@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { logout, isAdmin, isTeacher } from '../util/login'
 import './Sidebar.css'
 import AvatarInitials from './AvatarInitials'
+import NotificationBell from './NotificationBell'
 
 function getLoggedInUser() {
   try {
@@ -31,13 +32,14 @@ export default function Sidebar() {
         <img src="/oc_logo.png" alt="OC Logo" />
       </div>
       <div className="SidebarTop">
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '10px 0' }}>
           <AvatarInitials
             firstName={firstName}
             lastName={lastName}
             userId={user.id || 0}
             size={36}
           />
+          <NotificationBell />
         </div>
         <SidebarRow onClick={() => logout()} href='#' selected={false}>
           Logout

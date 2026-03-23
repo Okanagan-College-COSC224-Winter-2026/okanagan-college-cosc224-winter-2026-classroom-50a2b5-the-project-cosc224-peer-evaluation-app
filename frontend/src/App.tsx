@@ -18,6 +18,8 @@ import ReviewHistoryPage from "./pages/ReviewHistoryPage";
 import TeacherReviewsPage from "./pages/TeacherReviewsPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AssignmentAnalytics from "./pages/AssignmentAnalytics";
+import ActivityFeedPage from "./pages/ActivityFeedPage";
+import RubricBuilderPage from "./pages/RubricBuilderPage";
 
 function AppContent() {
   const location = useLocation();
@@ -136,6 +138,24 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <AssignmentAnalytics />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/activity"
+            element={
+              <ProtectedRoute>
+                <ActivityFeedPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/teacher/assignments/:assignmentId/rubric"
+            element={
+              <ProtectedRoute>
+                <RubricBuilderPage />
               </ProtectedRoute>
             }
           />
