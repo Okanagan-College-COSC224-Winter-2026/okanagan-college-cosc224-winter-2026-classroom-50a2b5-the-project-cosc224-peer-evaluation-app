@@ -373,6 +373,7 @@ See [database-schema.md](schema/database-schema.md) for complete details.
 | **Frontend** | React 18 + TypeScript | UI components and routing |
 | | Vite | Fast dev server and build tool |
 | | React Router | Client-side navigation |
+| | Tailwind CSS | Utility-first CSS styling |
 | **Backend** | Flask 3.x | REST API framework |
 | | SQLAlchemy | ORM for database operations |
 | | Flask-JWT-Extended | JWT token management |
