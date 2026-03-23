@@ -31,6 +31,7 @@ interface Submission {
   file_name: string;
   file_path: string;
   submitted_at?: string;
+  student_name?: string;
 }
 
 export default function Assignment() {
@@ -53,12 +54,36 @@ export default function Assignment() {
   const [loadingTeacherSubmissions, setLoadingTeacherSubmissions] =
     useState(false);
 
+  const loadTeacherSubmissions = async () => {
+    try {
+      console.log("Teacher mode: loading submissions for", assignmentId);
+      setLoadingTeacherSubmissions(true);
+      const submissions = await listAssignmentSubmissions(assignmentId);
+      console.log("Teacher submissions response:", submissions);
+      setTeacherSubmissions(submissions);
+    } catch (error) {
+      console.error("Error fetching submissions:", error);
+      setSubmissionMessage(
+        error instanceof Error
+          ? error.message
+          : "Failed to load submissions"
+      );
+    } finally {
+      setLoadingTeacherSubmissions(false);
+    }
+  };
+
   useEffect(() => {
     (async () => {
-      const currentStuID = await getUserId();
-      setStuID(currentStuID);
+      try {
+        if (isTeacher()) {
+          await loadTeacherSubmissions();
+          return;
+        }
 
-      if (!isTeacher()) {
+        const currentStuID = await getUserId();
+        setStuID(currentStuID);
+
         const stus = await listStuGroup(assignmentId, currentStuID);
         setStuGroup(stus);
 
@@ -73,21 +98,13 @@ export default function Assignment() {
         } catch (error) {
           console.error("Error fetching review:", error);
         }
-      } else {
-        try {
-          setLoadingTeacherSubmissions(true);
-          const submissions = await listAssignmentSubmissions(assignmentId);
-          setTeacherSubmissions(submissions);
-        } catch (error) {
-          console.error("Error fetching submissions:", error);
-          setSubmissionMessage(
-            error instanceof Error
-              ? error.message
-              : "Failed to load submissions"
-          );
-        } finally {
-          setLoadingTeacherSubmissions(false);
-        }
+      } catch (error) {
+        console.error("Error loading assignment page:", error);
+        setSubmissionMessage(
+          error instanceof Error
+            ? error.message
+            : "Failed to load assignment page"
+        );
       }
     })();
   }, [revieweeID, assignmentId]);
@@ -238,6 +255,15 @@ export default function Assignment() {
                 <h3>Student Submissions</h3>
               </div>
 
+              <div className="assignmentButtonRow">
+                <button
+                  className="assignmentActionButton"
+                  onClick={loadTeacherSubmissions}
+                >
+                  Refresh Submissions
+                </button>
+              </div>
+
               {loadingTeacherSubmissions ? (
                 <p>Loading submissions...</p>
               ) : teacherSubmissions.length === 0 ? (
@@ -251,7 +277,8 @@ export default function Assignment() {
                     >
                       <div className="teacherSubmissionInfo">
                         <p className="teacherSubmissionStudent">
-                          Student {submission.studentID}
+                          {submission.student_name ||
+                            `Student ${submission.studentID}`}
                         </p>
                         <p className="teacherSubmissionFile">
                           {submission.file_name}

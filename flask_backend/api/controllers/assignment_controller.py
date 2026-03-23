@@ -361,6 +361,14 @@ def submit_assignment(assignment_id):
         existing_submission.submitted_at = datetime.utcnow()
         existing_submission.update()
 
+        print("=== UPDATED SUBMISSION ===")
+        print("id:", existing_submission.id)
+        print("studentID:", existing_submission.studentID)
+        print("assignmentID:", existing_submission.assignmentID)
+        print("file_name:", existing_submission.file_name)
+        print("file_path:", existing_submission.file_path)
+        print("submitted_at:", existing_submission.submitted_at)
+
         return jsonify(
             {
                 "msg": "Submission updated",
@@ -378,6 +386,14 @@ def submit_assignment(assignment_id):
     )
     new_submission.submitted_at = datetime.utcnow()
     Submission.create_submission(new_submission)
+
+    print("=== CREATED SUBMISSION ===")
+    print("id:", new_submission.id)
+    print("studentID:", new_submission.studentID)
+    print("assignmentID:", new_submission.assignmentID)
+    print("file_name:", new_submission.file_name)
+    print("file_path:", new_submission.file_path)
+    print("submitted_at:", new_submission.submitted_at)
 
     return jsonify(
         {
@@ -459,7 +475,25 @@ def list_submissions(assignment_id):
             {"msg": "Unauthorized: You are not the teacher of this class"}
         ), 403
 
-    submissions = Submission.get_by_assignment_id(assignment_id)
+    submissions = (
+        Submission.query.filter_by(assignmentID=assignment_id)
+        .order_by(Submission.submitted_at.desc())
+        .all()
+    )
+
+    print("=== LIST SUBMISSIONS ===")
+    print("assignment_id:", assignment_id)
+    print("count:", len(submissions))
+    for submission in submissions:
+        print(
+            "submission ->",
+            submission.id,
+            submission.studentID,
+            submission.assignmentID,
+            submission.file_name,
+            submission.submitted_at,
+        )
+
     return jsonify(SubmissionSchema(many=True).dump(submissions)), 200
 
 

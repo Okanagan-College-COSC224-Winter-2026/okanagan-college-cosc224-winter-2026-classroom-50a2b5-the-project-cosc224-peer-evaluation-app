@@ -221,5 +221,12 @@ class SubmissionSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Submission
         load_instance = True
-        include_fk = False
+        include_fk = True
         sqla_session = db.session
+
+    student_name = fields.Method("get_student_name")
+
+    def get_student_name(self, obj):
+        if obj.student:
+            return obj.student.name
+        return None
