@@ -142,9 +142,9 @@ function AssignmentList({
                     <span className="text-text-secondary text-xs">
                       {count} review{count !== 1 ? "s" : ""}
                     </span>
-                    {avg !== null && (
+                    {avg !== null && max !== null && max > 0 && (
                       <span className="font-semibold text-btn-primary bg-btn-primary/10 px-2.5 py-0.5 rounded-full text-xs">
-                        {avg.toFixed(1)}{max !== null ? ` / ${max}` : ""}
+                        {((avg / max) * 100).toFixed(0)}%
                       </span>
                     )}
                   </>
@@ -154,19 +154,12 @@ function AssignmentList({
           );
         })}
       </div>
-      {totalAverage !== null && (
+      {totalAverage !== null && totalMax !== null && totalMax > 0 && (
         <div className="px-5 md:px-8 py-4 bg-bg-secondary border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <span className="text-sm font-semibold text-text-primary">{totalLabel}</span>
-          <div className="flex items-center gap-3">
-            <span className="font-bold text-btn-primary text-sm">
-              {totalAverage.toFixed(1)}{totalMax !== null ? ` / ${totalMax.toFixed(1)}` : ""}
-            </span>
-            {totalMax !== null && totalMax > 0 && (
-              <span className="text-xs text-text-secondary">
-                ({((totalAverage / totalMax) * 100).toFixed(0)}%)
-              </span>
-            )}
-          </div>
+          <span className="font-bold text-btn-primary text-sm">
+            {((totalAverage / totalMax) * 100).toFixed(0)}%
+          </span>
         </div>
       )}
     </div>
@@ -248,31 +241,23 @@ export default function ClassEvaluations() {
             )}
 
             {/* Course total card */}
-            {courseAverage !== null && (
+            {courseAverage !== null && courseMax !== null && courseMax > 0 && (
               <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
                 <div className="px-5 md:px-8 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide m-0 mb-1">Course Total</p>
-                    <p className="text-xl font-bold text-text-primary m-0">
-                      {courseAverage.toFixed(1)}
-                      {courseMax !== null && (
-                        <span className="text-sm font-normal text-text-secondary"> / {courseMax.toFixed(1)}</span>
-                      )}
+                    <p className="text-xl font-bold text-btn-primary m-0">
+                      {((courseAverage / courseMax) * 100).toFixed(0)}%
                     </p>
                   </div>
-                  {courseMax !== null && courseMax > 0 && (
-                    <div className="w-full sm:w-48">
-                      <div className="h-2 bg-bg-secondary rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-btn-primary rounded-full transition-all"
-                          style={{ width: `${Math.min((courseAverage / courseMax) * 100, 100)}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-text-secondary m-0 mt-1 text-right">
-                        {((courseAverage / courseMax) * 100).toFixed(0)}%
-                      </p>
+                  <div className="w-full sm:w-48">
+                    <div className="h-2 bg-bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-btn-primary rounded-full transition-all"
+                        style={{ width: `${Math.min((courseAverage / courseMax) * 100, 100)}%` }}
+                      />
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             )}
@@ -290,13 +275,35 @@ export default function ClassEvaluations() {
           <p className="text-text-secondary text-sm">Loading reviews...</p>
         ) : (reviews as ReviewData[]).length === 0 ? (
           <p className="text-text-secondary text-sm">No reviews found.</p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {(reviews as ReviewData[]).map((review, idx) => (
-              <ReviewCard key={review.id} review={review} idx={idx} />
-            ))}
-          </div>
-        )}
+        ) : (() => {
+          const typedReviews = reviews as ReviewData[];
+          const allTotal = typedReviews.reduce((sum, r) => {
+            return sum + r.criteria.filter((c) => c.grade !== null).reduce((s, c) => s + (c.grade ?? 0), 0);
+          }, 0);
+          const allMax = typedReviews.reduce((sum, r) => {
+            return sum + r.criteria.filter((c) => c.grade !== null && c.score_max !== null).reduce((s, c) => s + (c.score_max ?? 0), 0);
+          }, 0);
+          return (
+            <div className="flex flex-col gap-4">
+              {typedReviews.map((review, idx) => (
+                <ReviewCard key={review.id} review={review} idx={idx} />
+              ))}
+              {allMax > 0 && (
+                <div className="rounded-xl border border-border bg-bg-secondary px-4 py-3 flex justify-between items-center">
+                  <span className="text-sm font-semibold text-text-primary">Overall</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-text-secondary">
+                      {allTotal} / {allMax}
+                    </span>
+                    <span className="font-bold text-btn-primary text-sm">
+                      {((allTotal / allMax) * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </Modal>
     </>
   );
