@@ -90,39 +90,6 @@ function ReviewCard({ review, idx }: { review: ReviewData; idx: number }) {
   );
 }
 
-function AverageBanner({ label, average, max }: { label: string; average: number | null; max: number | null }) {
-  if (average === null) return null;
-
-  return (
-    <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
-      <div className="px-5 md:px-8 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide m-0 mb-1">{label}</p>
-          <p className="text-2xl font-bold text-text-primary m-0">
-            {average.toFixed(1)}
-            {max !== null && (
-              <span className="text-base font-normal text-text-secondary"> / {max.toFixed(1)}</span>
-            )}
-          </p>
-        </div>
-        {max !== null && max > 0 && (
-          <div className="w-full sm:w-48">
-            <div className="h-2.5 bg-bg-secondary rounded-full overflow-hidden">
-              <div
-                className="h-full bg-btn-primary rounded-full transition-all"
-                style={{ width: `${Math.min((average / max) * 100, 100)}%` }}
-              />
-            </div>
-            <p className="text-xs text-text-secondary m-0 mt-1 text-right">
-              {((average / max) * 100).toFixed(0)}%
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function AssignmentList({
   title,
   summaries,
@@ -130,6 +97,8 @@ function AssignmentList({
   averageKey,
   maxKey,
   onOpen,
+  totalAverage,
+  totalMax,
 }: {
   title: string;
   summaries: AssignmentSummary[];
@@ -137,7 +106,11 @@ function AssignmentList({
   averageKey: "individualAverage" | "groupAverage";
   maxKey: "individualMax" | "groupMax";
   onOpen: (summary: AssignmentSummary) => void;
+  totalAverage: number | null;
+  totalMax: number | null;
 }) {
+  const totalLabel = title.replace("Reviews", "Total");
+
   return (
     <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
       <div className="px-5 md:px-8 py-4 border-b border-border">
@@ -181,6 +154,21 @@ function AssignmentList({
           );
         })}
       </div>
+      {totalAverage !== null && (
+        <div className="px-5 md:px-8 py-4 bg-bg-secondary border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <span className="text-sm font-semibold text-text-primary">{totalLabel}</span>
+          <div className="flex items-center gap-3">
+            <span className="font-bold text-btn-primary text-sm">
+              {totalAverage.toFixed(1)}{totalMax !== null ? ` / ${totalMax.toFixed(1)}` : ""}
+            </span>
+            {totalMax !== null && totalMax > 0 && (
+              <span className="text-xs text-text-secondary">
+                ({((totalAverage / totalMax) * 100).toFixed(0)}%)
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -233,17 +221,6 @@ export default function ClassEvaluations() {
           </div>
         ) : (
           <>
-            {/* Course average (weighted) */}
-            <AverageBanner label="Course Average (Weighted)" average={courseAverage} max={courseMax} />
-
-            {/* Per-type averages side by side */}
-            {(individualAverage !== null || groupAverage !== null) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <AverageBanner label="Individual Average" average={individualAverage} max={individualMax} />
-                <AverageBanner label="Group Average" average={groupAverage} max={groupMax} />
-              </div>
-            )}
-
             {/* Individual reviews per assignment */}
             <AssignmentList
               title="Individual Reviews"
@@ -252,6 +229,8 @@ export default function ClassEvaluations() {
               averageKey="individualAverage"
               maxKey="individualMax"
               onOpen={(s) => openAssignment(s, "individual")}
+              totalAverage={individualAverage}
+              totalMax={individualMax}
             />
 
             {/* Group reviews per assignment */}
@@ -263,7 +242,39 @@ export default function ClassEvaluations() {
                 averageKey="groupAverage"
                 maxKey="groupMax"
                 onOpen={(s) => openAssignment(s, "group")}
+                totalAverage={groupAverage}
+                totalMax={groupMax}
               />
+            )}
+
+            {/* Course total card */}
+            {courseAverage !== null && (
+              <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+                <div className="px-5 md:px-8 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide m-0 mb-1">Course Total</p>
+                    <p className="text-xl font-bold text-text-primary m-0">
+                      {courseAverage.toFixed(1)}
+                      {courseMax !== null && (
+                        <span className="text-sm font-normal text-text-secondary"> / {courseMax.toFixed(1)}</span>
+                      )}
+                    </p>
+                  </div>
+                  {courseMax !== null && courseMax > 0 && (
+                    <div className="w-full sm:w-48">
+                      <div className="h-2 bg-bg-secondary rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-btn-primary rounded-full transition-all"
+                          style={{ width: `${Math.min((courseAverage / courseMax) * 100, 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-text-secondary m-0 mt-1 text-right">
+                        {((courseAverage / courseMax) * 100).toFixed(0)}%
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </>
         )}

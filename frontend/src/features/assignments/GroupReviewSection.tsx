@@ -118,10 +118,10 @@ export default function GroupReviewSection({
     }
   }
 
-  // Determine grades to display — from existing review or local state
+  // Only pre-populate grades from an existing review; new reviews use Criterion's internal state
   const displayGrades: number[] = isEditing
     ? existingReview.criteria?.map((c: { grade: number }) => c.grade) ?? []
-    : selectedCriteria.map((c) => c.column);
+    : [];
 
   return (
     <>
