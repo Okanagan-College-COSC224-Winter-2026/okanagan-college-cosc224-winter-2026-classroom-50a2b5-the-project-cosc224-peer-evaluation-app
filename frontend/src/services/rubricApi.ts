@@ -93,6 +93,29 @@ export async function getRubricForAssignment(
   return await resp.json();
 }
 
+export async function updateRubric(
+  rubricID: number,
+  payload: {
+    canComment?: boolean;
+    criteria: { question: string; scoreMax: number; hasScore: boolean }[];
+  },
+): Promise<{ reviews_deleted: number }> {
+  const resp = await fetch(`${BASE_URL}/rubric/${rubricID}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  });
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json();
+}
+
 export async function deleteRubric(rubricID: number) {
   const resp = await fetch(`${BASE_URL}/rubric/${rubricID}`, {
     method: "DELETE",

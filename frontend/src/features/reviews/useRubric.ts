@@ -5,6 +5,7 @@ import {
   getCriteria,
   createRubric,
   createCriteria,
+  updateRubric,
   deleteRubric,
 } from "../../services/rubricApi";
 
@@ -57,6 +58,26 @@ export function useCreateRubric(
       queryClient.invalidateQueries({
         queryKey: ["rubric", "assignment", assignmentId, rubric_type],
       });
+    },
+  });
+}
+
+export function useUpdateRubric(
+  assignmentId: number,
+  rubric_type: "individual" | "group" = "individual"
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: {
+      rubricId: number;
+      canComment?: boolean;
+      criteria: { question: string; scoreMax: number; hasScore: boolean }[];
+    }) => updateRubric(params.rubricId, { canComment: params.canComment, criteria: params.criteria }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["rubric", "assignment", assignmentId, rubric_type],
+      });
+      queryClient.invalidateQueries({ queryKey: ["criteria"] });
     },
   });
 }

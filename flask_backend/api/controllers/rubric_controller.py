@@ -3,9 +3,10 @@ Rubric and Criteria controller for the peer evaluation app.
 
 Endpoints:
   POST   /rubric/create                  — Create a rubric for an assignment
-  GET    /rubric/<id>                    — Get a rubric by ID
+  GET    /rubric/<id>                    — Get a rubric by ID (includes review_count)
   GET    /rubric/assignment/<id>         — Get the rubric for an assignment
-  DELETE /rubric/<id>                    — Delete a rubric (cascades criteria)
+  PUT    /rubric/<id>                    — Update rubric (replace criteria, cascade-delete reviews)
+  DELETE /rubric/<id>                    — Delete a rubric (cascade criteria + reviews)
   POST   /rubric/<id>/criteria           — Add a criterion to a rubric
   GET    /rubric/<id>/criteria           — List criteria for a rubric
 """
@@ -22,9 +23,26 @@ from ..models import (
     RubricSchema,
     User,
 )
+from ..models.review_model import Review
+from ..models.db import db
 from .auth_controller import jwt_teacher_required
 
 bp = Blueprint("rubric", __name__, url_prefix="/rubric")
+
+
+def _delete_reviews_for_rubric(rubric):
+    """Delete all reviews matching the rubric's assignment and type.
+
+    Returns the number of reviews deleted.
+    """
+    review_type = rubric.rubric_type
+    reviews = Review.query.filter_by(
+        assignmentID=rubric.assignmentID, review_type=review_type
+    ).all()
+    count = len(reviews)
+    for r in reviews:
+        db.session.delete(r)
+    return count
 
 
 # ============================================================================
@@ -71,12 +89,18 @@ def create_rubric():
 @bp.route("/<int:rubric_id>", methods=["GET"])
 @jwt_required()
 def get_rubric(rubric_id):
-    """Get a rubric by its ID."""
+    """Get a rubric by its ID, including the count of associated reviews."""
     rubric = Rubric.get_by_id(rubric_id)
     if not rubric:
         return jsonify({"msg": "Rubric not found"}), 404
 
-    return jsonify(RubricSchema().dump(rubric)), 200
+    review_count = Review.query.filter_by(
+        assignmentID=rubric.assignmentID, review_type=rubric.rubric_type
+    ).count()
+
+    result = RubricSchema().dump(rubric)
+    result["review_count"] = review_count
+    return jsonify(result), 200
 
 
 @bp.route("/assignment/<int:assignment_id>", methods=["GET"])
@@ -100,16 +124,65 @@ def get_rubric_for_assignment(assignment_id):
     return jsonify(RubricSchema().dump(rubric)), 200
 
 
-@bp.route("/<int:rubric_id>", methods=["DELETE"])
+@bp.route("/<int:rubric_id>", methods=["PUT"])
 @jwt_teacher_required
-def delete_rubric(rubric_id):
-    """Delete a rubric and cascade-delete its criteria."""
+def update_rubric(rubric_id):
+    """Update a rubric: replace criteria atomically, cascade-delete reviews.
+
+    All reviews of the matching type for this assignment are deleted because
+    the old criterion IDs become invalid.
+    """
     rubric = Rubric.get_by_id(rubric_id)
     if not rubric:
         return jsonify({"msg": "Rubric not found"}), 404
 
+    data = request.get_json()
+    criteria_data = data.get("criteria", [])
+    if not criteria_data:
+        return jsonify({"msg": "At least one criterion is required"}), 400
+
+    # Cascade-delete reviews that reference this rubric's criteria
+    reviews_deleted = _delete_reviews_for_rubric(rubric)
+
+    # Delete old criteria one by one so ORM cascades delete Criterion responses
+    for old_crit in CriteriaDescription.query.filter_by(rubricID=rubric.id).all():
+        db.session.delete(old_crit)
+
+    # Update rubric fields
+    if "canComment" in data:
+        rubric.canComment = data["canComment"]
+
+    # Create new criteria
+    for item in criteria_data:
+        crit = CriteriaDescription(
+            rubricID=rubric.id,
+            question=item.get("question", ""),
+            scoreMax=item.get("scoreMax", 0),
+            hasScore=item.get("hasScore", True),
+        )
+        db.session.add(crit)
+
+    db.session.commit()
+
+    return jsonify({
+        "msg": "Rubric updated",
+        "rubric": RubricSchema().dump(rubric),
+        "reviews_deleted": reviews_deleted,
+    }), 200
+
+
+@bp.route("/<int:rubric_id>", methods=["DELETE"])
+@jwt_teacher_required
+def delete_rubric(rubric_id):
+    """Delete a rubric, cascade-delete its criteria and associated reviews."""
+    rubric = Rubric.get_by_id(rubric_id)
+    if not rubric:
+        return jsonify({"msg": "Rubric not found"}), 404
+
+    reviews_deleted = _delete_reviews_for_rubric(rubric)
     rubric.delete()
-    return jsonify({"msg": "Rubric deleted"}), 200
+
+    return jsonify({"msg": "Rubric deleted", "reviews_deleted": reviews_deleted}), 200
 
 
 # ============================================================================
