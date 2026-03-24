@@ -693,8 +693,8 @@ class TestCourseGradeSummary:
         assert "assignments" in data
         assert len(data["assignments"]) == 1
         assert data["assignments"][0]["name"] == assignment.name
-        assert data["assignments"][0]["reviewCount"] == 0
-        assert data["assignments"][0]["averageScore"] is None
+        assert data["assignments"][0]["individualReviewCount"] == 0
+        assert data["assignments"][0]["individualAverage"] is None
 
     def test_summary_computes_average_correctly(
         self, db, auth_student_a, student_a, student_b, course, assignment, rubric_with_criteria
@@ -731,11 +731,11 @@ class TestCourseGradeSummary:
         data = resp.get_json()
 
         a = data["assignments"][0]
-        assert a["reviewCount"] == 2
+        assert a["individualReviewCount"] == 2
         # Average: (13 + 9) / 2 = 11.0
-        assert a["averageScore"] == 11.0
+        assert a["individualAverage"] == 11.0
         # Max: 5 + 10 = 15
-        assert a["maxScore"] == 15
+        assert a["individualMax"] == 15
 
     def test_summary_course_average_across_assignments(
         self, db, auth_student_a, student_a, student_b, course, rubric_with_criteria
@@ -785,8 +785,8 @@ class TestCourseGradeSummary:
         resp = auth_student_a.get(f"/review/course/{course.id}/summary")
         data = resp.get_json()
 
-        # criteria[0].scoreMax=5, criteria[1].scoreMax=10 → maxScore=15
-        assert data["assignments"][0]["maxScore"] == 15
+        # criteria[0].scoreMax=5, criteria[1].scoreMax=10 → individualMax=15
+        assert data["assignments"][0]["individualMax"] == 15
 
     def test_summary_student_sees_only_own_reviews(
         self, db, auth_student_b, student_a, student_b, course, assignment, rubric_with_criteria
@@ -810,8 +810,8 @@ class TestCourseGradeSummary:
         resp = auth_student_b.get(f"/review/course/{course.id}/summary")
         data = resp.get_json()
 
-        assert data["assignments"][0]["reviewCount"] == 1
-        assert data["assignments"][0]["averageScore"] == 4.0
+        assert data["assignments"][0]["individualReviewCount"] == 1
+        assert data["assignments"][0]["individualAverage"] == 4.0
 
     def test_summary_teacher_sees_all_reviews(
         self, db, auth_teacher, student_a, student_b, course, assignment, rubric_with_criteria
@@ -835,8 +835,8 @@ class TestCourseGradeSummary:
         data = resp.get_json()
 
         # Teacher sees both reviews: avg = (5 + 3) / 2 = 4.0
-        assert data["assignments"][0]["reviewCount"] == 2
-        assert data["assignments"][0]["averageScore"] == 4.0
+        assert data["assignments"][0]["individualReviewCount"] == 2
+        assert data["assignments"][0]["individualAverage"] == 4.0
 
     def test_summary_teacher_filter_by_student(
         self, db, auth_teacher, student_a, student_b, course, assignment, rubric_with_criteria
@@ -862,8 +862,8 @@ class TestCourseGradeSummary:
         )
         data = resp.get_json()
 
-        assert data["assignments"][0]["reviewCount"] == 1
-        assert data["assignments"][0]["averageScore"] == 5.0
+        assert data["assignments"][0]["individualReviewCount"] == 1
+        assert data["assignments"][0]["individualAverage"] == 5.0
 
     def test_summary_course_not_found(self, auth_student_a):
         """Returns 404 for a nonexistent course."""

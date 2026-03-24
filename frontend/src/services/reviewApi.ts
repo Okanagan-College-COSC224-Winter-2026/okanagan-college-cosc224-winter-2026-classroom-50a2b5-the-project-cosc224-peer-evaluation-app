@@ -4,11 +4,36 @@ export const submitReview = async (
   assignmentID: number,
   revieweeID: number,
   criteria: { criterionRowID: number; grade: number; comments: string }[],
-  comments: string = ""
+  comments: string = "",
+  review_type: "individual" | "group" = "individual"
 ) => {
   const response = await fetch(`${BASE_URL}/review/submit`, {
     method: "POST",
-    body: JSON.stringify({ assignmentID, revieweeID, comments, criteria }),
+    body: JSON.stringify({ assignmentID, revieweeID, comments, criteria, review_type }),
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  });
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.msg || `Response status: ${response.status}`);
+  }
+  return await response.json();
+};
+
+export const updateReview = async (
+  reviewId: number,
+  criteria: { criterionRowID: number; grade: number; comments: string }[],
+  comments?: string
+) => {
+  const body: Record<string, unknown> = { criteria };
+  if (comments !== undefined) body.comments = comments;
+
+  const response = await fetch(`${BASE_URL}/review/${reviewId}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
     headers: { "Content-Type": "application/json" },
     credentials: "include",
   });
@@ -24,10 +49,11 @@ export const submitReview = async (
 
 export const getReview = async (
   assignmentID: number,
-  revieweeID: number
+  revieweeID: number,
+  review_type: "individual" | "group" = "individual"
 ) => {
   const resp = await fetch(
-    `${BASE_URL}/review/lookup?assignmentID=${assignmentID}&revieweeID=${revieweeID}`,
+    `${BASE_URL}/review/lookup?assignmentID=${assignmentID}&revieweeID=${revieweeID}&review_type=${review_type}`,
     { credentials: "include" }
   );
 
@@ -35,8 +61,15 @@ export const getReview = async (
   return resp;
 };
 
-export const getReviewsForAssignment = async (assignmentID: number) => {
-  const resp = await fetch(`${BASE_URL}/review/assignment/${assignmentID}`, {
+export const getReviewsForAssignment = async (
+  assignmentID: number,
+  review_type?: "individual" | "group"
+) => {
+  const url = new URL(`${BASE_URL}/review/assignment/${assignmentID}`);
+  if (review_type) {
+    url.searchParams.set("review_type", review_type);
+  }
+  const resp = await fetch(url.toString(), {
     credentials: "include",
   });
 

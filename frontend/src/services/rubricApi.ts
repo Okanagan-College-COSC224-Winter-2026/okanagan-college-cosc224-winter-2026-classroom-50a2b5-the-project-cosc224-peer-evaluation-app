@@ -38,10 +38,11 @@ export async function createCriteria(
 export async function createRubric(
   assignmentID: number,
   canComment: boolean,
+  rubric_type: "individual" | "group" = "individual",
 ): Promise<{ id: number }> {
   const response = await fetch(`${BASE_URL}/rubric/create`, {
     method: "POST",
-    body: JSON.stringify({ assignmentID, canComment }),
+    body: JSON.stringify({ assignmentID, canComment, rubric_type }),
     headers: { "Content-Type": "application/json" },
     credentials: "include",
   });
@@ -70,10 +71,14 @@ export async function getRubric(rubricID: number) {
   return await resp.json();
 }
 
-export async function getRubricForAssignment(assignmentID: number) {
-  const resp = await fetch(`${BASE_URL}/rubric/assignment/${assignmentID}`, {
-    credentials: "include",
-  });
+export async function getRubricForAssignment(
+  assignmentID: number,
+  rubric_type: "individual" | "group" = "individual",
+) {
+  const resp = await fetch(
+    `${BASE_URL}/rubric/assignment/${assignmentID}?rubric_type=${rubric_type}`,
+    { credentials: "include" }
+  );
 
   maybeHandleExpire(resp);
 

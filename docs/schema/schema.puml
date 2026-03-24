@@ -32,7 +32,7 @@ entity "CourseGroup" as CG {
   * id : SERIAL <<PK>>
   --
   name : VARCHAR(255)
-  assignmentID : INT <<FK Assignment.id>>
+  courseID : INT <<FK Course.id>>
 }
 
 entity "Submission" as S {
@@ -48,7 +48,6 @@ entity "Group_Members" as GM {
   --
   groupID : INT <<FK CourseGroup.id>>
   userID  : INT <<FK User.id>>
-  assignmentID : INT <<FK Assignment.id>>
 }
 
 entity "User_Courses" as UC {
@@ -63,7 +62,8 @@ entity "Review" as R {
   --
   assignmentID : INT <<FK Assignment.id>>
   reviewerID   : INT <<FK User.id>>
-  revieweeID   : INT <<FK User.id>>
+  revieweeID   : INT (polymorphic, no FK)
+  review_type  : VARCHAR(20) <<default 'individual'>>
   comments     : VARCHAR(500)
 }
 
@@ -81,6 +81,7 @@ entity "Rubric" as RB {
   --
   assignmentID : INT <<FK Assignment.id>>
   canComment : BOOLEAN
+  rubric_type : VARCHAR(20) <<default 'individual'>>
 }
 
 entity "Criteria_Description" as CD {
@@ -95,7 +96,7 @@ entity "Criteria_Description" as CD {
 ' Relationships (FK -> PK)
 U ||--o{ C    : teaches (teacherID)
 C ||--o{ A    : has (courseID)
-A ||--o{ CG   : has (assignmentID)
+C ||--o{ CG   : has (courseID)
 A ||--o{ S    : has (assignmentID)
 U ||--o{ S    : submits (studentID)
 
@@ -107,7 +108,8 @@ U ||--o{ UC  : enrolled (userID)
 
 A ||--o{ R   : has (assignmentID)
 U ||--o{ R   : reviewer (reviewerID)
-U ||--o{ R   : reviewee (revieweeID)
+U ..o{ R    : reviewee (individual)
+CG ..o{ R   : reviewee (group)
 
 R ||--o{ CR  : contains (reviewID)
 CD ||--o{ CR : referenced_by (criterionRowID)

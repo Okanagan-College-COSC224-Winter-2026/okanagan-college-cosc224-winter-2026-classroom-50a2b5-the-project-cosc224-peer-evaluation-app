@@ -5,6 +5,7 @@ Handles peer review submission and retrieval (US2 & US3).
 
 Endpoints:
   POST  /review/submit                              — Submit a review with criteria (atomic)
+  PUT   /review/<id>                                 — Update an existing review
   GET   /review/<id>                                 — Get a review by ID with criteria
   GET   /review/lookup?assignmentID=X&revieweeID=Y   — Lookup existing review (reviewer from JWT)
   GET   /review/assignment/<id>                      — List all reviews for an assignment
@@ -17,9 +18,11 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from ..models import (
     Assignment,
     Course,
+    CourseGroup,
     CriteriaDescription,
     Criterion,
     CriterionSchema,
+    Group_Members,
     Review,
     ReviewSchema,
     Rubric,
@@ -29,6 +32,51 @@ from ..models.db import db
 from .auth_controller import jwt_teacher_required
 
 bp = Blueprint("review", __name__, url_prefix="/review")
+
+
+# ============================================================================
+# HELPERS
+# ============================================================================
+
+
+def _get_user_group_in_course(user_id, course_id):
+    """Return the CourseGroup the user belongs to in this course, or None."""
+    membership = (
+        Group_Members.query
+        .join(CourseGroup, CourseGroup.id == Group_Members.groupID)
+        .filter(Group_Members.userID == user_id, CourseGroup.courseID == course_id)
+        .first()
+    )
+    if membership:
+        return CourseGroup.get_by_id(membership.groupID)
+    return None
+
+
+def _can_edit_review(user, review):
+    """Check if a user is authorized to edit a review.
+
+    Individual reviews: only the original reviewer can edit.
+    Group reviews: any member of the reviewer's group can edit.
+    """
+    if user.is_teacher() or user.is_admin():
+        return True
+
+    if review.review_type == "individual":
+        return review.reviewerID == user.id
+
+    # Group review — check if user is in the same group as the original reviewer
+    assignment = Assignment.get_by_id(review.assignmentID)
+    if not assignment:
+        return False
+
+    user_group = _get_user_group_in_course(user.id, assignment.courseID)
+    reviewer_group = _get_user_group_in_course(review.reviewerID, assignment.courseID)
+
+    return (
+        user_group is not None
+        and reviewer_group is not None
+        and user_group.id == reviewer_group.id
+    )
 
 
 # ============================================================================
@@ -47,6 +95,7 @@ def submit_review():
         {
             "assignmentID": int,
             "revieweeID": int,
+            "review_type": str (optional — "individual" or "group", default "individual"),
             "comments": str (optional — overall review comment),
             "criteria": [
                 { "criterionRowID": int, "grade": int, "comments": str (optional) },
@@ -55,18 +104,22 @@ def submit_review():
         }
 
     Returns 201 with the created review (including id) on success.
-    Returns 409 if the user already reviewed this person for this assignment.
+    Returns 409 if a duplicate review exists.
     """
     data = request.get_json()
 
     # --- validate required fields ---
     assignment_id = data.get("assignmentID")
     reviewee_id = data.get("revieweeID")
+    review_type = data.get("review_type", "individual")
     review_comments = data.get("comments", "")
     criteria_data = data.get("criteria", [])
 
     if not assignment_id or not reviewee_id:
         return jsonify({"msg": "assignmentID and revieweeID are required"}), 400
+
+    if review_type not in ("individual", "group"):
+        return jsonify({"msg": "review_type must be 'individual' or 'group'"}), 400
 
     # --- resolve reviewer from JWT ---
     email = get_jwt_identity()
@@ -74,31 +127,61 @@ def submit_review():
     if not reviewer:
         return jsonify({"msg": "Authenticated user not found"}), 404
 
-    # --- basic validation ---
-    if reviewer.id == reviewee_id:
-        return jsonify({"msg": "You cannot review yourself"}), 400
-
     assignment = Assignment.get_by_id(assignment_id)
     if not assignment:
         return jsonify({"msg": "Assignment not found"}), 404
 
-    reviewee = User.get_by_id(reviewee_id)
-    if not reviewee:
-        return jsonify({"msg": "Reviewee not found"}), 404
+    # --- type-specific validation ---
+    if review_type == "individual":
+        if reviewer.id == reviewee_id:
+            return jsonify({"msg": "You cannot review yourself"}), 400
 
-    # --- prevent duplicate reviews ---
-    existing = Review.query.filter_by(
-        assignmentID=assignment_id,
-        reviewerID=reviewer.id,
-        revieweeID=reviewee_id,
-    ).first()
-    if existing:
-        return (
-            jsonify(
-                {"msg": "You have already reviewed this person for this assignment"}
-            ),
-            409,
-        )
+        reviewee = User.get_by_id(reviewee_id)
+        if not reviewee:
+            return jsonify({"msg": "Reviewee not found"}), 404
+
+        # Prevent duplicate individual reviews
+        existing = Review.query.filter_by(
+            assignmentID=assignment_id,
+            reviewerID=reviewer.id,
+            revieweeID=reviewee_id,
+            review_type="individual",
+        ).first()
+        if existing:
+            return (
+                jsonify({"msg": "You have already reviewed this person for this assignment"}),
+                409,
+            )
+    else:
+        # Group review
+        target_group = CourseGroup.get_by_id(reviewee_id)
+        if not target_group:
+            return jsonify({"msg": "Target group not found"}), 404
+
+        # Reviewer must be in a group for this course
+        reviewer_group = _get_user_group_in_course(reviewer.id, assignment.courseID)
+        if not reviewer_group:
+            return jsonify({"msg": "You must be in a group to submit a group review"}), 400
+
+        # Cannot review own group
+        if reviewer_group.id == target_group.id:
+            return jsonify({"msg": "You cannot review your own group"}), 400
+
+        # Prevent duplicate: check if ANY member of reviewer's group already reviewed this target
+        group_member_ids = [
+            m.userID for m in Group_Members.query.filter_by(groupID=reviewer_group.id).all()
+        ]
+        existing = Review.query.filter(
+            Review.assignmentID == assignment_id,
+            Review.reviewerID.in_(group_member_ids),
+            Review.revieweeID == reviewee_id,
+            Review.review_type == "group",
+        ).first()
+        if existing:
+            return (
+                jsonify({"msg": "Your group has already reviewed this group for this assignment"}),
+                409,
+            )
 
     # --- create review + criteria in one transaction ---
     try:
@@ -106,6 +189,7 @@ def submit_review():
             assignmentID=assignment_id,
             reviewerID=reviewer.id,
             revieweeID=reviewee_id,
+            review_type=review_type,
             comments=review_comments,
         )
         db.session.add(review)
@@ -145,6 +229,74 @@ def submit_review():
 
 
 # ============================================================================
+# UPDATE (edit existing review)
+# ============================================================================
+
+
+@bp.route("/<int:review_id>", methods=["PUT"])
+@jwt_required()
+def update_review(review_id):
+    """Update an existing review's criteria and/or comments.
+
+    For individual reviews: only the original reviewer can edit.
+    For group reviews: any member of the reviewer's group can edit.
+
+    Request body:
+        {
+            "comments": str (optional),
+            "criteria": [
+                { "criterionRowID": int, "grade": int, "comments": str (optional) },
+                ...
+            ]
+        }
+    """
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "Authenticated user not found"}), 404
+
+    review = Review.get_by_id(review_id)
+    if not review:
+        return jsonify({"msg": "Review not found"}), 404
+
+    if not _can_edit_review(user, review):
+        return jsonify({"msg": "Unauthorized"}), 403
+
+    data = request.get_json()
+
+    try:
+        # Update comments if provided
+        if "comments" in data:
+            review.comments = data["comments"]
+
+        # Replace criteria if provided
+        if "criteria" in data:
+            # Delete existing criteria
+            Criterion.query.filter_by(reviewID=review.id).delete()
+
+            for crit in data["criteria"]:
+                criterion_row_id = crit.get("criterionRowID")
+                if criterion_row_id is None:
+                    db.session.rollback()
+                    return jsonify({"msg": "Each criterion must include criterionRowID"}), 400
+
+                criterion = Criterion(
+                    reviewID=review.id,
+                    criterionRowID=criterion_row_id,
+                    grade=crit.get("grade"),
+                    comments=crit.get("comments", ""),
+                )
+                db.session.add(criterion)
+
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": f"Failed to update review: {str(e)}"}), 500
+
+    return jsonify({"msg": "Review updated"}), 200
+
+
+# ============================================================================
 # LOOKUP (check if a review already exists)
 # ============================================================================
 
@@ -155,12 +307,14 @@ def lookup_review():
     """Look up an existing review by assignment and reviewee.
 
     The reviewer is taken from the JWT token.
+    For group reviews, any member of the reviewer's group can look up the review.
 
-    Query params:  assignmentID (int), revieweeID (int)
+    Query params:  assignmentID (int), revieweeID (int), review_type (str, optional)
     Returns the review with its criteria, or 404 if none exists.
     """
     assignment_id = request.args.get("assignmentID", type=int)
     reviewee_id = request.args.get("revieweeID", type=int)
+    review_type = request.args.get("review_type", "individual")
 
     if not assignment_id or not reviewee_id:
         return jsonify({"msg": "assignmentID and revieweeID are required"}), 400
@@ -170,11 +324,32 @@ def lookup_review():
     if not reviewer:
         return jsonify({"msg": "Authenticated user not found"}), 404
 
-    review = Review.query.filter_by(
-        assignmentID=assignment_id,
-        reviewerID=reviewer.id,
-        revieweeID=reviewee_id,
-    ).first()
+    if review_type == "group":
+        # For group reviews, find the review submitted by any member of the user's group
+        assignment = Assignment.get_by_id(assignment_id)
+        if not assignment:
+            return jsonify({"msg": "Assignment not found"}), 404
+
+        user_group = _get_user_group_in_course(reviewer.id, assignment.courseID)
+        if not user_group:
+            return jsonify({"msg": "Review not found"}), 404
+
+        group_member_ids = [
+            m.userID for m in Group_Members.query.filter_by(groupID=user_group.id).all()
+        ]
+        review = Review.query.filter(
+            Review.assignmentID == assignment_id,
+            Review.reviewerID.in_(group_member_ids),
+            Review.revieweeID == reviewee_id,
+            Review.review_type == "group",
+        ).first()
+    else:
+        review = Review.query.filter_by(
+            assignmentID=assignment_id,
+            reviewerID=reviewer.id,
+            revieweeID=reviewee_id,
+            review_type="individual",
+        ).first()
 
     if not review:
         return jsonify({"msg": "Review not found"}), 404
@@ -204,6 +379,7 @@ def get_review(review_id):
     """Get a single review by ID, including its criteria.
 
     Students can only view reviews they authored or received.
+    For group reviews, any member of the reviewing or reviewed group can view.
     Teachers can view any review.
     """
     email = get_jwt_identity()
@@ -217,8 +393,20 @@ def get_review(review_id):
 
     # Authorization: students can only see their own reviews
     if not user.is_teacher() and not user.is_admin():
-        if review.reviewerID != user.id and review.revieweeID != user.id:
-            return jsonify({"msg": "Unauthorized"}), 403
+        if review.review_type == "individual":
+            if review.reviewerID != user.id and review.revieweeID != user.id:
+                return jsonify({"msg": "Unauthorized"}), 403
+        else:
+            # Group review — user must be in the reviewer or reviewee group
+            assignment = Assignment.get_by_id(review.assignmentID)
+            user_group = _get_user_group_in_course(user.id, assignment.courseID) if assignment else None
+            reviewer_group = _get_user_group_in_course(review.reviewerID, assignment.courseID) if assignment else None
+
+            is_in_reviewer_group = user_group and reviewer_group and user_group.id == reviewer_group.id
+            is_in_reviewee_group = user_group and user_group.id == review.revieweeID
+
+            if not is_in_reviewer_group and not is_in_reviewee_group:
+                return jsonify({"msg": "Unauthorized"}), 403
 
     criteria = Criterion.query.filter_by(reviewID=review.id).all()
 
@@ -227,14 +415,15 @@ def get_review(review_id):
     # If the assignment is anonymous and the user is the reviewee (not the
     # reviewer or a teacher), strip reviewer identity
     assignment = Assignment.get_by_id(review.assignmentID)
-    if (
-        assignment
-        and assignment.is_anonymous
-        and review.revieweeID == user.id
-        and not user.is_teacher()
-        and not user.is_admin()
-    ):
-        result["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
+    if review.review_type == "individual":
+        if (
+            assignment
+            and assignment.is_anonymous
+            and review.revieweeID == user.id
+            and not user.is_teacher()
+            and not user.is_admin()
+        ):
+            result["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
 
     result["criteria"] = CriterionSchema(many=True).dump(criteria)
     return jsonify(result), 200
@@ -250,6 +439,7 @@ def get_review(review_id):
 def get_reviews_for_assignment(assignment_id):
     """List all reviews for an assignment.
 
+    Supports optional query param ``review_type`` to filter by type.
     Teachers see all reviews.  Students see only reviews they received
     (with reviewer anonymized when the assignment's is_anonymous flag is set).
     """
@@ -262,16 +452,28 @@ def get_reviews_for_assignment(assignment_id):
     if not assignment:
         return jsonify({"msg": "Assignment not found"}), 404
 
+    review_type_filter = request.args.get("review_type")
+
     is_teacher_or_admin = user.is_teacher() or user.is_admin()
 
+    query = Review.query.filter_by(assignmentID=assignment_id)
+
+    if review_type_filter:
+        query = query.filter_by(review_type=review_type_filter)
+
     if is_teacher_or_admin:
-        # Teachers see every review for this assignment
-        reviews = Review.query.filter_by(assignmentID=assignment_id).all()
+        reviews = query.all()
     else:
-        # Students see only reviews they received
-        reviews = Review.query.filter_by(
-            assignmentID=assignment_id, revieweeID=user.id
-        ).all()
+        if review_type_filter == "group":
+            # Students see group reviews targeting their group
+            user_group = _get_user_group_in_course(user.id, assignment.courseID)
+            if user_group:
+                reviews = query.filter_by(revieweeID=user_group.id).all()
+            else:
+                reviews = []
+        else:
+            # Students see only individual reviews they received
+            reviews = query.filter_by(revieweeID=user.id).all()
 
     results = []
     for review in reviews:
@@ -281,10 +483,11 @@ def get_reviews_for_assignment(assignment_id):
         criteria = Criterion.query.filter_by(reviewID=review.id).all()
         dumped["criteria"] = CriterionSchema(many=True).dump(criteria)
 
-        # Anonymize reviewer if needed
+        # Anonymize reviewer if needed (individual reviews only)
         if (
             not is_teacher_or_admin
             and assignment.is_anonymous
+            and review.review_type == "individual"
         ):
             dumped["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
 
@@ -303,25 +506,25 @@ def get_reviews_for_assignment(assignment_id):
 def course_grade_summary(course_id):
     """Compute grade summary for all assignments in a course.
 
-    For students: averages are based on reviews *they received*.
+    Returns separate individual and group averages, plus a 50/50 weighted
+    course average.
+
+    For students: averages are based on reviews *they received* (individual)
+    and reviews *their group received* (group).
     For teachers: averages are based on *all* reviews for the assignment.
 
     An optional query param ``studentID`` lets teachers request a summary
-    scoped to a specific student (useful for US20 course-card grades).
+    scoped to a specific student.
 
     Returns:
         {
-            "assignments": [
-                {
-                    "id": 1,
-                    "name": "Peer Review HW",
-                    "reviewCount": 3,
-                    "averageScore": 12.5,
-                    "maxScore": 15
-                }, ...
-            ],
-            "courseAverage": 12.5,
-            "courseMax": 15.0
+            "assignments": [ ... ],
+            "individualAverage": float | null,
+            "individualMax": float | null,
+            "groupAverage": float | null,
+            "groupMax": float | null,
+            "courseAverage": float | null,
+            "courseMax": float | null
         }
     """
     email = get_jwt_identity()
@@ -342,63 +545,126 @@ def course_grade_summary(course_id):
         if student_id_param:
             target_student_id = student_id_param
         else:
-            # Teacher viewing without studentID → aggregate all reviews
             target_student_id = None
     else:
-        # Students always see their own received reviews
         target_student_id = user.id
+
+    # Determine target student's group for group review lookups
+    target_group = None
+    if target_student_id:
+        target_group = _get_user_group_in_course(target_student_id, course_id)
 
     assignments = Assignment.get_by_class_id(course_id)
     assignment_summaries = []
 
+    # Track per-type averages across all assignments
+    individual_assignment_avgs = []
+    individual_max_values = []
+    group_assignment_avgs = []
+    group_max_values = []
+
     for assignment in assignments:
-        # Get reviews scoped to target student or all reviews
+        # --- Individual reviews ---
         if target_student_id:
-            reviews = Review.query.filter_by(
-                assignmentID=assignment.id, revieweeID=target_student_id
+            ind_reviews = Review.query.filter_by(
+                assignmentID=assignment.id, revieweeID=target_student_id, review_type="individual"
             ).all()
         else:
-            reviews = Review.query.filter_by(assignmentID=assignment.id).all()
+            ind_reviews = Review.query.filter_by(
+                assignmentID=assignment.id, review_type="individual"
+            ).all()
 
-        # Compute per-review totals, then average
-        review_totals = []
-        for review in reviews:
+        ind_totals = []
+        for review in ind_reviews:
             criteria = Criterion.query.filter_by(reviewID=review.id).all()
             scored = [c for c in criteria if c.grade is not None]
             if scored:
-                review_totals.append(sum(c.grade for c in scored))
+                ind_totals.append(sum(c.grade for c in scored))
 
-        avg = (
-            sum(review_totals) / len(review_totals) if review_totals else None
-        )
+        ind_avg = sum(ind_totals) / len(ind_totals) if ind_totals else None
+        ind_max = _compute_max_score(assignment.id, "individual")
 
-        # Max score: sum of scoreMax from RubricCriteria (via any review's criteria)
-        max_score = _compute_max_score(assignment.id)
+        if ind_avg is not None:
+            individual_assignment_avgs.append(ind_avg)
+            if ind_max is not None:
+                individual_max_values.append(ind_max)
+
+        # --- Group reviews ---
+        if target_group:
+            grp_reviews = Review.query.filter_by(
+                assignmentID=assignment.id, revieweeID=target_group.id, review_type="group"
+            ).all()
+        elif target_student_id and not target_group:
+            grp_reviews = []
+        else:
+            grp_reviews = Review.query.filter_by(
+                assignmentID=assignment.id, review_type="group"
+            ).all()
+
+        grp_totals = []
+        for review in grp_reviews:
+            criteria = Criterion.query.filter_by(reviewID=review.id).all()
+            scored = [c for c in criteria if c.grade is not None]
+            if scored:
+                grp_totals.append(sum(c.grade for c in scored))
+
+        grp_avg = sum(grp_totals) / len(grp_totals) if grp_totals else None
+        grp_max = _compute_max_score(assignment.id, "group")
+
+        if grp_avg is not None:
+            group_assignment_avgs.append(grp_avg)
+            if grp_max is not None:
+                group_max_values.append(grp_max)
 
         assignment_summaries.append(
             {
                 "id": assignment.id,
                 "name": assignment.name,
-                "reviewCount": len(reviews),
-                "averageScore": round(avg, 2) if avg is not None else None,
-                "maxScore": max_score,
+                "individualReviewCount": len(ind_reviews),
+                "individualAverage": round(ind_avg, 2) if ind_avg is not None else None,
+                "individualMax": ind_max,
+                "groupReviewCount": len(grp_reviews),
+                "groupAverage": round(grp_avg, 2) if grp_avg is not None else None,
+                "groupMax": grp_max,
             }
         )
 
-    # Course-level average: mean of assignment averages
-    scored_assignments = [a for a in assignment_summaries if a["averageScore"] is not None]
-    if scored_assignments:
-        course_avg = sum(a["averageScore"] for a in scored_assignments) / len(
-            scored_assignments
-        )
-        course_max_values = [
-            a["maxScore"] for a in scored_assignments if a["maxScore"] is not None
-        ]
+    # Compute per-type course averages
+    ind_course_avg = (
+        sum(individual_assignment_avgs) / len(individual_assignment_avgs)
+        if individual_assignment_avgs
+        else None
+    )
+    ind_course_max = (
+        sum(individual_max_values) / len(individual_max_values)
+        if individual_max_values
+        else None
+    )
+    grp_course_avg = (
+        sum(group_assignment_avgs) / len(group_assignment_avgs)
+        if group_assignment_avgs
+        else None
+    )
+    grp_course_max = (
+        sum(group_max_values) / len(group_max_values)
+        if group_max_values
+        else None
+    )
+
+    # 50/50 weighted course average
+    if ind_course_avg is not None and grp_course_avg is not None:
+        course_avg = (ind_course_avg + grp_course_avg) / 2
         course_max = (
-            sum(course_max_values) / len(course_max_values)
-            if course_max_values
+            ((ind_course_max or 0) + (grp_course_max or 0)) / 2
+            if ind_course_max is not None or grp_course_max is not None
             else None
         )
+    elif ind_course_avg is not None:
+        course_avg = ind_course_avg
+        course_max = ind_course_max
+    elif grp_course_avg is not None:
+        course_avg = grp_course_avg
+        course_max = grp_course_max
     else:
         course_avg = None
         course_max = None
@@ -407,6 +673,10 @@ def course_grade_summary(course_id):
         jsonify(
             {
                 "assignments": assignment_summaries,
+                "individualAverage": round(ind_course_avg, 2) if ind_course_avg is not None else None,
+                "individualMax": round(ind_course_max, 2) if ind_course_max is not None else None,
+                "groupAverage": round(grp_course_avg, 2) if grp_course_avg is not None else None,
+                "groupMax": round(grp_course_max, 2) if grp_course_max is not None else None,
                 "courseAverage": round(course_avg, 2) if course_avg is not None else None,
                 "courseMax": round(course_max, 2) if course_max is not None else None,
             }
@@ -415,13 +685,15 @@ def course_grade_summary(course_id):
     )
 
 
-def _compute_max_score(assignment_id):
+def _compute_max_score(assignment_id, rubric_type="individual"):
     """Compute the max possible score for an assignment from its rubric criteria.
 
-    Sums scoreMax across all CriteriaDescription rows for the first rubric
-    associated with the assignment.  Returns None if no rubric exists.
+    Sums scoreMax across all CriteriaDescription rows for the rubric
+    of the given type.  Returns None if no rubric exists.
     """
-    rubric = Rubric.query.filter_by(assignmentID=assignment_id).first()
+    rubric = Rubric.query.filter_by(
+        assignmentID=assignment_id, rubric_type=rubric_type
+    ).first()
     if not rubric:
         return None
 

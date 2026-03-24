@@ -54,8 +54,12 @@ def create_rubric():
         return jsonify({"msg": "Unauthorized: you are not the teacher of this course"}), 403
 
     can_comment = data.get("canComment", True)
+    rubric_type = data.get("rubric_type", "individual")
 
-    rubric = Rubric(assignmentID=assignment_id, canComment=can_comment)
+    if rubric_type not in ("individual", "group"):
+        return jsonify({"msg": "rubric_type must be 'individual' or 'group'"}), 400
+
+    rubric = Rubric(assignmentID=assignment_id, canComment=can_comment, rubric_type=rubric_type)
     Rubric.create_rubric(rubric)
 
     return jsonify({
@@ -78,12 +82,18 @@ def get_rubric(rubric_id):
 @bp.route("/assignment/<int:assignment_id>", methods=["GET"])
 @jwt_required()
 def get_rubric_for_assignment(assignment_id):
-    """Get the rubric attached to an assignment (returns the first one)."""
+    """Get the rubric attached to an assignment.
+
+    Optional query param ``rubric_type`` filters by type (default: "individual").
+    """
     assignment = Assignment.get_by_id(assignment_id)
     if not assignment:
         return jsonify({"msg": "Assignment not found"}), 404
 
-    rubric = Rubric.query.filter_by(assignmentID=assignment_id).first()
+    rubric_type = request.args.get("rubric_type", "individual")
+    rubric = Rubric.query.filter_by(
+        assignmentID=assignment_id, rubric_type=rubric_type
+    ).first()
     if not rubric:
         return jsonify({"msg": "No rubric found for this assignment"}), 404
 

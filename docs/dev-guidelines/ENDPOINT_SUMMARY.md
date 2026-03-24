@@ -138,13 +138,13 @@ All group endpoints require teacher or admin role.
 
 ## Rubric Endpoints
 
-Rubrics belong to **assignments** and contain multiple **criteria descriptions** (questions) for peer evaluation.
+Rubrics belong to **assignments** and contain multiple **criteria descriptions** (questions) for peer evaluation. Each assignment can have one **individual** rubric and one **group** rubric, distinguished by `rubric_type`.
 
 | Method | Path | Body | Response | Notes |
 |--------|------|------|----------|-------|
-| POST | `/rubric/create` | `{ assignmentID, canComment? }` | `201 { msg, rubric }` | ✅ Create rubric (teacher) |
-| GET | `/rubric/<id>` | — | `Rubric { id, assignmentID, canComment }` | ✅ Get rubric by ID |
-| GET | `/rubric/assignment/<assignment_id>` | — | `Rubric` | ✅ Get rubric for assignment |
+| POST | `/rubric/create` | `{ assignmentID, canComment?, rubric_type? }` | `201 { msg, rubric }` | ✅ Create rubric (teacher). `rubric_type` defaults to `"individual"` |
+| GET | `/rubric/<id>` | — | `Rubric { id, assignmentID, canComment, rubric_type }` | ✅ Get rubric by ID |
+| GET | `/rubric/assignment/<assignment_id>?rubric_type=X` | — | `Rubric` | ✅ Get rubric for assignment. `rubric_type` defaults to `"individual"` |
 | DELETE | `/rubric/<id>` | — | `{ msg }` | ✅ Delete rubric + cascade criteria (teacher) |
 | POST | `/rubric/<rubric_id>/criteria` | `{ question, scoreMax?, hasScore? }` | `201 { msg, criterion }` | ✅ Add criterion (teacher) |
 | GET | `/rubric/<rubric_id>/criteria` | — | `Array<CriteriaDescription>` | ✅ List criteria for rubric |
@@ -156,7 +156,8 @@ Rubrics belong to **assignments** and contain multiple **criteria descriptions**
 {
   "id": 1,
   "assignmentID": 1,
-  "canComment": true
+  "canComment": true,
+  "rubric_type": "individual"
 }
 ```
 
@@ -178,22 +179,24 @@ Rubrics belong to **assignments** and contain multiple **criteria descriptions**
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
 | `POST` | `/review/submit` | JWT (any) | Submit a review with criteria (atomic) |
-| `GET` | `/review/lookup?assignmentID=X&revieweeID=Y` | JWT (any) | Look up an existing review (reviewer from JWT) |
+| `PUT` | `/review/<id>` | JWT (any) | Update an existing review (replace criteria atomically) |
+| `GET` | `/review/lookup?assignmentID=X&revieweeID=Y&review_type=Z` | JWT (any) | Look up an existing review |
 | `GET` | `/review/<id>` | JWT (any) | Get a single review with its criteria |
-| `GET` | `/review/assignment/<id>` | JWT (any) | List reviews for an assignment |
-| `GET` | `/review/course/<id>/summary` | JWT (any) | Grade summary for all assignments in a course |
+| `GET` | `/review/assignment/<id>?review_type=X` | JWT (any) | List reviews for an assignment, optionally filtered by type |
+| `GET` | `/review/course/<id>/summary` | JWT (any) | Grade summary with individual/group/weighted averages |
 
 **Authorization notes:**
-- `submit`: Reviewer is derived from the JWT token (prevents impersonation). Cannot review yourself. Duplicate reviews return 409.
-- `lookup`: Reviewer is derived from JWT. Returns 404 if no review exists.
+- `submit`: Reviewer is derived from the JWT token (prevents impersonation). Cannot review yourself (individual) or your own group (group). Duplicate reviews return 409. For group reviews, duplicates are checked across all members of the submitter's group.
+- `PUT /<id>`: For individual reviews, only the original reviewer can edit. For group reviews, any member of the reviewer's group can edit. Replaces all criteria atomically.
+- `lookup`: Reviewer is derived from JWT. For group reviews, any group member can look up the review. Returns 404 if no review exists.
 - `GET /<id>`: Students can only view reviews they authored or received. Teachers can view any.
-- `assignment/<id>`: Teachers see all reviews. Students only see reviews they received.
+- `assignment/<id>`: Teachers see all reviews. Students only see reviews they received. Optional `review_type` filter (`individual` or `group`).
 - **Anonymous reviews (US3):** When `assignment.is_anonymous` is `true`, the reviewer identity is replaced with `{ id: null, name: "Anonymous", email: null }` for the reviewee. Teachers always see the real reviewer.
 - `course/<id>/summary`: Students see averages based on reviews they received. Teachers see aggregate across all reviews. Teachers can pass `?studentID=X` to get a specific student's summary.
 
-### Review Request Shape
+### Review Request Shapes
 
-**POST /review/submit:**
+**POST /review/submit (individual):**
 ```json
 {
   "assignmentID": 1,
@@ -206,8 +209,32 @@ Rubrics belong to **assignments** and contain multiple **criteria descriptions**
 }
 ```
 
-> **Note:** The `comments` field at the top level is the overall review comment (stored on the Review model). Per-criterion `comments` fields exist in the schema but are not currently used by the frontend.
+**POST /review/submit (group):**
+```json
+{
+  "assignmentID": 1,
+  "revieweeID": 7,
+  "review_type": "group",
+  "comments": "Solid presentation by this group.",
+  "criteria": [
+    { "criterionRowID": 10, "grade": 4, "comments": "" }
+  ]
+}
 ```
+
+**PUT /review/<id> (update):**
+```json
+{
+  "assignmentID": 1,
+  "revieweeID": 3,
+  "comments": "Updated comment",
+  "criteria": [
+    { "criterionRowID": 5, "grade": 5, "comments": "" }
+  ]
+}
+```
+
+> **Note:** The `comments` field at the top level is the overall review comment (stored on the Review model). Per-criterion `comments` fields exist in the schema but are not currently used by the frontend.
 
 ### Review Response Shapes
 
@@ -216,12 +243,20 @@ Rubrics belong to **assignments** and contain multiple **criteria descriptions**
 {
   "id": 1,
   "assignmentID": 1,
+  "review_type": "individual",
   "comments": "Great teamwork overall!",
   "reviewer": { "id": 2, "name": "Alice", "email": "alice@test.com" },
   "reviewee": { "id": 3, "name": "Bob", "email": "bob@test.com" },
   "criteria": [
     { "id": 1, "reviewID": 1, "criterionRowID": 5, "criterion_name": "Communication", "score_max": 5, "grade": 4, "comments": "" }
   ]
+}
+```
+
+**Group review reviewee shape:**
+```json
+{
+  "reviewee": { "id": 7, "name": "Group B", "type": "group" }
 }
 ```
 
@@ -233,6 +268,13 @@ Rubrics belong to **assignments** and contain multiple **criteria descriptions**
 }
 ```
 
+**Update response (PUT /review/<id>):**
+```json
+{
+  "msg": "Review updated"
+}
+```
+
 **Course grade summary (GET /review/course/<id>/summary):**
 ```json
 {
@@ -240,18 +282,28 @@ Rubrics belong to **assignments** and contain multiple **criteria descriptions**
     {
       "id": 1,
       "name": "Peer Review HW",
-      "reviewCount": 3,
-      "averageScore": 12.5,
-      "maxScore": 15
+      "individualReviewCount": 3,
+      "individualAverage": 12.5,
+      "individualMax": 15,
+      "groupReviewCount": 2,
+      "groupAverage": 8.0,
+      "groupMax": 10
     }
   ],
-  "courseAverage": 12.5,
-  "courseMax": 15.0
+  "courseAverage": 10.25,
+  "courseMax": 12.5,
+  "individualAverage": 12.5,
+  "individualMax": 15.0,
+  "groupAverage": 8.0,
+  "groupMax": 10.0
 }
 ```
 
+> **Note:** `courseAverage` is a 50/50 weighted average of `individualAverage` and `groupAverage`. If only one type has reviews, only that type contributes to the course average.
+
 **Query parameters:**
 - `studentID` (optional, teacher/admin only): Scope the summary to a specific student's received reviews
+- `review_type` (optional, on `/review/assignment/<id>` and `/review/lookup`): Filter by `"individual"` or `"group"`
 
 ---
 
