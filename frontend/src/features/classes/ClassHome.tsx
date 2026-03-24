@@ -113,7 +113,7 @@ export default function ClassHome() {
                   return (
                     <Link
                       key={assignment.id}
-                      to={`/assignments/${assignment.id}`}
+                      to={`/classes/${id}/assignments/${assignment.id}`}
                       className="px-5 md:px-8 py-4 flex items-center justify-between gap-4 no-underline text-inherit transition-colors hover:bg-btn-primary/[0.03] group"
                     >
                       <div className="flex items-center gap-3 min-w-0">

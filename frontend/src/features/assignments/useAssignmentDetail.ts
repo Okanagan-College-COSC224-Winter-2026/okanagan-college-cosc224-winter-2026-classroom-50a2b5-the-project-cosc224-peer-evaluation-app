@@ -33,8 +33,8 @@ export interface CourseGroupItem {
 }
 
 export function useAssignmentDetail() {
-  const { id } = useParams();
-  const assignmentId = Number(id);
+  const { id: classId, assignmentId: assignmentIdParam } = useParams();
+  const assignmentId = Number(assignmentIdParam);
   const location = useLocation();
 
   const [revieweeID, setRevieweeID] = useState<number>(0);
@@ -80,7 +80,7 @@ export function useAssignmentDetail() {
   );
 
   return {
-    id,
+    classId,
     assignmentId,
     assignment,
     teacherMode,

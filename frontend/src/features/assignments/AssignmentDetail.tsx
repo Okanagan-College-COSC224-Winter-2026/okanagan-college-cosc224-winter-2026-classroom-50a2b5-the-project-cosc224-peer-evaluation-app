@@ -20,7 +20,7 @@ const tabButtonClass = (active: boolean) =>
 
 export default function AssignmentDetail() {
   const {
-    id,
+    classId,
     assignmentId,
     assignment,
     teacherMode,
@@ -44,18 +44,20 @@ export default function AssignmentDetail() {
 
   return (
     <>
-      <TabNavigation
-        tabs={[
-          { label: teacherMode ? "Review" : "Home", path: `/assignments/${id}` },
-          ...(teacherMode ? [{ label: "Management", path: `/assignments/${id}/manage` }] : []),
-        ]}
-      />
+      {teacherMode && (
+        <TabNavigation
+          tabs={[
+            { label: "Review", path: `/classes/${classId}/assignments/${assignmentId}` },
+            { label: "Management", path: `/classes/${classId}/assignments/${assignmentId}/manage` },
+          ]}
+        />
+      )}
 
       <div className="p-4 md:p-8 w-full max-w-260 mx-auto flex flex-col gap-6">
         {/* Header row */}
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-2xl font-semibold text-text-primary m-0">
-            {assignment?.name ? assignment.name : `Assignment ${id}`}
+            {assignment?.name ? assignment.name : `Assignment ${assignmentId}`}
           </h2>
           {assignment && (
             <span className="shrink-0 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide bg-btn-primary/10 text-btn-primary">
