@@ -685,3 +685,143 @@ export const deleteAssignment = async (assignmentId: number) => {
 
   return await response.json();
 };
+
+// US26 - Admin User Management
+// List all users
+export const listAllUsers = async () => {
+  const response = await fetch(`${BASE_URL}/admin/users`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.msg || `Response status: ${response.status}`);
+  }
+
+  return await response.json();
+};
+
+// Create a new user with any role
+export const createUser = async (
+  name: string,
+  email: string,
+  password: string,
+  role: string,
+  must_change_password: boolean = false
+) => {
+  const response = await fetch(`${BASE_URL}/admin/users/create`, {
+    method: "POST",
+    body: JSON.stringify({
+      name,
+      email,
+      password,
+      role,
+      must_change_password,
+    }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.msg || `Response status: ${response.status}`);
+  }
+
+  return await response.json();
+};
+
+// Update user details (name and/or email)
+export const updateUserDetails = async (
+  userId: number,
+  updates: { name?: string; email?: string }
+) => {
+  const response = await fetch(`${BASE_URL}/admin/users/${userId}`, {
+    method: "PUT",
+    body: JSON.stringify(updates),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.msg || `Response status: ${response.status}`);
+  }
+
+  return await response.json();
+};
+
+// Update user role
+export const updateUserRole = async (userId: number, role: string) => {
+  const response = await fetch(`${BASE_URL}/admin/users/${userId}/role`, {
+    method: "PUT",
+    body: JSON.stringify({ role }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.msg || `Response status: ${response.status}`);
+  }
+
+  return await response.json();
+};
+
+// Delete a user
+export const deleteUser = async (userId: number) => {
+  const response = await fetch(`${BASE_URL}/admin/users/${userId}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.msg || `Response status: ${response.status}`);
+  }
+
+  return await response.json();
+};
+
+// Reset a user's password
+export const resetUserPassword = async (userId: number, newPassword: string) => {
+  const response = await fetch(`${BASE_URL}/admin/users/${userId}/password`, {
+    method: "PUT",
+    body: JSON.stringify({ password: newPassword }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.msg || `Response status: ${response.status}`);
+  }
+
+  return await response.json();
+};
