@@ -1,8 +1,9 @@
-import { useState, ChangeEvent } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import toast from "react-hot-toast";
 import Modal from "../../ui/Modal";
 import RubricDisplay from "../reviews/RubricDisplay";
-import { useSubmitReview, useReview, useUpdateReview } from "../reviews/useReviews";
+import { useSubmitReview, useReview, useUpdateReview, useMyReviewed } from "../reviews/useReviews";
+import { useCriteria } from "../reviews/useRubric";
 import { btnPrimary } from "./assignmentStyles";
 import type { GroupMember } from "./useAssignmentDetail";
 
@@ -25,14 +26,27 @@ export default function PeerReviewSection({ assignmentId, rubricId, review, grou
   const [reviewComment, setReviewComment] = useState("");
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedMemberName, setSelectedMemberName] = useState("");
-  const [reviewedMembers, setReviewedMembers] = useState<Set<number>>(new Set());
 
+  const { data: reviewedIds = [] } = useMyReviewed(assignmentId, "individual");
   const { mutate: submitReview, isPending: isSubmitting } = useSubmitReview();
   const { mutate: updateReviewMut, isPending: isUpdating } = useUpdateReview();
   const { data: existingReview } = useReview(assignmentId, revieweeID, "individual");
+  const { data: rubricCriteria = [] } = useCriteria(rubricId);
 
   const isEditing = existingReview?.review !== undefined && existingReview?.review !== null;
   const isPending = isSubmitting || isUpdating;
+
+  // Seed selectedCriteria from existing review when data loads
+  useEffect(() => {
+    if (isEditing && existingReview?.criteria && rubricCriteria.length > 0 && isReviewModalOpen) {
+      const seeded = existingReview.criteria.map((c: { criterionRowID: number; grade: number }) => ({
+        row: c.criterionRowID,
+        column: c.grade,
+      }));
+      setSelectedCriteria(seeded);
+      setReviewComment(existingReview.review.comments || "");
+    }
+  }, [isEditing, existingReview, rubricCriteria, isReviewModalOpen]);
 
   function handleCriterionSelect(row: number, column: number) {
     setSelectedCriteria((prev) => {
@@ -88,7 +102,6 @@ export default function PeerReviewSection({ assignmentId, rubricId, review, grou
         {
           onSuccess: () => {
             if (closeModal) setIsReviewModalOpen(false);
-            setReviewedMembers((prev) => new Set(prev).add(revieweeID));
             toast.success("Review submitted successfully.");
           },
           onError: (error) => {
@@ -124,7 +137,7 @@ export default function PeerReviewSection({ assignmentId, rubricId, review, grou
                     className="w-4 h-4 accent-btn-primary"
                   />
                   {member.name}
-                  {reviewedMembers.has(member.id) && (
+                  {reviewedIds.includes(member.id) && (
                     <span className="text-xs text-emerald-600 font-medium">(reviewed)</span>
                   )}
                 </label>

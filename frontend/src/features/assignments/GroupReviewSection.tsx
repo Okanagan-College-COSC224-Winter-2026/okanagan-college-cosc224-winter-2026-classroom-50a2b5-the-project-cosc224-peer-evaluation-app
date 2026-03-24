@@ -1,8 +1,9 @@
-import { useState, ChangeEvent } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import toast from "react-hot-toast";
 import Modal from "../../ui/Modal";
 import RubricDisplay from "../reviews/RubricDisplay";
-import { useSubmitReview, useReview, useUpdateReview } from "../reviews/useReviews";
+import { useSubmitReview, useReview, useUpdateReview, useMyReviewed } from "../reviews/useReviews";
+import { useCriteria } from "../reviews/useRubric";
 import { btnPrimary } from "./assignmentStyles";
 import type { CourseGroupItem } from "./useAssignmentDetail";
 
@@ -30,14 +31,27 @@ export default function GroupReviewSection({
   const [reviewComment, setReviewComment] = useState("");
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedGroupName, setSelectedGroupName] = useState("");
-  const [reviewedGroups, setReviewedGroups] = useState<Set<number>>(new Set());
 
+  const { data: reviewedIds = [] } = useMyReviewed(assignmentId, "group");
   const { mutate: submitReview, isPending: isSubmitting } = useSubmitReview();
   const { mutate: updateReviewMut, isPending: isUpdating } = useUpdateReview();
   const { data: existingReview } = useReview(assignmentId, groupRevieweeID, "group");
+  const { data: rubricCriteria = [] } = useCriteria(groupRubricId);
 
   const isEditing = existingReview?.review !== undefined && existingReview?.review !== null;
   const isPending = isSubmitting || isUpdating;
+
+  // Seed selectedCriteria from existing review when data loads
+  useEffect(() => {
+    if (isEditing && existingReview?.criteria && rubricCriteria.length > 0 && isReviewModalOpen) {
+      const seeded = existingReview.criteria.map((c: { criterionRowID: number; grade: number }) => ({
+        row: c.criterionRowID,
+        column: c.grade,
+      }));
+      setSelectedCriteria(seeded);
+      setReviewComment(existingReview.review.comments || "");
+    }
+  }, [isEditing, existingReview, rubricCriteria, isReviewModalOpen]);
 
   function handleCriterionSelect(row: number, column: number) {
     setSelectedCriteria((prev) => {
@@ -94,7 +108,6 @@ export default function GroupReviewSection({
         {
           onSuccess: () => {
             if (closeModal) setIsReviewModalOpen(false);
-            setReviewedGroups((prev) => new Set(prev).add(groupRevieweeID));
             toast.success("Group review submitted successfully.");
           },
           onError: (error) => {
@@ -130,7 +143,7 @@ export default function GroupReviewSection({
                     className="w-4 h-4 accent-btn-primary"
                   />
                   {group.name}
-                  {reviewedGroups.has(group.id) && (
+                  {reviewedIds.includes(group.id) && (
                     <span className="text-xs text-emerald-600 font-medium">(reviewed)</span>
                   )}
                 </label>

@@ -4,6 +4,8 @@ import {
   updateReview,
   getReview,
   getReviewsForAssignment,
+  getMyReviewed,
+  getMyProgress,
   getCourseGradeSummary,
 } from "../../services/reviewApi";
 
@@ -34,11 +36,30 @@ export function useReviewsForAssignment(
   });
 }
 
+export function useMyProgress(courseId: number, enabled = true) {
+  return useQuery({
+    queryKey: ["my-progress", courseId],
+    queryFn: () => getMyProgress(courseId),
+    enabled: !!courseId && enabled,
+  });
+}
+
 export function useCourseGradeSummary(courseId: number) {
   return useQuery({
     queryKey: ["grade-summary", courseId],
     queryFn: () => getCourseGradeSummary(courseId),
     enabled: !!courseId,
+  });
+}
+
+export function useMyReviewed(
+  assignmentId: number,
+  review_type: "individual" | "group" = "individual"
+) {
+  return useQuery({
+    queryKey: ["my-reviewed", assignmentId, review_type],
+    queryFn: () => getMyReviewed(assignmentId, review_type),
+    enabled: !!assignmentId,
   });
 }
 
@@ -65,6 +86,9 @@ export function useSubmitReview() {
       });
       queryClient.invalidateQueries({
         queryKey: ["reviews", variables.assignmentID],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["my-reviewed", variables.assignmentID],
       });
     },
   });

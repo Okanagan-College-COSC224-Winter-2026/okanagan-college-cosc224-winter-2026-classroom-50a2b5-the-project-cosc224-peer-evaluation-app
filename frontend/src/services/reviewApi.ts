@@ -83,6 +83,50 @@ export const getReviewsForAssignment = async (
   return await resp.json();
 };
 
+export const getMyReviewed = async (
+  assignmentID: number,
+  review_type: "individual" | "group" = "individual"
+): Promise<number[]> => {
+  const resp = await fetch(
+    `${BASE_URL}/review/assignment/${assignmentID}/my-reviewed?review_type=${review_type}`,
+    { credentials: "include" }
+  );
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  const data = await resp.json();
+  return data.reviewee_ids;
+};
+
+export interface AssignmentProgress {
+  assignment_id: number;
+  individual_completed: number;
+  individual_required: number;
+  group_completed: number;
+  group_required: number;
+}
+
+export const getMyProgress = async (
+  courseID: number
+): Promise<{ assignments: AssignmentProgress[] }> => {
+  const resp = await fetch(
+    `${BASE_URL}/review/course/${courseID}/my-progress`,
+    { credentials: "include" }
+  );
+
+  maybeHandleExpire(resp);
+
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
+
+  return await resp.json();
+};
+
 export const getCourseGradeSummary = async (
   courseID: number,
   studentID?: number

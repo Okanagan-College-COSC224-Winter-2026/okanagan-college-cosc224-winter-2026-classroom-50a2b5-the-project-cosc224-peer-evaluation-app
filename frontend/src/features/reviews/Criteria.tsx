@@ -1,5 +1,5 @@
 import Criterion from './Criterion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface props {
     questions: Array<string>;
@@ -15,6 +15,12 @@ export default function Criteria(props: props) {
     const [scores, setScores] = useState<number[]>(
         props.grades.length > 0 ? [...props.grades] : new Array(props.questions.length).fill(0)
     );
+
+    useEffect(() => {
+        if (props.grades.length > 0) {
+            setScores([...props.grades]);
+        }
+    }, [props.grades]);
 
     const handleSelect = (row: number, value: number) => {
         setScores(prev => {

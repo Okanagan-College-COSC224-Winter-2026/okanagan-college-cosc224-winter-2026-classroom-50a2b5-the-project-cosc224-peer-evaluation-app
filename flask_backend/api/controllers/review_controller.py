@@ -9,6 +9,8 @@ Endpoints:
   GET   /review/<id>                                 — Get a review by ID with criteria
   GET   /review/lookup?assignmentID=X&revieweeID=Y   — Lookup existing review (reviewer from JWT)
   GET   /review/assignment/<id>                      — List all reviews for an assignment
+  GET   /review/assignment/<id>/my-reviewed          — Reviewee IDs already reviewed by current user
+  GET   /review/course/<id>/my-progress              — Per-assignment review completion for current student
   GET   /review/course/<id>/summary                  — Grade summary for all assignments in a course
 """
 
@@ -430,6 +432,57 @@ def get_review(review_id):
 
 
 # ============================================================================
+# MY REVIEWED (which reviewees has the current user already reviewed?)
+# ============================================================================
+
+
+@bp.route("/assignment/<int:assignment_id>/my-reviewed", methods=["GET"])
+@jwt_required()
+def my_reviewed(assignment_id):
+    """Return reviewee IDs that the current user has already reviewed.
+
+    For individual reviews: returns user IDs the logged-in user reviewed.
+    For group reviews: returns group IDs that anyone on the user's team reviewed.
+
+    Query param: review_type (default "individual")
+    Returns: { "reviewee_ids": [int, ...] }
+    """
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "Authenticated user not found"}), 404
+
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    review_type = request.args.get("review_type", "individual")
+
+    if review_type == "group":
+        user_group = _get_user_group_in_course(user.id, assignment.courseID)
+        if not user_group:
+            return jsonify({"reviewee_ids": []}), 200
+
+        group_member_ids = [
+            m.userID for m in Group_Members.query.filter_by(groupID=user_group.id).all()
+        ]
+        reviews = Review.query.filter(
+            Review.assignmentID == assignment_id,
+            Review.reviewerID.in_(group_member_ids),
+            Review.review_type == "group",
+        ).all()
+    else:
+        reviews = Review.query.filter_by(
+            assignmentID=assignment_id,
+            reviewerID=user.id,
+            review_type="individual",
+        ).all()
+
+    reviewee_ids = list({r.revieweeID for r in reviews})
+    return jsonify({"reviewee_ids": reviewee_ids}), 200
+
+
+# ============================================================================
 # LIST REVIEWS FOR AN ASSIGNMENT
 # ============================================================================
 
@@ -494,6 +547,81 @@ def get_reviews_for_assignment(assignment_id):
         results.append(dumped)
 
     return jsonify(results), 200
+
+
+# ============================================================================
+# MY PROGRESS (per-assignment review completion for current student)
+# ============================================================================
+
+
+@bp.route("/course/<int:course_id>/my-progress", methods=["GET"])
+@jwt_required()
+def my_progress(course_id):
+    """Return per-assignment review completion counts for the current student.
+
+    Individual required = group members minus self.
+    Group required = other groups in the course.
+    Group completed counts reviews by any member of the student's group.
+
+    Returns: { "assignments": [ { assignment_id, individual_completed,
+    individual_required, group_completed, group_required }, ... ] }
+    """
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "Authenticated user not found"}), 404
+
+    course = Course.get_by_id(course_id)
+    if not course:
+        return jsonify({"msg": "Course not found"}), 404
+
+    # Determine user's group and group members
+    user_group = _get_user_group_in_course(user.id, course_id)
+
+    if user_group:
+        group_member_ids = [
+            m.userID for m in Group_Members.query.filter_by(groupID=user_group.id).all()
+        ]
+        other_member_ids = [mid for mid in group_member_ids if mid != user.id]
+        individual_required = len(other_member_ids)
+
+        all_groups = CourseGroup.query.filter_by(courseID=course_id).all()
+        group_required = len([g for g in all_groups if g.id != user_group.id])
+    else:
+        group_member_ids = []
+        individual_required = 0
+        group_required = 0
+
+    assignments = Assignment.get_by_class_id(course_id)
+    result = []
+
+    for assignment in assignments:
+        # Individual: reviews by this user
+        ind_completed = Review.query.filter_by(
+            assignmentID=assignment.id,
+            reviewerID=user.id,
+            review_type="individual",
+        ).count()
+
+        # Group: reviews by any member of user's group
+        if user_group and group_member_ids:
+            grp_completed = Review.query.filter(
+                Review.assignmentID == assignment.id,
+                Review.reviewerID.in_(group_member_ids),
+                Review.review_type == "group",
+            ).count()
+        else:
+            grp_completed = 0
+
+        result.append({
+            "assignment_id": assignment.id,
+            "individual_completed": ind_completed,
+            "individual_required": individual_required,
+            "group_completed": grp_completed,
+            "group_required": group_required,
+        })
+
+    return jsonify({"assignments": result}), 200
 
 
 # ============================================================================
