@@ -59,10 +59,9 @@ function App() {
               <Route path="groups" element={<GroupManager />} />
               <Route path="evaluations" element={<ClassEvaluations />} />
               <Route path="settings" element={<ClassSettings />} />
+              <Route path="assignments/:assignmentId" element={<AssignmentDetail />} />
+              <Route path="assignments/:assignmentId/manage" element={<AssignmentDetail />} />
             </Route>
-
-            <Route path="/assignments/:id" element={<AssignmentDetail />} />
-            <Route path="/assignments/:id/manage" element={<AssignmentDetail />} />
           </Route>
         </Routes>
       </BrowserRouter>

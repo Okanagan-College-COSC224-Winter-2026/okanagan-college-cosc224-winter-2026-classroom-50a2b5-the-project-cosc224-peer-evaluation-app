@@ -63,7 +63,8 @@ class Review {
   +id: Integer
   +assignmentID: Integer
   +reviewerID: Integer
-  +revieweeID: Integer
+  +revieweeID: Integer (polymorphic)
+  +review_type: String <<individual|group>>
   +comments: String
 }
 
@@ -81,6 +82,7 @@ class Rubric {
   +id: Integer
   +assignmentID: Integer
   +canComment: Boolean <<default TRUE>>
+  +rubric_type: String <<individual|group>>
 }
 
 class CriteriaDescription {
@@ -121,7 +123,8 @@ Assignment "1" --> "0..*" Submission : collects
 ' Peer review flow
 Assignment "1" --> "0..*" Review : reviews
 User "1" --> "0..*" Review : reviewer
-User "1" <-- "0..*" Review : reviewee
+User "1" <.. "0..*" Review : reviewee (individual)
+CourseGroup "1" <.. "0..*" Review : reviewee (group)
 Review "1" --> "0..*" Criterion : criteria
 
 ' Rubrics and criteria

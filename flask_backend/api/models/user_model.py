@@ -44,9 +44,6 @@ class User(db.Model):
     reviews_made = db.relationship(
         "Review", back_populates="reviewer", foreign_keys="Review.reviewerID", lazy="dynamic"
     )
-    reviews_received = db.relationship(
-        "Review", back_populates="reviewee", foreign_keys="Review.revieweeID", lazy="dynamic"
-    )
     group_memberships = db.relationship(
         "Group_Members", back_populates="user", cascade="all, delete-orphan", lazy="dynamic"
     )

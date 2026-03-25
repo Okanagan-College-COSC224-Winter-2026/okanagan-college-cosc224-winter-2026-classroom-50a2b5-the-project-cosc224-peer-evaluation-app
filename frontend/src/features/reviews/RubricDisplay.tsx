@@ -6,9 +6,10 @@ interface RubricDisplayProps {
     onCriterionSelect: (row: number, column: number) => void;
     onCommentChange?: (comment: string) => void;
     grades: number[];
+    comment?: string;
 }
 
-export default function RubricDisplay({ rubricId, onCriterionSelect, onCommentChange, grades }: RubricDisplayProps) {
+export default function RubricDisplay({ rubricId, onCriterionSelect, onCommentChange, grades, comment }: RubricDisplayProps) {
     const { data: criteria = [] } = useCriteria(rubricId);
     const { data: rubricInfo } = useRubric(rubricId);
 
@@ -45,6 +46,7 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, onCommentCh
             }}
             onCommentChange={onCommentChange}
             grades={grades}
+            comment={comment}
         />
     );
 }

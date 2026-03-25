@@ -5,7 +5,7 @@ import RubricDisplay from "../reviews/RubricDisplay";
 import { useSubmitReview, useReview, useUpdateReview, useMyReviewed } from "../reviews/useReviews";
 import { useCriteria } from "../reviews/useRubric";
 import { btnPrimary } from "./assignmentStyles";
-import type { GroupMember } from "./useAssignmentDetail";
+import type { CourseGroupItem } from "./useAssignmentDetail";
 
 interface SelectedCriterion {
   row: number;
@@ -14,24 +14,29 @@ interface SelectedCriterion {
 
 interface Props {
   assignmentId: number;
-  rubricId: number | null;
-  review: number[];
-  groupMembers: GroupMember[];
-  revieweeID: number;
-  setRevieweeID: (id: number) => void;
+  groupRubricId: number | null;
+  otherGroups: CourseGroupItem[];
+  groupRevieweeID: number;
+  setGroupRevieweeID: (id: number) => void;
 }
 
-export default function PeerReviewSection({ assignmentId, rubricId, review, groupMembers, revieweeID, setRevieweeID }: Props) {
+export default function GroupReviewSection({
+  assignmentId,
+  groupRubricId,
+  otherGroups,
+  groupRevieweeID,
+  setGroupRevieweeID,
+}: Props) {
   const [selectedCriteria, setSelectedCriteria] = useState<SelectedCriterion[]>([]);
   const [reviewComment, setReviewComment] = useState("");
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [selectedMemberName, setSelectedMemberName] = useState("");
+  const [selectedGroupName, setSelectedGroupName] = useState("");
 
-  const { data: reviewedIds = [] } = useMyReviewed(assignmentId, "individual");
+  const { data: reviewedIds = [] } = useMyReviewed(assignmentId, "group");
   const { mutate: submitReview, isPending: isSubmitting } = useSubmitReview();
   const { mutate: updateReviewMut, isPending: isUpdating } = useUpdateReview();
-  const { data: existingReview } = useReview(assignmentId, revieweeID, "individual");
-  const { data: rubricCriteria = [] } = useCriteria(rubricId);
+  const { data: existingReview } = useReview(assignmentId, groupRevieweeID, "group");
+  const { data: rubricCriteria = [] } = useCriteria(groupRubricId);
 
   const isEditing = existingReview?.review !== undefined && existingReview?.review !== null;
   const isPending = isSubmitting || isUpdating;
@@ -57,9 +62,9 @@ export default function PeerReviewSection({ assignmentId, rubricId, review, grou
 
   function handleRadioChange(event: ChangeEvent<HTMLInputElement>) {
     const selectedID = Number(event.target.value);
-    setRevieweeID(selectedID);
-    const member = groupMembers.find((m) => m.id === selectedID);
-    setSelectedMemberName(member?.name || "");
+    setGroupRevieweeID(selectedID);
+    const group = otherGroups.find((g) => g.id === selectedID);
+    setSelectedGroupName(group?.name || "");
     setSelectedCriteria([]);
     setReviewComment("");
     setIsReviewModalOpen(true);
@@ -77,14 +82,14 @@ export default function PeerReviewSection({ assignmentId, rubricId, review, grou
         {
           reviewId: existingReview.review.id,
           assignmentID: assignmentId,
-          revieweeID: revieweeID,
+          revieweeID: groupRevieweeID,
           criteria: criteriaPayload,
           comments: reviewComment,
         },
         {
           onSuccess: () => {
             if (closeModal) setIsReviewModalOpen(false);
-            toast.success("Review updated successfully.");
+            toast.success("Group review updated successfully.");
           },
           onError: (error) => {
             toast.error(error instanceof Error ? error.message : "Failed to update review.");
@@ -95,14 +100,15 @@ export default function PeerReviewSection({ assignmentId, rubricId, review, grou
       submitReview(
         {
           assignmentID: assignmentId,
-          revieweeID,
+          revieweeID: groupRevieweeID,
           criteria: criteriaPayload,
           comments: reviewComment,
+          review_type: "group",
         },
         {
           onSuccess: () => {
             if (closeModal) setIsReviewModalOpen(false);
-            toast.success("Review submitted successfully.");
+            toast.success("Group review submitted successfully.");
           },
           onError: (error) => {
             toast.error(error instanceof Error ? error.message : "Failed to submit review.");
@@ -112,32 +118,32 @@ export default function PeerReviewSection({ assignmentId, rubricId, review, grou
     }
   }
 
-  // Determine grades to display — from existing review or local state
+  // Only pre-populate grades from an existing review; new reviews use Criterion's internal state
   const displayGrades: number[] = isEditing
     ? existingReview.criteria?.map((c: { grade: number }) => c.grade) ?? []
-    : review;
+    : [];
 
   return (
     <>
       <div>
         <div className="flex flex-col gap-4">
-          <p className="text-sm text-text-secondary m-0">Select a group member to review</p>
-          {groupMembers.length === 0 ? (
-            <p className="text-text-secondary text-sm m-0">No group members found. You may not be assigned to a group yet.</p>
+          <p className="text-sm text-text-secondary m-0">Select a group to review</p>
+          {otherGroups.length === 0 ? (
+            <p className="text-text-secondary text-sm m-0">No other groups found in this course.</p>
           ) : (
             <div className="flex flex-col gap-2">
-              {groupMembers.map((member) => (
-                <label key={member.id} className="flex items-center gap-2.5 cursor-pointer text-sm text-text-primary py-1">
+              {otherGroups.map((group) => (
+                <label key={group.id} className="flex items-center gap-2.5 cursor-pointer text-sm text-text-primary py-1">
                   <input
                     type="radio"
-                    id={member.id.toString()}
-                    value={member.id}
-                    name="groupMembers"
+                    id={`group-${group.id}`}
+                    value={group.id}
+                    name="reviewGroup"
                     onChange={handleRadioChange}
                     className="w-4 h-4 accent-btn-primary"
                   />
-                  {member.name}
-                  {reviewedIds.includes(member.id) && (
+                  {group.name}
+                  {reviewedIds.includes(group.id) && (
                     <span className="text-xs text-emerald-600 font-medium">(reviewed)</span>
                   )}
                 </label>
@@ -150,10 +156,10 @@ export default function PeerReviewSection({ assignmentId, rubricId, review, grou
       <Modal
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
-        title={`${isEditing ? "Edit" : "Review"}: ${selectedMemberName}`}
+        title={`${isEditing ? "Edit" : "Review"}: ${selectedGroupName}`}
       >
         <RubricDisplay
-          rubricId={rubricId}
+          rubricId={groupRubricId}
           onCriterionSelect={handleCriterionSelect}
           onCommentChange={setReviewComment}
           grades={displayGrades}

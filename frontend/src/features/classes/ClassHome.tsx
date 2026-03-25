@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { useAssignments, useCreateAssignment } from "../assignments/useAssignments";
 import { isTeacher } from "../../util/login";
 import { formatDueDate, getAssignmentStatus } from "../../util/assignmentDates";
+import { useMyProgress } from "../reviews/useReviews";
 import Modal from "../../ui/Modal";
 
 function getStatusClasses(status: string): string {
@@ -31,8 +32,21 @@ export default function ClassHome() {
   const courseId = Number(id);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const teacherMode = isTeacher();
   const { data: assignments = [] } = useAssignments(String(id));
+  const { data: progressData } = useMyProgress(courseId, !teacherMode);
   const { mutate: createAssignment, isPending, isSuccess, isError, error } = useCreateAssignment(String(id));
+
+  // Build a lookup map: assignment_id → { completed, required }
+  const progressMap = new Map<number, { completed: number; required: number }>();
+  if (progressData?.assignments) {
+    for (const a of progressData.assignments) {
+      progressMap.set(a.assignment_id, {
+        completed: a.individual_completed + a.group_completed,
+        required: a.individual_required + a.group_required,
+      });
+    }
+  }
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<AssignmentFormData>({
     defaultValues: {
@@ -91,7 +105,7 @@ export default function ClassHome() {
         <div className="flex flex-col items-stretch w-full gap-5">
           <div className="flex justify-between items-center gap-4">
             <h3 className="m-0 text-text-primary text-base font-semibold">Assignments</h3>
-            {isTeacher() && (
+            {teacherMode && (
               <Button onClick={handleOpenModal}>+ New Assignment</Button>
             )}
           </div>
@@ -110,10 +124,12 @@ export default function ClassHome() {
               <div className="divide-y divide-border">
                 {assignments.map((assignment: Assignment) => {
                   const status = getAssignmentStatus(assignment.due_date);
+                  const progress = progressMap.get(assignment.id);
+                  const isComplete = progress && progress.required > 0 && progress.completed >= progress.required;
                   return (
                     <Link
                       key={assignment.id}
-                      to={`/assignments/${assignment.id}`}
+                      to={`/classes/${id}/assignments/${assignment.id}`}
                       className="px-5 md:px-8 py-4 flex items-center justify-between gap-4 no-underline text-inherit transition-colors hover:bg-btn-primary/[0.03] group"
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -129,7 +145,18 @@ export default function ClassHome() {
                           </span>
                         </div>
                       </div>
-                      <span className={getStatusClasses(status)}>{status}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {!teacherMode && progress && progress.required > 0 && (
+                          <span className={`text-xs font-medium rounded-full px-2.5 py-0.5 whitespace-nowrap ${
+                            isComplete
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-amber-50 text-amber-700 border border-amber-200"
+                          }`}>
+                            {progress.completed}/{progress.required} reviews
+                          </span>
+                        )}
+                        <span className={getStatusClasses(status)}>{status}</span>
+                      </div>
                     </Link>
                   );
                 })}

@@ -6,13 +6,14 @@ import { useCreateRubric } from './useRubric';
 interface RubricCreatorProps {
     onRubricCreated?: (rubricId: number) => void;
     id: number;
+    rubricType?: "individual" | "group";
 }
 
-export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProps) {
+export default function RubricCreator({ onRubricCreated, id, rubricType = "individual" }: RubricCreatorProps) {
     const [newCriteria, setNewCriteria] = useState<Omit<Criterion, 'id'>[]>([{ rubricID: 0, question: '', scoreMax: 0, hasScore: true }]);
     const [canComment, setCanComment] = useState(false);
 
-    const { mutate: createRubric, isPending } = useCreateRubric(id);
+    const { mutate: createRubric, isPending } = useCreateRubric(id, rubricType);
 
     const handleCreate = () => {
         const emptyQuestions = newCriteria.some(c => !c.question.trim());
