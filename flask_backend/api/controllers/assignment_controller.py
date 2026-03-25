@@ -11,7 +11,12 @@ from ..models import (
     Course,
     Group_Members,
     Submission,
+<<<<<<< HEAD
     User,
+=======
+    SubmissionSchema,
+    Group_Members,
+>>>>>>> 80acb7f (finished us27/28. need more work when combining with file upload likely)
     User_Course,
     db,
 )
@@ -92,6 +97,37 @@ def submission_to_dict(submission):
         "submitted_at": submitted_at,
         "student_name": student.name if student else None,
     }
+
+
+def get_group_member_ids_for_assignment(assignment_id, user_id):
+    membership = Group_Members.query.filter_by(
+        assignmentID=assignment_id,
+        userID=user_id,
+    ).first()
+
+    if not membership:
+        return [], None
+
+    members = Group_Members.query.filter_by(
+        assignmentID=assignment_id,
+        groupID=membership.groupID,
+    ).all()
+    member_ids = [member.userID for member in members]
+    return member_ids, membership.groupID
+
+
+def get_group_submission(assignment_id, member_ids):
+    if not member_ids:
+        return None
+
+    return (
+        Submission.query.filter(
+            Submission.assignmentID == assignment_id,
+            Submission.studentID.in_(member_ids),
+        )
+        .order_by(Submission.submitted_at.desc(), Submission.id.desc())
+        .first()
+    )
 
 
 @bp.route("/create_assignment", methods=["POST"])
@@ -371,14 +407,32 @@ def submit_assignment(assignment_id):
     full_path = os.path.join(upload_dir, stored_name)
     submission_file.save(full_path)
 
+<<<<<<< HEAD
     existing_submission = get_group_submission(assignment.id, group_member_ids)
+=======
+    existing_submission = (
+        get_group_submission(assignment.id, group_member_ids)
+        if group_member_ids
+        else Submission.get_by_student_and_assignment(
+            user.id,
+            assignment.id,
+        )
+    )
+>>>>>>> 80acb7f (finished us27/28. need more work when combining with file upload likely)
 
     if existing_submission:
         if existing_submission.path and os.path.exists(existing_submission.path):
             os.remove(existing_submission.path)
 
+<<<<<<< HEAD
         existing_submission.path = full_path
         existing_submission.studentID = user.id
+=======
+        existing_submission.file_name = safe_name
+        existing_submission.file_path = full_path
+        existing_submission.studentID = user.id
+        existing_submission.submitted_at = datetime.utcnow()
+>>>>>>> 80acb7f (finished us27/28. need more work when combining with file upload likely)
         existing_submission.update()
 
         return jsonify(
@@ -418,6 +472,16 @@ def get_my_submission(assignment_id):
     group_member_ids, _ = get_group_member_ids_for_assignment(assignment_id, user.id)
     submission = get_group_submission(assignment_id, group_member_ids)
     if not submission:
+        group_member_ids, _ = get_group_member_ids_for_assignment(
+            assignment_id,
+            user.id,
+        )
+        submission = get_group_submission(
+            assignment_id,
+            group_member_ids,
+        )
+
+    if not submission:
         return jsonify({"msg": "No submission found"}), 404
 
     return jsonify(submission_to_dict(submission)), 200
@@ -437,6 +501,16 @@ def download_my_submission(assignment_id):
 
     group_member_ids, _ = get_group_member_ids_for_assignment(assignment_id, user.id)
     submission = get_group_submission(assignment_id, group_member_ids)
+    if not submission:
+        group_member_ids, _ = get_group_member_ids_for_assignment(
+            assignment_id,
+            user.id,
+        )
+        submission = get_group_submission(
+            assignment_id,
+            group_member_ids,
+        )
+
     if not submission:
         return jsonify({"msg": "No submission found"}), 404
 

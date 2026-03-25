@@ -905,10 +905,13 @@ export const downloadMySubmissionFile = async (
 };
 
 export const getMySubmissionInfo = async (assignmentId: number) => {
-  const response = await fetch(`${BASE_URL}/assignment/my_submission/${assignmentId}`, {
-    method: "GET",
-    credentials: "include",
-  });
+  const response = await fetch(
+    `${BASE_URL}/assignment/my_submission/${assignmentId}`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
 
   maybeHandleExpire(response);
 
@@ -918,7 +921,7 @@ export const getMySubmissionInfo = async (assignmentId: number) => {
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(data.msg || "Failed to load submission");
+    throw new Error(data.msg || "Failed to load submission info");
   }
 
   return await response.json();
