@@ -731,6 +731,113 @@ class TestWeightedGradeSummary:
 
 
 # ============================================================================
+# GROUP REVIEW ANONYMITY & REVIEWER DISPLAY
+# ============================================================================
+
+
+class TestGroupReviewAnonymity:
+    """Tests for group review reviewer display and anonymity."""
+
+    def test_anonymous_group_review_hides_reviewer(
+        self, test_client, db, student_a, student_c, student_d,
+        course, group_alpha, group_beta, group_rubric
+    ):
+        """On an anonymous assignment, group review reviewer should be 'Anonymous'."""
+        anon_assignment = Assignment(courseID=course.id, name="Anon HW", is_anonymous=True)
+        db.session.add(anon_assignment)
+        db.session.commit()
+
+        _, criteria = group_rubric
+
+        # Alice (Alpha) reviews Beta
+        test_client.post("/auth/login", json={"email": student_a.email, "password": "password123"})
+        test_client.post(
+            "/review/submit",
+            json={
+                "assignmentID": anon_assignment.id,
+                "revieweeID": group_beta.id,
+                "review_type": "group",
+                "criteria": [{"criterionRowID": criteria[0].id, "grade": 8, "comments": ""}],
+            },
+        )
+
+        # Carol (Beta, the reviewee group) lists reviews
+        test_client.post("/auth/login", json={"email": student_c.email, "password": "password123"})
+        resp = test_client.get(
+            f"/review/assignment/{anon_assignment.id}?review_type=group"
+        )
+        assert resp.status_code == 200
+        reviews = resp.get_json()
+        assert len(reviews) == 1
+        assert reviews[0]["reviewer"]["name"] == "Anonymous"
+        assert reviews[0]["reviewer"]["id"] is None
+
+    def test_non_anonymous_group_review_shows_group_name(
+        self, test_client, db, student_a, student_c,
+        assignment, group_alpha, group_beta, group_rubric
+    ):
+        """On a non-anonymous assignment, group review reviewer should show the group name."""
+        _, criteria = group_rubric
+
+        # Alice (Alpha) reviews Beta
+        test_client.post("/auth/login", json={"email": student_a.email, "password": "password123"})
+        test_client.post(
+            "/review/submit",
+            json={
+                "assignmentID": assignment.id,
+                "revieweeID": group_beta.id,
+                "review_type": "group",
+                "criteria": [{"criterionRowID": criteria[0].id, "grade": 7, "comments": ""}],
+            },
+        )
+
+        # Carol (Beta) lists reviews — should see "Alpha" not "Alice"
+        test_client.post("/auth/login", json={"email": student_c.email, "password": "password123"})
+        resp = test_client.get(
+            f"/review/assignment/{assignment.id}?review_type=group"
+        )
+        assert resp.status_code == 200
+        reviews = resp.get_json()
+        assert len(reviews) == 1
+        assert reviews[0]["reviewer"]["name"] == "Alpha"
+        assert reviews[0]["reviewer"]["id"] is None
+        assert reviews[0]["reviewer"]["email"] is None
+
+    def test_teacher_sees_real_reviewer_on_anonymous_group_review(
+        self, test_client, db, student_a, teacher,
+        course, assignment, group_alpha, group_beta, group_rubric
+    ):
+        """Teacher should always see the real reviewer identity on group reviews."""
+        # Make assignment anonymous
+        assignment.is_anonymous = True
+        db.session.commit()
+
+        _, criteria = group_rubric
+
+        # Alice (Alpha) reviews Beta
+        test_client.post("/auth/login", json={"email": student_a.email, "password": "password123"})
+        test_client.post(
+            "/review/submit",
+            json={
+                "assignmentID": assignment.id,
+                "revieweeID": group_beta.id,
+                "review_type": "group",
+                "criteria": [{"criterionRowID": criteria[0].id, "grade": 9, "comments": ""}],
+            },
+        )
+
+        # Teacher lists reviews — should see Alice's real name
+        test_client.post("/auth/login", json={"email": teacher.email, "password": "password123"})
+        resp = test_client.get(
+            f"/review/assignment/{assignment.id}?review_type=group"
+        )
+        assert resp.status_code == 200
+        reviews = resp.get_json()
+        assert len(reviews) == 1
+        assert reviews[0]["reviewer"]["name"] == "Alice"
+
+
+# ============================================================================
 # RUBRIC TYPE — CREATING / FETCHING RUBRICS BY TYPE
 # ============================================================================
 

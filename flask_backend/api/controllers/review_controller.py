@@ -414,18 +414,23 @@ def get_review(review_id):
 
     result = ReviewSchema().dump(review)
 
-    # If the assignment is anonymous and the user is the reviewee (not the
-    # reviewer or a teacher), strip reviewer identity
+    # Strip or replace reviewer identity for students
     assignment = Assignment.get_by_id(review.assignmentID)
-    if review.review_type == "individual":
-        if (
-            assignment
-            and assignment.is_anonymous
-            and review.revieweeID == user.id
-            and not user.is_teacher()
-            and not user.is_admin()
-        ):
-            result["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
+    is_student = not user.is_teacher() and not user.is_admin()
+    if assignment and is_student:
+        if review.review_type == "individual":
+            if assignment.is_anonymous and review.revieweeID == user.id:
+                result["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
+        elif review.review_type == "group":
+            if assignment.is_anonymous:
+                result["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
+            else:
+                reviewer_group = _get_user_group_in_course(review.reviewerID, assignment.courseID)
+                result["reviewer"] = {
+                    "id": None,
+                    "name": reviewer_group.name if reviewer_group else "Unknown Group",
+                    "email": None,
+                }
 
     result["criteria"] = CriterionSchema(many=True).dump(criteria)
     return jsonify(result), 200
@@ -536,13 +541,20 @@ def get_reviews_for_assignment(assignment_id):
         criteria = Criterion.query.filter_by(reviewID=review.id).all()
         dumped["criteria"] = CriterionSchema(many=True).dump(criteria)
 
-        # Anonymize reviewer if needed (individual reviews only)
-        if (
-            not is_teacher_or_admin
-            and assignment.is_anonymous
-            and review.review_type == "individual"
-        ):
-            dumped["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
+        # Anonymize or replace reviewer for students
+        if not is_teacher_or_admin:
+            if review.review_type == "individual" and assignment.is_anonymous:
+                dumped["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
+            elif review.review_type == "group":
+                if assignment.is_anonymous:
+                    dumped["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
+                else:
+                    reviewer_group = _get_user_group_in_course(review.reviewerID, assignment.courseID)
+                    dumped["reviewer"] = {
+                        "id": None,
+                        "name": reviewer_group.name if reviewer_group else "Unknown Group",
+                        "email": None,
+                    }
 
         results.append(dumped)
 
@@ -757,45 +769,42 @@ def course_grade_summary(course_id):
             }
         )
 
-    # Compute per-type course averages
+    # Compute per-type course totals (sum of scores / sum of maxes)
     ind_course_avg = (
-        sum(individual_assignment_avgs) / len(individual_assignment_avgs)
+        sum(individual_assignment_avgs)
         if individual_assignment_avgs
         else None
     )
     ind_course_max = (
-        sum(individual_max_values) / len(individual_max_values)
+        sum(individual_max_values)
         if individual_max_values
         else None
     )
     grp_course_avg = (
-        sum(group_assignment_avgs) / len(group_assignment_avgs)
+        sum(group_assignment_avgs)
         if group_assignment_avgs
         else None
     )
     grp_course_max = (
-        sum(group_max_values) / len(group_max_values)
+        sum(group_max_values)
         if group_max_values
         else None
     )
 
-    # 50/50 weighted course average
-    if ind_course_avg is not None and grp_course_avg is not None:
-        course_avg = (ind_course_avg + grp_course_avg) / 2
-        course_max = (
-            ((ind_course_max or 0) + (grp_course_max or 0)) / 2
-            if ind_course_max is not None or grp_course_max is not None
-            else None
-        )
-    elif ind_course_avg is not None:
-        course_avg = ind_course_avg
-        course_max = ind_course_max
-    elif grp_course_avg is not None:
-        course_avg = grp_course_avg
-        course_max = grp_course_max
-    else:
-        course_avg = None
-        course_max = None
+    # Course total: sum all points earned / sum all points possible
+    course_avg_parts = []
+    course_max_parts = []
+    if ind_course_avg is not None:
+        course_avg_parts.append(ind_course_avg)
+        if ind_course_max is not None:
+            course_max_parts.append(ind_course_max)
+    if grp_course_avg is not None:
+        course_avg_parts.append(grp_course_avg)
+        if grp_course_max is not None:
+            course_max_parts.append(grp_course_max)
+
+    course_avg = sum(course_avg_parts) if course_avg_parts else None
+    course_max = sum(course_max_parts) if course_max_parts else None
 
     return (
         jsonify(

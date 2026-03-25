@@ -774,9 +774,10 @@ class TestCourseGradeSummary:
         data = resp.get_json()
 
         assert len(data["assignments"]) == 2
-        # Assignment 1 avg = 15.0, Assignment 2 avg = 7.0
-        # Course avg = (15 + 7) / 2 = 11.0
-        assert data["courseAverage"] == 11.0
+        # Assignment 1 total = 15.0, Assignment 2 total = 7.0
+        # Course total = 15 + 7 = 22.0, Course max = 15 + 10 = 25
+        assert data["courseAverage"] == 22.0
+        assert data["courseMax"] == 25
 
     def test_summary_max_score_from_rubric(
         self, auth_student_a, student_a, course, assignment, rubric_with_criteria

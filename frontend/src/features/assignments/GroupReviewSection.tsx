@@ -163,6 +163,7 @@ export default function GroupReviewSection({
           onCriterionSelect={handleCriterionSelect}
           onCommentChange={setReviewComment}
           grades={displayGrades}
+          comment={reviewComment}
         />
         <div className="flex justify-end pt-4 mt-2 border-t border-border">
           <button className={btnPrimary} disabled={isPending} onClick={() => handleSubmitOrUpdate(true)}>
