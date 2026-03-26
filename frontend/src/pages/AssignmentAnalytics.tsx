@@ -5,6 +5,7 @@ import {
   exportReviewsCSV,
   AnalyticsData,
 } from '../util/api';
+import ExportReportButton from '../components/ExportReportButton';
 import CriterionBarChart from '../components/CriterionBarChart';
 import CompletionRing from '../components/CompletionRing';
 import OutlierTable from '../components/OutlierTable';
@@ -63,20 +64,24 @@ export default function AssignmentAnalytics() {
           <p className="AssignmentAnalytics__subtitle">{data.assignment_name}</p>
         </div>
         <div className="AssignmentAnalytics__headerActions">
-          <button
-            className="AssignmentAnalytics__csvBtn"
-            onClick={downloadCSV}
-            disabled={exporting}
-          >
-            {exporting ? 'Exporting...' : '⬇ Download CSV'}
-          </button>
-          <button
-            className="AssignmentAnalytics__backBtn"
-            onClick={() => navigate(-1)}
-          >
-            ← Back to Reviews
-          </button>
-        </div>
+  <button
+    className="AssignmentAnalytics__csvBtn"
+    onClick={downloadCSV}
+    disabled={exporting}
+  >
+    {exporting ? 'Exporting...' : '⬇ Download CSV'}
+  </button>
+  <ExportReportButton
+    assignmentId={Number(id)}
+    assignmentTitle={data.assignment_name}
+  />
+  <button
+    className="AssignmentAnalytics__backBtn"
+    onClick={() => navigate(-1)}
+  >
+    ← Back to Reviews
+  </button>
+</div>
       </div>
 
       {/* Summary row */}
