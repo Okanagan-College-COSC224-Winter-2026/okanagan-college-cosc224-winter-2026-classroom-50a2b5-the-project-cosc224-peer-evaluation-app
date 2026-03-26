@@ -28,6 +28,9 @@ class Review(db.Model):
     criteria = db.relationship(
         "Criterion", back_populates="review", cascade="all, delete-orphan", lazy="dynamic"
     )
+    files = db.relationship(
+        "ReviewFile", back_populates="review", cascade="all, delete-orphan", lazy="dynamic"
+    )
 
     def __init__(self, assignmentID, reviewerID, revieweeID):
         self.assignmentID = assignmentID
