@@ -16,9 +16,9 @@ import csv
 import io
 import statistics
 
+from io import BytesIO
 from flask import Blueprint, Response, jsonify, request, send_file
 from flask_jwt_extended import get_jwt_identity
-from io import BytesIO
 
 from ..models import (
     Assignment,
@@ -96,6 +96,7 @@ def list_assignment_reviews(assignment_id):
 
     # ── Optional group filter ─────────────────────────────────────────────────
     if group_id is not None:
+        # Resolve the group, return 404 if it doesn't exist
         group = CourseGroup.get_by_id(group_id)
         if group is None:
             return jsonify({"msg": "Group not found"}), 404
@@ -169,6 +170,9 @@ def get_review_detail(assignment_id, review_id):
     if review is None:
         return jsonify({"msg": "Review not found"}), 404
 
+    # ── Build criteria breakdown ──────────────────────────────────────────────
+    # Each Criterion row has a grade + comments, and a FK to CriteriaDescription
+    # which holds the human-readable question and scoreMax.
     criteria_breakdown = [
         {
             "criterion_id":   c.id,
@@ -205,6 +209,8 @@ def get_review_detail(assignment_id, review_id):
 def upsert_conclusion(review_id):
     """
     Create or update the instructor note (Conclusion) on a peer review.
+    Behaves as an upsert: a second POST to the same review_id updates
+    the existing note rather than creating a duplicate.
 
     Request body (JSON):
         { "note": str }
@@ -221,11 +227,13 @@ def upsert_conclusion(review_id):
     if not note:
         return jsonify({"error": "Note cannot be empty"}), 400
 
+    # ── Resolve the teacher from the JWT cookie ───────────────────────────────
     email = get_jwt_identity()
     teacher = User.get_by_email(email)
     if teacher is None:
         return jsonify({"msg": "User not found"}), 404
 
+    # ── Upsert ────────────────────────────────────────────────────────────────
     existing = Conclusion.get_by_review(review_id)
     if existing:
         existing.note = note
@@ -252,11 +260,27 @@ def assignment_analytics(assignment_id):
     """
     Return analytics for an assignment: completion rate, per-criterion
     average scores, and flagged outlier reviews (>2 std deviations).
+
+    Response 200:
+        {
+            "assignment_id":   int,
+            "assignment_name": str,
+            "completion_pct":  float,
+            "total_students":  int,
+            "submitted":       int,
+            "criteria":        [ { criterion_id, criterion_name, score_max,
+                                   avg_score, response_count } ],
+            "outliers":        [ { review_id, reviewer_id, reviewee_id,
+                                   total_score, deviation } ]
+        }
+
+    Response 404: assignment not found
     """
     assignment = Assignment.get_by_id(assignment_id)
     if assignment is None:
         return jsonify({"msg": "Assignment not found"}), 404
 
+    # --- Completion rate ---
     total_students = (
         db.session.query(Group_Members.userID)
         .join(CourseGroup, CourseGroup.id == Group_Members.groupID)
@@ -275,6 +299,7 @@ def assignment_analytics(assignment_id):
         round((submitted / total_students * 100), 1) if total_students else 0
     )
 
+    # --- Per-criterion averages ---
     crit_descs = (
         CriteriaDescription.query
         .join(Rubric, Rubric.id == CriteriaDescription.rubricID)
@@ -300,6 +325,7 @@ def assignment_analytics(assignment_id):
         })
         all_review_totals.extend(scores)
 
+    # --- Outlier detection (>2 std deviations from mean) ---
     outliers = []
     if len(all_review_totals) >= 2:
         mean = statistics.mean(all_review_totals)
@@ -341,6 +367,12 @@ def assignment_analytics(assignment_id):
 def export_reviews_csv(assignment_id):
     """
     Export all review scores for an assignment as a downloadable CSV file.
+
+    Columns: review_id, reviewer_id, reviewee_id, criterion, score,
+             max_score, comment
+
+    Response 200: text/csv attachment
+    Response 404: assignment not found
     """
     assignment = Assignment.get_by_id(assignment_id)
     if assignment is None:
