@@ -9,13 +9,15 @@ Endpoints:
     POST /teacher/reviews/<review_id>/conclusion
     GET  /teacher/assignments/<assignment_id>/analytics
     GET  /teacher/assignments/<assignment_id>/export
+    GET  /teacher/assignments/<assignment_id>/export-pdf
 """
 
 import csv
 import io
 import statistics
 
-from flask import Blueprint, Response, jsonify, request
+from io import BytesIO
+from flask import Blueprint, Response, jsonify, request, send_file
 from flask_jwt_extended import get_jwt_identity
 
 from ..models import (
@@ -31,6 +33,7 @@ from ..models import (
 from ..models.conclusion_model import Conclusion
 from ..models.db import db
 from .auth_controller import jwt_teacher_required
+from ..services.pdf_report_service import generate_assignment_report
 
 teacher_bp = Blueprint("teacher", __name__, url_prefix="/teacher")
 
@@ -404,4 +407,76 @@ def export_reviews_csv(assignment_id):
             "Content-Disposition":
                 f"attachment;filename=assignment_{assignment_id}_reviews.csv"
         },
+    )
+
+
+# ============================================================
+# GET /teacher/assignments/<assignment_id>/export-pdf
+# PDF export of assignment review results
+# ============================================================
+
+@teacher_bp.route("/assignments/<int:assignment_id>/export-pdf", methods=["GET"])
+@jwt_teacher_required
+def export_assignment_pdf(assignment_id):
+    """
+    Generate and return a formatted PDF report for an assignment.
+    Returns 200 with application/pdf for teachers.
+    Returns 403 for students (handled by jwt_teacher_required).
+    """
+    assignment = Assignment.get_by_id(assignment_id)
+    if assignment is None:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    assignment_info = {
+        "title": assignment.name,
+        "course_name": assignment.course.name if assignment.course else "Unknown Course",
+    }
+
+    # Fetch all students in this assignment's groups
+    student_id_rows = (
+        db.session.query(Group_Members.userID)
+        .join(CourseGroup, CourseGroup.id == Group_Members.groupID)
+        .filter(CourseGroup.assignmentID == assignment_id)
+        .distinct()
+        .all()
+    )
+    student_ids = [row[0] for row in student_id_rows]
+
+    students_data = []
+    for sid in student_ids:
+        student = db.session.get(User, sid)
+        if not student:
+            continue
+
+        reviews_received = Review.query.filter_by(
+            assignmentID=assignment_id, revieweeID=sid
+        ).all()
+
+        reviews_given_count = Review.query.filter_by(
+            assignmentID=assignment_id, reviewerID=sid
+        ).count()
+
+        all_scores = [_review_total_score(r) for r in reviews_received]
+        avg_score = (sum(all_scores) / len(all_scores)) if all_scores else None
+
+        has_submitted = Review.query.filter_by(
+            assignmentID=assignment_id, reviewerID=sid
+        ).first() is not None
+        completion_status = "Complete" if has_submitted else "Incomplete"
+
+        students_data.append({
+            "name": student.name,
+            "avg_score": avg_score,
+            "reviews_received": len(reviews_received),
+            "reviews_given": reviews_given_count,
+            "completion_status": completion_status,
+        })
+
+    pdf_bytes = generate_assignment_report(assignment_info, students_data)
+
+    return send_file(
+        BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"{assignment.name.replace(' ', '_')}_Report.pdf",
     )
