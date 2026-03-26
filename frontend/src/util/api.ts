@@ -882,3 +882,15 @@ export const applyRubricTemplate = (templateId: number, assignmentId: number) =>
     method: 'POST',
     credentials: 'include',
   }).then(res => { maybeHandleExpire(res); return res; });
+
+// ── PDF Report Export ─────────────────────────────────────────────────────────
+
+export const exportAssignmentPDF = async (assignmentId: number): Promise<Blob> => {
+  const res = await fetch(`${BASE_URL}/assignments/${assignmentId}/export-pdf`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  maybeHandleExpire(res);
+  if (!res.ok) throw new Error('Failed to export PDF');
+  return res.blob();
+};
