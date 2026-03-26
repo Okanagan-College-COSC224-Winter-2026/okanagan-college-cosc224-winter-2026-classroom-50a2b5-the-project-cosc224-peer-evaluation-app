@@ -190,7 +190,6 @@ def test_get_messages_returns_correct_order(test_client, db):
     _assignment, group, users = _seed_group(["member@test.com"])
     _login(test_client, "member@test.com")
 
-    # Seed two messages directly
     msg1 = Message(groupID=group.id, senderID=users[0].id, content="First")
     msg2 = Message(groupID=group.id, senderID=users[0].id, content="Second")
     _db.session.add(msg1)
@@ -254,7 +253,6 @@ def test_mark_read_marks_others_messages(test_client, db):
     _assignment, group, users = _seed_group(["member1@test.com", "member2@test.com"])
     member1, member2 = users[0], users[1]
 
-    # member2 sends a message (is_read=False by default)
     msg = Message(groupID=group.id, senderID=member2.id, content="Hey!")
     _db.session.add(msg)
     _db.session.commit()
@@ -264,7 +262,6 @@ def test_mark_read_marks_others_messages(test_client, db):
 
     assert resp.status_code == 200
 
-    # Verify the message is now marked read
     _db.session.refresh(msg)
     assert msg.is_read is True
 
@@ -273,7 +270,7 @@ def test_mark_read_does_not_mark_own_messages(test_client, db):
     """
     GIVEN a member who has sent their own messages
     WHEN  they call PUT /message/group/<id>/read
-    THEN  their own messages remain unread (only others' are marked)
+    THEN  their own messages remain unread
     """
     _assignment, group, users = _seed_group(["member1@test.com"])
     member1 = users[0]
@@ -286,7 +283,7 @@ def test_mark_read_does_not_mark_own_messages(test_client, db):
     test_client.put(f"/message/group/{group.id}/read")
 
     _db.session.refresh(own_msg)
-    assert own_msg.is_read is False  # own message should NOT be marked read
+    assert own_msg.is_read is False
 
 
 def test_unauthenticated_get_returns_401(test_client, db):

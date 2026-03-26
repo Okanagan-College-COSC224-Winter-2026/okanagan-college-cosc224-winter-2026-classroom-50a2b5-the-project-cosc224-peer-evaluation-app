@@ -2,10 +2,8 @@
 Review controller for the peer evaluation app.
 Provides the endpoint for submitting rubric-based peer reviews.
 """
-
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-
 from api.models import User, Assignment, Review, Criterion, Group_Members
 from api.models.rubric_model import Rubric
 from api.models.criteria_description_model import CriteriaDescription
@@ -19,7 +17,6 @@ def submit_review():
     """
     POST /api/reviews/submit
     Submit a rubric-based peer review.
-
     Request body:
     {
       "assignment_id": int,
@@ -28,7 +25,6 @@ def submit_review():
         { "criteria_description_id": int, "grade": int, "comments": str }
       ]
     }
-
     Validations:
     1. Reviewer != reviewee (no self-reviews)
     2. Assignment exists
@@ -68,6 +64,7 @@ def submit_review():
     if reviewer_membership and reviewee_membership:
         if reviewer_membership.groupID != reviewee_membership.groupID:
             return jsonify({"msg": "Reviewer and reviewee are not in the same group"}), 403
+
     # If no group memberships exist, allow the review (groups may not be set up)
 
     # 4. No duplicate reviews

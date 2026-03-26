@@ -1,6 +1,5 @@
 from marshmallow import Schema, fields
 
-
 class MessageSchema(Schema):
     id          = fields.Int(dump_only=True)
     group_id    = fields.Int(attribute="groupID", dump_only=True)
@@ -12,7 +11,6 @@ class MessageSchema(Schema):
 
     def get_sender_name(self, obj):
         return obj.sender.name if obj.sender else "Unknown"
-
 
 message_schema  = MessageSchema()
 messages_schema = MessageSchema(many=True)

@@ -127,7 +127,7 @@ def mark_read(group_id):
     Message.query.filter(
         Message.groupID == group_id,
         Message.senderID != user.id,
-        Message.is_read == False,  # noqa: E712 — SQLAlchemy requires == not `is`
+        Message.is_read.is_(False),
     ).update({"is_read": True})
     db.session.commit()
 

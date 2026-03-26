@@ -4,11 +4,9 @@ Assignment model for the peer evaluation app.
 from datetime import datetime, timezone, timedelta
 from .db import db
 
-
 class Assignment(db.Model):
     """Assignment model representing assignments in a course"""
     __tablename__ = "Assignment"
-
     id = db.Column(db.Integer, primary_key=True)
     courseID = db.Column(db.Integer, db.ForeignKey("Course.id"), index=True)
     name = db.Column(db.String(255), nullable=True)
@@ -19,7 +17,6 @@ class Assignment(db.Model):
     attachment_filename = db.Column(db.String(255), nullable=True)
     attachment_path = db.Column(db.String(512), nullable=True)
     due_date = db.Column(db.DateTime, nullable=True, index=True)
-
     # relationships
     course = db.relationship("Course", back_populates="assignments", lazy="joined")
     rubrics = db.relationship(

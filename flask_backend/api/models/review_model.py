@@ -4,16 +4,13 @@ Review model for the peer evaluation app.
 from sqlalchemy.orm import joinedload
 from .db import db
 
-
 class Review(db.Model):
     """Review model representing peer evaluations"""
     __tablename__ = "Review"
-
     id = db.Column(db.Integer, primary_key=True)
     assignmentID = db.Column(db.Integer, db.ForeignKey("Assignment.id"), nullable=False, index=True)
     reviewerID = db.Column(db.Integer, db.ForeignKey("User.id"), nullable=False, index=True)
     revieweeID = db.Column(db.Integer, db.ForeignKey("User.id"), nullable=False, index=True)
-
     # relationships - using lazy='joined' for commonly accessed foreign entities
     assignment = db.relationship("Assignment", back_populates="reviews", lazy="joined")
     reviewer = db.relationship(

@@ -2,17 +2,12 @@
 Message model for the peer evaluation app.
 Stores in-group messages sent between students in the same assignment group.
 """
-
 from datetime import datetime, timezone
-
 from .db import db
-
 
 class Message(db.Model):
     """Message model for in-group student communication."""
-
     __tablename__ = "Message"
-
     id = db.Column(db.Integer, primary_key=True)
     groupID = db.Column(
         db.Integer, db.ForeignKey("CourseGroup.id"), nullable=False, index=True
@@ -27,7 +22,6 @@ class Message(db.Model):
         default=lambda: datetime.now(timezone.utc),
     )
     is_read = db.Column(db.Boolean, nullable=False, default=False)
-
     # relationships
     sender = db.relationship("User", foreign_keys=[senderID])
     group = db.relationship("CourseGroup", foreign_keys=[groupID])
