@@ -7,6 +7,7 @@ from .criteria_description_model import CriteriaDescription
 from .criterion_model import Criterion
 from .db import db, ma
 from .group_members_model import Group_Members
+from .message_model import Message
 from .notification_model import Notification
 from .review_file_model import ReviewFile
 from .review_model import Review
@@ -50,6 +51,7 @@ __all__ = [
     "User_Course",
     "Group_Members",
     "Notification",
+    "Message",
     # Schemas
     "UserSchema",
     "UserLoginSchema",
