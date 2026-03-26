@@ -47,3 +47,10 @@
 .modal-slide-in {
   animation: slideIn 0.18s ease-out;
 }
+
+
+@media (max-width:25em) {
+  html{
+    font-size: 81%;
+  }
+}

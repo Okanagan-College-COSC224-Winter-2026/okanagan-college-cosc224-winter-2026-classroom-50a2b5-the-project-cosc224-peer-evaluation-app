@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { logout } from "../util/login";
+import { isAdmin, logout } from "../util/login";
 
 export default function MobileHeader() {
   return (
@@ -15,6 +15,11 @@ export default function MobileHeader() {
         <Link to="/profile/1" className="text-text-secondary hover:text-text-primary no-underline transition-colors">
           Account
         </Link>
+        {isAdmin() && (
+          <Link to="/admin/users" className="text-text-secondary hover:text-text-primary no-underline transition-colors">
+            Users
+          </Link>
+        )}
         <button
           onClick={() => logout()}
           className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer text-sm font-medium p-0 transition-colors"

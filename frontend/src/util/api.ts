@@ -42,7 +42,7 @@ export {
   getReviewsForAssignment,
   getCourseGradeSummary,
 } from "../services/reviewApi";
-export { createTeacherAccount } from "../services/adminApi";
+export { createTeacherAccount, listUsers, createUser, updateUser, deleteUser } from "../services/adminApi";
 export {
   getUser,
   updateUserProfile,

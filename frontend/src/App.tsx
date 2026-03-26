@@ -9,6 +9,7 @@ import LoginForm from "./features/authentication/LoginForm";
 import SignupForm from "./features/authentication/SignupForm";
 import UpdateAccount from "./features/account/UpdateAccount";
 import CreateTeacher from "./features/account/CreateTeacher";
+import AdminUsers from "./features/admin/AdminUsers";
 import CreateClassForm from "./features/classes/CreateClassForm";
 import DashboardLayout from "./features/dashboard/DashboardLayout";
 import ClassSettings from "./features/classes/ClassSettings";
@@ -50,6 +51,7 @@ function App() {
           <Route element={<ProtectedLayout />}>
             <Route path="/home" element={<DashboardLayout />} />
             <Route path="/admin/create-teacher" element={<CreateTeacher />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/profile/:id" element={<UpdateAccount />} />
             <Route path="/classes/create" element={<CreateClassForm />} />
 

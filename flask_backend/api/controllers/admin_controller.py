@@ -71,6 +71,57 @@ def create_user():
     )
 
 
+@bp.route("/users/<int:user_id>", methods=["PUT"])
+@jwt_admin_required
+def update_user(user_id):
+    """Update a user's name, email, and/or role (admin only)"""
+    if not request.is_json:
+        return jsonify({"msg": "Missing JSON in request"}), 400
+
+    user = User.get_by_id(user_id)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    name = request.json.get("name")
+    email = request.json.get("email")
+    role = request.json.get("role")
+
+    current_email = get_jwt_identity()
+    current_user = User.get_by_email(current_email)
+
+    if role and role not in ["student", "teacher", "admin"]:
+        return jsonify({"msg": "Invalid role. Must be 'student', 'teacher', or 'admin'"}), 400
+
+    # Prevent self-demotion from admin
+    if current_user.id == user_id and role and role != "admin":
+        return jsonify({"msg": "Cannot demote yourself from admin role"}), 400
+
+    # Check email uniqueness if changing
+    if email and email != user.email:
+        existing = User.get_by_email(email)
+        if existing:
+            return jsonify({"msg": f"User with email {email} is already registered"}), 400
+
+    if name:
+        user.name = name
+    if email:
+        user.email = email
+    if role:
+        user.role = role
+
+    user.update()
+
+    return (
+        jsonify(
+            {
+                "msg": "User updated successfully",
+                "user": UserSchema().dump(user),
+            }
+        ),
+        200,
+    )
+
+
 @bp.route("/users/<int:user_id>/role", methods=["PUT"])
 @jwt_admin_required
 def update_user_role(user_id):
