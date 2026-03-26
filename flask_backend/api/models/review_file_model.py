@@ -5,18 +5,16 @@ Stores file attachments uploaded alongside peer reviews.
 from datetime import datetime
 from .db import db
 
-
 class ReviewFile(db.Model):
     """File attachment linked to a specific peer review."""
     __tablename__ = "ReviewFile"
-
     id = db.Column(db.Integer, primary_key=True)
     reviewID = db.Column(db.Integer, db.ForeignKey("Review.id"), nullable=False, index=True)
     filename = db.Column(db.String(255), nullable=False)
     file_path = db.Column(db.String(512), nullable=False)
     uploaded_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     uploaderID = db.Column(db.Integer, db.ForeignKey("User.id"), nullable=False, index=True)
-
+    # relationships
     review = db.relationship("Review", back_populates="files", lazy="joined")
     uploader = db.relationship("User", lazy="joined")
 

@@ -6,18 +6,24 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
 from .cli import init_app
-from .controllers.admin_controller import bp as admin_bp
-from .controllers.auth_controller import bp as auth_bp
-from .controllers.class_controller import bp as class_bp
-from .controllers.fake_api_controller import fake as fake_api_bp
-from .controllers.user_controller import bp as user_bp
-from .controllers.assignment_controller import bp as assignment_bp
-from .controllers.student_controller import student_bp
-from .controllers.review_controller import review_bp
-from .controllers.group_controller import group_bp
-from .controllers.file_controller import file_bp
-from .controllers.review_file_controller import review_file_bp
-from .controllers.message_controller import message_bp
+from .controllers import (
+    admin_controller,
+    auth_controller,
+    class_controller,
+    fake_api_controller,
+    user_controller,
+    assignment_controller,
+    student_controller,
+    review_controller,
+    group_controller,
+    file_controller,
+    review_file_controller,
+    teacher_controller,
+    notification_controller,
+    review_history_controller,
+    rubric_builder_controller,
+    message_controller,
+)
 from .models.db import db, ma
 
 
@@ -67,6 +73,15 @@ def create_app(test_config=None):
     ma.init_app(app)
 
     jwt = JWTManager()
+
+    @jwt.unauthorized_loader
+    def unauthorized_callback(reason):
+        return jsonify({"msg": f"Unauthorized: {reason}"}), 401
+
+    @jwt.invalid_token_loader
+    def invalid_token_callback(reason):
+        return jsonify({"msg": f"Invalid token: {reason}"}), 422
+
     jwt.init_app(app)
 
     cors_origins = (
@@ -88,17 +103,21 @@ def create_app(test_config=None):
 
     init_app(app)
 
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(user_bp)
-    app.register_blueprint(admin_bp)
-    app.register_blueprint(class_bp)
-    app.register_blueprint(assignment_bp)
-    app.register_blueprint(fake_api_bp)
-    app.register_blueprint(student_bp)
-    app.register_blueprint(review_bp)
-    app.register_blueprint(group_bp)
-    app.register_blueprint(file_bp)
-    app.register_blueprint(review_file_bp)
-    app.register_blueprint(message_bp)
+    app.register_blueprint(auth_controller.bp)
+    app.register_blueprint(user_controller.bp)
+    app.register_blueprint(admin_controller.bp)
+    app.register_blueprint(class_controller.bp)
+    app.register_blueprint(assignment_controller.bp)
+    app.register_blueprint(fake_api_controller.fake)
+    app.register_blueprint(student_controller.student_bp)
+    app.register_blueprint(review_controller.review_bp)
+    app.register_blueprint(group_controller.group_bp)
+    app.register_blueprint(file_controller.file_bp)
+    app.register_blueprint(review_file_controller.review_file_bp)
+    app.register_blueprint(teacher_controller.teacher_bp)
+    app.register_blueprint(notification_controller.notification_bp)
+    app.register_blueprint(review_history_controller.review_history_bp)
+    app.register_blueprint(rubric_builder_controller.rubric_builder_bp)
+    app.register_blueprint(message_controller.message_bp)
 
     return app

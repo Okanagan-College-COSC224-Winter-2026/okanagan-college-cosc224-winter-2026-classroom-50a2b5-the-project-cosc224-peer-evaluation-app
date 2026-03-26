@@ -12,6 +12,7 @@ class UserSchema(Schema):
     email = fields.Str()
     role = fields.Str()
     must_change_password = fields.Bool()
+    is_active = fields.Bool()
 
 
 class UserLoginSchema(Schema):
@@ -170,23 +171,6 @@ class ConclusionFileSchema(Schema):
     filename = fields.Str(required=True)
     file_path = fields.Str(required=True)
     uploaded_at = fields.DateTime(dump_only=True)
-
-
-# ----------------------------
-# Messages
-# ----------------------------
-
-class MessageSchema(Schema):
-    id = fields.Int(dump_only=True)
-    group_id = fields.Int(required=True)
-    sender_id = fields.Int(dump_only=True)
-    sender_name = fields.Method("get_sender_name")
-    content = fields.Str(required=True)
-    created_at = fields.DateTime(dump_only=True)
-    is_read = fields.Bool(dump_only=True)
-
-    def get_sender_name(self, obj):
-        return obj.sender.name if obj.sender else "Unknown"
 
 
 # ----------------------------
