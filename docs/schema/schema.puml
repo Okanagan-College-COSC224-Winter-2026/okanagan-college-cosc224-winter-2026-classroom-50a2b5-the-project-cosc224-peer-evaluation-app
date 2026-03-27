@@ -25,7 +25,12 @@ entity "Assignment" as A {
   courseID : INT <<FK Course.id>>
   name : VARCHAR(255)
   rubric : VARCHAR(255)
-  due_date : DATE
+  description : TEXT
+  start_date : TIMESTAMP
+  due_date : TIMESTAMP
+  is_anonymous : BOOLEAN <<default TRUE>>
+  individual_reviews : BOOLEAN <<default TRUE>>
+  group_reviews : BOOLEAN <<default TRUE>>
 }
 
 entity "CourseGroup" as CG {

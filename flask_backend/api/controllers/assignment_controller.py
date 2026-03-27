@@ -50,6 +50,8 @@ def create_assignment():
     rubric_text = data.get("rubric")
     due_date = data.get("due_date")
     is_anonymous = data.get("is_anonymous", True)
+    individual_reviews = data.get("individual_reviews", True)
+    group_reviews = data.get("group_reviews", True)
 
     try:
         if start_date:
@@ -64,6 +66,12 @@ def create_assignment():
         is_anonymous = _coerce_optional_bool(is_anonymous, "is_anonymous")
         if is_anonymous is None:
             is_anonymous = True
+        individual_reviews = _coerce_optional_bool(individual_reviews, "individual_reviews")
+        if individual_reviews is None:
+            individual_reviews = True
+        group_reviews = _coerce_optional_bool(group_reviews, "group_reviews")
+        if group_reviews is None:
+            group_reviews = True
     except ValueError:
         return jsonify({"msg": "Invalid format. Use ISO format for start_date/due_date and boolean for is_anonymous."}), 400
 
@@ -91,6 +99,8 @@ def create_assignment():
         rubric_text=rubric_text,
         due_date=due_date,
         is_anonymous=is_anonymous,
+        individual_reviews=individual_reviews,
+        group_reviews=group_reviews,
     )
     Assignment.create(new_assignment)
     return (
@@ -139,6 +149,10 @@ def edit_assignment(assignment_id):
 
         if "is_anonymous" in data:
             assignment.is_anonymous = _coerce_optional_bool(data.get("is_anonymous"), "is_anonymous")
+        if "individual_reviews" in data:
+            assignment.individual_reviews = _coerce_optional_bool(data.get("individual_reviews"), "individual_reviews")
+        if "group_reviews" in data:
+            assignment.group_reviews = _coerce_optional_bool(data.get("group_reviews"), "group_reviews")
     except ValueError:
         return jsonify({"msg": "Invalid format. Use ISO format for start_date/due_date and boolean for is_anonymous."}), 400
 

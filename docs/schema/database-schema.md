@@ -33,7 +33,7 @@ Field types, primary keys, and notable constraints are included for quick refere
 ### Assignments and Grouping
 
 - Assignment
-  - id (PK), courseID (FK -> Course.id), name, `description` (nullable), `start_date` (nullable, timezone-aware), `rubric_text` column (stored as `rubric`), `due_date` (nullable, timezone-aware), `is_anonymous` (BOOLEAN, default TRUE)
+  - id (PK), courseID (FK -> Course.id), name, `description` (nullable), `start_date` (nullable, timezone-aware), `rubric_text` column (stored as `rubric`), `due_date` (nullable, timezone-aware), `is_anonymous` (BOOLEAN, default TRUE), `individual_reviews` (BOOLEAN, default TRUE), `group_reviews` (BOOLEAN, default TRUE)
   - Relationships: `course`, `rubrics`, `submissions`, `reviews`, `resources`
 - CourseGroup
   - id (PK), name, courseID (FK -> Course.id, not null)

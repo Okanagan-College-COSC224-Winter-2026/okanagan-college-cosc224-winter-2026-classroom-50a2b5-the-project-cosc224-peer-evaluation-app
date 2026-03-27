@@ -1,16 +1,14 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useUploadSubmission, useDeleteSubmission } from "../reviews/useSubmission";
-import { cardClass, btnSecondary, btnOutline, fileInputClass } from "./assignmentStyles";
-import type { AssignmentResourceItem } from "./useAssignmentDetail";
+import { cardClass, btnSecondary, btnOutline } from "./assignmentStyles";
 
 interface Props {
   assignmentId: number;
-  resources: AssignmentResourceItem[];
   mySubmission: { download_url: string; filename: string } | null;
 }
 
-export default function StudentSubmissionCard({ assignmentId, resources, mySubmission }: Props) {
+export default function StudentSubmissionCard({ assignmentId, mySubmission }: Props) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const { mutate: uploadSubmission, isPending: isUploading } = useUploadSubmission(assignmentId);
@@ -19,25 +17,11 @@ export default function StudentSubmissionCard({ assignmentId, resources, mySubmi
   return (
     <div className={cardClass}>
       <div className="px-5 md:px-8 py-4 border-b border-border">
-        <h3 className="text-base font-semibold text-text-primary m-0">Supporting Documents</h3>
+        <h3 className="text-base font-semibold text-text-primary m-0">Submit Your Assignment</h3>
       </div>
 
       <div className="px-5 md:px-8 py-5 flex flex-col gap-5">
-        {resources.length === 0 ? (
-          <p className="text-text-secondary text-sm m-0">No supporting documents available.</p>
-        ) : (
-          <ul className="m-0 p-0 list-none flex flex-col">
-            {resources.map((resource) => (
-              <li key={resource.id} className="py-2.5 border-b border-border last:border-0">
-                <a href={resource.download_url} target="_blank" rel="noreferrer" className="text-btn-primary text-sm hover:underline">
-                  {resource.original_name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="pt-4 border-t border-border">
+        <div>
           <h4 className="text-sm font-semibold text-text-primary m-0 mb-3">My Attachment</h4>
           {mySubmission ? (
             <div className="flex items-center gap-3 mb-3">
@@ -64,14 +48,21 @@ export default function StudentSubmissionCard({ assignmentId, resources, mySubmi
           )}
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-3">
-            <input
-              type="file"
-              className={fileInputClass}
-              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-            />
+            <label className="flex-1 cursor-pointer">
+              <div className="flex items-center justify-center px-4 py-3 rounded-lg border-2 border-dashed border-border hover:border-btn-primary/40 hover:bg-btn-primary/5 transition-all">
+                <span className="text-sm text-text-secondary">
+                  {selectedFile ? selectedFile.name : "Choose a file..."}
+                </span>
+              </div>
+              <input
+                type="file"
+                className="hidden"
+                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+              />
+            </label>
             <button
               className={btnSecondary}
-              disabled={isUploading}
+              disabled={isUploading || !selectedFile}
               onClick={() => {
                 if (!selectedFile) {
                   toast.error("Please choose a file first.");
@@ -86,7 +77,7 @@ export default function StudentSubmissionCard({ assignmentId, resources, mySubmi
                 });
               }}
             >
-              {isUploading ? "Uploading..." : mySubmission ? "Replace Attachment" : "Upload Attachment"}
+              {isUploading ? "Submitting..." : "Submit!"}
             </button>
           </div>
         </div>

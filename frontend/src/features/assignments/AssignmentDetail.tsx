@@ -39,8 +39,13 @@ export default function AssignmentDetail() {
     setGroupRevieweeID,
   } = useAssignmentDetail();
 
+  const individualEnabled = assignment?.individual_reviews !== false;
+  const groupEnabled = assignment?.group_reviews !== false;
+
   const [previewTab, setPreviewTab] = useState<ReviewTab>("individual");
-  const [studentReviewTab, setStudentReviewTab] = useState<ReviewTab>("individual");
+  const [studentReviewTab, setStudentReviewTab] = useState<ReviewTab>(
+    individualEnabled ? "individual" : "group"
+  );
 
   return (
     <>
@@ -92,26 +97,24 @@ export default function AssignmentDetail() {
                 </div>
               )}
 
-              {resourceList.length > 0 && (
+              {(resourceList.length > 0 || teacherMode) && (
                 <div className="flex flex-col gap-2 pt-3 border-t border-border">
                   <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
                     {teacherMode ? "Documents (Student Preview)" : "Supporting Documents"}
                   </span>
-                  <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
-                    {resourceList.map((resource) => (
-                      <li key={resource.id}>
-                        <a href={resource.download_url} target="_blank" rel="noreferrer" className="text-btn-primary text-sm hover:underline">
-                          {resource.original_name}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {resourceList.length === 0 && teacherMode && (
-                <div className="flex flex-col gap-1 pt-3 border-t border-border">
-                  <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Documents</span>
-                  <p className="text-text-secondary text-sm m-0">No supporting documents available.</p>
+                  {resourceList.length > 0 ? (
+                    <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
+                      {resourceList.map((resource) => (
+                        <li key={resource.id}>
+                          <a href={resource.download_url} target="_blank" rel="noreferrer" className="text-btn-primary text-sm hover:underline">
+                            {resource.original_name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-text-secondary text-sm m-0">No supporting documents available.</p>
+                  )}
                 </div>
               )}
             </div>
@@ -180,42 +183,45 @@ export default function AssignmentDetail() {
           <>
             <StudentSubmissionCard
               assignmentId={assignmentId}
-              resources={resourceList}
               mySubmission={mySubmission}
             />
-            <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
-              <div className="px-5 md:px-8 py-4 border-b border-border flex items-center justify-between gap-4">
-                <h3 className="text-base font-semibold text-text-primary m-0">Reviews</h3>
-                <div className="flex bg-bg-secondary rounded-lg p-0.5">
-                  <button onClick={() => setStudentReviewTab("individual")} className={tabButtonClass(studentReviewTab === "individual")}>
-                    Individual
-                  </button>
-                  <button onClick={() => setStudentReviewTab("group")} className={tabButtonClass(studentReviewTab === "group")}>
-                    Group
-                  </button>
+            {(individualEnabled || groupEnabled) && (
+              <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+                <div className="px-5 md:px-8 py-4 border-b border-border flex items-center justify-between gap-4">
+                  <h3 className="text-base font-semibold text-text-primary m-0">Reviews</h3>
+                  {individualEnabled && groupEnabled && (
+                    <div className="flex bg-bg-secondary rounded-lg p-0.5">
+                      <button onClick={() => setStudentReviewTab("individual")} className={tabButtonClass(studentReviewTab === "individual")}>
+                        Individual
+                      </button>
+                      <button onClick={() => setStudentReviewTab("group")} className={tabButtonClass(studentReviewTab === "group")}>
+                        Group
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="px-5 md:px-8 py-5">
+                  {studentReviewTab === "individual" && individualEnabled ? (
+                    <PeerReviewSection
+                      assignmentId={assignmentId}
+                      rubricId={rubricId}
+                      review={review}
+                      groupMembers={groupMembers}
+                      revieweeID={revieweeID}
+                      setRevieweeID={setRevieweeID}
+                    />
+                  ) : groupEnabled ? (
+                    <GroupReviewSection
+                      assignmentId={assignmentId}
+                      groupRubricId={groupRubricId}
+                      otherGroups={otherGroups}
+                      groupRevieweeID={groupRevieweeID}
+                      setGroupRevieweeID={setGroupRevieweeID}
+                    />
+                  ) : null}
                 </div>
               </div>
-              <div className="px-5 md:px-8 py-5">
-                {studentReviewTab === "individual" ? (
-                  <PeerReviewSection
-                    assignmentId={assignmentId}
-                    rubricId={rubricId}
-                    review={review}
-                    groupMembers={groupMembers}
-                    revieweeID={revieweeID}
-                    setRevieweeID={setRevieweeID}
-                  />
-                ) : (
-                  <GroupReviewSection
-                    assignmentId={assignmentId}
-                    groupRubricId={groupRubricId}
-                    otherGroups={otherGroups}
-                    groupRevieweeID={groupRevieweeID}
-                    setGroupRevieweeID={setGroupRevieweeID}
-                  />
-                )}
-              </div>
-            </div>
+            )}
           </>
         )}
       </div>

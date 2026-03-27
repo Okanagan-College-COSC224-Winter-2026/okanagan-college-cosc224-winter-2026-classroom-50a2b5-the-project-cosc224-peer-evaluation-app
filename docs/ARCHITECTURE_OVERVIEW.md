@@ -60,6 +60,8 @@ The system has three role types with hierarchical permissions:
 - Have due dates and submission requirements
 - Can have associated rubrics for evaluation
 - May be individual or group-based
+- Teachers can enable/disable individual reviews and group reviews per assignment
+- Can be set as anonymous (hides reviewer identity from students)
 
 ### 4. **Groups**
 

@@ -133,6 +133,12 @@ def submit_review():
     if not assignment:
         return jsonify({"msg": "Assignment not found"}), 404
 
+    # --- check if review type is enabled on the assignment ---
+    if review_type == "individual" and not assignment.individual_reviews:
+        return jsonify({"msg": "Individual reviews are not enabled for this assignment"}), 400
+    if review_type == "group" and not assignment.group_reviews:
+        return jsonify({"msg": "Group reviews are not enabled for this assignment"}), 400
+
     # --- type-specific validation ---
     if review_type == "individual":
         if reviewer.id == reviewee_id:
@@ -608,29 +614,36 @@ def my_progress(course_id):
     result = []
 
     for assignment in assignments:
-        # Individual: reviews by this user
-        ind_completed = Review.query.filter_by(
-            assignmentID=assignment.id,
-            reviewerID=user.id,
-            review_type="individual",
-        ).count()
+        # Individual: reviews by this user (only if enabled)
+        if assignment.individual_reviews:
+            ind_completed = Review.query.filter_by(
+                assignmentID=assignment.id,
+                reviewerID=user.id,
+                review_type="individual",
+            ).count()
+            ind_required = individual_required
+        else:
+            ind_completed = 0
+            ind_required = 0
 
-        # Group: reviews by any member of user's group
-        if user_group and group_member_ids:
+        # Group: reviews by any member of user's group (only if enabled)
+        if assignment.group_reviews and user_group and group_member_ids:
             grp_completed = Review.query.filter(
                 Review.assignmentID == assignment.id,
                 Review.reviewerID.in_(group_member_ids),
                 Review.review_type == "group",
             ).count()
+            grp_required = group_required
         else:
             grp_completed = 0
+            grp_required = 0
 
         result.append({
             "assignment_id": assignment.id,
             "individual_completed": ind_completed,
-            "individual_required": individual_required,
+            "individual_required": ind_required,
             "group_completed": grp_completed,
-            "group_required": group_required,
+            "group_required": grp_required,
         })
 
     return jsonify({"assignments": result}), 200

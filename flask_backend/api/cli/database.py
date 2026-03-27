@@ -28,6 +28,8 @@ def migrate_assignment_columns_command():
         ("start_date", 'ALTER TABLE "Assignment" ADD COLUMN start_date TIMESTAMP'),
         ("due_date", 'ALTER TABLE "Assignment" ADD COLUMN due_date TIMESTAMP'),
         ("is_anonymous", 'ALTER TABLE "Assignment" ADD COLUMN is_anonymous BOOLEAN DEFAULT TRUE'),
+        ("individual_reviews", 'ALTER TABLE "Assignment" ADD COLUMN individual_reviews BOOLEAN DEFAULT TRUE'),
+        ("group_reviews", 'ALTER TABLE "Assignment" ADD COLUMN group_reviews BOOLEAN DEFAULT TRUE'),
     ]
 
     applied = 0

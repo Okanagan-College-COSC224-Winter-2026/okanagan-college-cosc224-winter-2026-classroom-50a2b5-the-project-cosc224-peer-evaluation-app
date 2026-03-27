@@ -1231,6 +1231,111 @@ def test_get_nonexistent_assignment(test_client, make_admin):
     )
     
     response = test_client.get("/assignment/detail/9999")
-    
+
     assert response.status_code == 404
     assert response.json["msg"] == "Assignment not found"
+
+
+# ============================================================================
+# REVIEW SETTINGS (individual_reviews / group_reviews)
+# ============================================================================
+
+
+def test_create_assignment_defaults_review_types_enabled(test_client, make_admin):
+    """New assignments default to both individual_reviews and group_reviews enabled."""
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_resp = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "Review Settings Class"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_resp.json["class"]["id"]
+
+    resp = test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps({"courseID": class_id, "name": "HW1"}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert resp.status_code == 201
+    assignment = resp.json["assignment"]
+    assert assignment["individual_reviews"] is True
+    assert assignment["group_reviews"] is True
+
+
+def test_create_assignment_with_review_types_disabled(test_client, make_admin):
+    """Teacher can create an assignment with review types explicitly disabled."""
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_resp = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "Review Settings Class 2"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_resp.json["class"]["id"]
+
+    resp = test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps({
+            "courseID": class_id,
+            "name": "HW2",
+            "individual_reviews": False,
+            "group_reviews": False,
+        }),
+        headers={"Content-Type": "application/json"},
+    )
+    assert resp.status_code == 201
+    assignment = resp.json["assignment"]
+    assert assignment["individual_reviews"] is False
+    assert assignment["group_reviews"] is False
+
+
+def test_edit_assignment_review_types(test_client, make_admin):
+    """Teacher can toggle review types via edit."""
+    make_admin(email="teacher@example.com", password="teacher", name="teacheruser")
+    test_client.post(
+        "/auth/login",
+        data=json.dumps({"email": "teacher@example.com", "password": "teacher"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_resp = test_client.post(
+        "/class/create_class",
+        data=json.dumps({"name": "Review Settings Edit Class"}),
+        headers={"Content-Type": "application/json"},
+    )
+    class_id = class_resp.json["class"]["id"]
+
+    create_resp = test_client.post(
+        "/assignment/create_assignment",
+        data=json.dumps({"courseID": class_id, "name": "HW3"}),
+        headers={"Content-Type": "application/json"},
+    )
+    assignment_id = create_resp.json["assignment"]["id"]
+
+    # Disable group reviews
+    edit_resp = test_client.patch(
+        f"/assignment/edit_assignment/{assignment_id}",
+        data=json.dumps({"group_reviews": False}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert edit_resp.status_code == 200
+    assert edit_resp.json["assignment"]["group_reviews"] is False
+    assert edit_resp.json["assignment"]["individual_reviews"] is True
+
+    # Disable individual, re-enable group
+    edit_resp2 = test_client.patch(
+        f"/assignment/edit_assignment/{assignment_id}",
+        data=json.dumps({"individual_reviews": False, "group_reviews": True}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert edit_resp2.status_code == 200
+    assert edit_resp2.json["assignment"]["individual_reviews"] is False
+    assert edit_resp2.json["assignment"]["group_reviews"] is True

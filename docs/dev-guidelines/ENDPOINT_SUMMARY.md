@@ -81,8 +81,8 @@ All require `role = 'admin'`.
 |--------|------|------|----------|-------|
 | GET | `/assignment/<course_id>` | — | `Array<Assignment>` | ✅ Get assignments for course |
 | GET | `/assignment/detail/<id>` | — | `Assignment` | ✅ Get single assignment |
-| POST | `/assignment/create_assignment` | `{ courseID, name, description?, start_date?, rubric?, due_date? }` | `{ msg, assignment }` | ✅ Create assignment (teacher/admin only, must own course) |
-| PATCH | `/assignment/edit_assignment/<id>` | `{ name?, description?, start_date?, rubric?, due_date? }` | `{ msg, assignment }` | ✅ Edit assignment (teacher/admin only, must own course) |
+| POST | `/assignment/create_assignment` | `{ courseID, name, description?, start_date?, rubric?, due_date?, is_anonymous?, individual_reviews?, group_reviews? }` | `{ msg, assignment }` | ✅ Create assignment (teacher/admin only, must own course) |
+| PATCH | `/assignment/edit_assignment/<id>` | `{ name?, description?, start_date?, rubric?, due_date?, is_anonymous?, individual_reviews?, group_reviews? }` | `{ msg, assignment }` | ✅ Edit assignment (teacher/admin only, must own course) |
 | DELETE | `/assignment/delete_assignment/<id>` | — | `{ msg }` | ✅ Delete assignment (teacher/admin only, must own course) |
 
 ---
@@ -186,7 +186,7 @@ Rubrics belong to **assignments** and contain multiple **criteria descriptions**
 | `GET` | `/review/course/<id>/summary` | JWT (any) | Grade summary with individual/group/weighted averages |
 
 **Authorization notes:**
-- `submit`: Reviewer is derived from the JWT token (prevents impersonation). Cannot review yourself (individual) or your own group (group). Duplicate reviews return 409. For group reviews, duplicates are checked across all members of the submitter's group.
+- `submit`: Reviewer is derived from the JWT token (prevents impersonation). Cannot review yourself (individual) or your own group (group). Duplicate reviews return 409. For group reviews, duplicates are checked across all members of the submitter's group. Returns 400 if the assignment has disabled the requested `review_type` (e.g., submitting an individual review when `individual_reviews` is false).
 - `PUT /<id>`: For individual reviews, only the original reviewer can edit. For group reviews, any member of the reviewer's group can edit. Replaces all criteria atomically.
 - `lookup`: Reviewer is derived from JWT. For group reviews, any group member can look up the review. Returns 404 if no review exists.
 - `GET /<id>`: Students can only view reviews they authored or received. Teachers can view any.
