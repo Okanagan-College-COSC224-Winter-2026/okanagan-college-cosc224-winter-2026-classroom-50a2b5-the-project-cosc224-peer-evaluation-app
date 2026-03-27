@@ -32,6 +32,9 @@ class Assignment {
   +start_date: DateTime (nullable)
   +rubric_text: String
   +due_date: DateTime (nullable)
+  +is_anonymous: Boolean <<default TRUE>>
+  +individual_reviews: Boolean <<default TRUE>>
+  +group_reviews: Boolean <<default TRUE>>
 }
 
 class CourseGroup {

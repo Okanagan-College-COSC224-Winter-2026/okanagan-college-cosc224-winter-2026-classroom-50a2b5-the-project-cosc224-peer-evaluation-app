@@ -133,6 +133,12 @@ def submit_review():
     if not assignment:
         return jsonify({"msg": "Assignment not found"}), 404
 
+    # --- check if review type is enabled on the assignment ---
+    if review_type == "individual" and not assignment.individual_reviews:
+        return jsonify({"msg": "Individual reviews are not enabled for this assignment"}), 400
+    if review_type == "group" and not assignment.group_reviews:
+        return jsonify({"msg": "Group reviews are not enabled for this assignment"}), 400
+
     # --- type-specific validation ---
     if review_type == "individual":
         if reviewer.id == reviewee_id:

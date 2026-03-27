@@ -41,7 +41,9 @@ export const createAssignment = async (
   description?: string,
   start_date?: string,
   due_date?: string,
-  is_anonymous: boolean = true
+  is_anonymous: boolean = true,
+  individual_reviews: boolean = true,
+  group_reviews: boolean = true
 ) => {
   const response = await fetch(
     `${BASE_URL}/assignment/create_assignment`,
@@ -54,6 +56,8 @@ export const createAssignment = async (
         start_date,
         due_date,
         is_anonymous,
+        individual_reviews,
+        group_reviews,
       }),
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -79,6 +83,8 @@ export const editAssignment = async (
     due_date?: string;
     rubric?: string;
     is_anonymous?: boolean;
+    individual_reviews?: boolean;
+    group_reviews?: boolean;
   }
 ) => {
   const response = await fetch(

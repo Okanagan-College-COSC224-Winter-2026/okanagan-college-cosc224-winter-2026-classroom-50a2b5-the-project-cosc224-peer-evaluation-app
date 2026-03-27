@@ -22,6 +22,8 @@ interface AssignmentFormData {
   start_date: string;
   due_date: string;
   is_anonymous: boolean;
+  individual_reviews: boolean;
+  group_reviews: boolean;
 }
 
 const inputClass =
@@ -55,6 +57,8 @@ export default function ClassHome() {
       start_date: "",
       due_date: "",
       is_anonymous: true,
+      individual_reviews: true,
+      group_reviews: true,
     },
   });
 
@@ -67,6 +71,8 @@ export default function ClassHome() {
         start_date: data.start_date || undefined,
         due_date: data.due_date || undefined,
         is_anonymous: data.is_anonymous,
+        individual_reviews: data.individual_reviews,
+        group_reviews: data.group_reviews,
       },
       {
         onSuccess: () => {
@@ -199,10 +205,27 @@ export default function ClassHome() {
               <input type="datetime-local" className={inputClass} disabled={isPending} {...register("due_date")} />
             </label>
 
-            <label className="flex flex-row items-center gap-2 cursor-pointer">
-              <input type="checkbox" className="w-4 h-4" disabled={isPending} {...register("is_anonymous")} />
-              <span className="text-sm text-text-primary">Anonymous submissions/reviews</span>
-            </label>
+            <div className="flex flex-col gap-2.5">
+              <span className="text-sm font-medium text-text-primary">Review Settings</span>
+              <label className="flex flex-row items-center gap-2 cursor-pointer text-sm text-text-primary">
+                <input type="checkbox" className="w-4 h-4 accent-btn-primary" disabled={isPending} {...register("individual_reviews")} />
+                Individual reviews
+              </label>
+              <label className="flex flex-row items-center gap-2 cursor-pointer text-sm text-text-primary">
+                <input type="checkbox" className="w-4 h-4 accent-btn-primary" disabled={isPending} {...register("group_reviews")} />
+                Group reviews
+              </label>
+              <label className="inline-flex flex-row items-center gap-2.5 cursor-pointer mt-1 self-start">
+                <span className="flex flex-col">
+                  <span className="text-sm text-text-primary">Anonymous</span>
+                  <span className="text-xs text-text-secondary">Hide reviewer identity from students</span>
+                </span>
+                <span className="relative inline-flex items-center shrink-0">
+                  <input type="checkbox" className="sr-only peer" disabled={isPending} {...register("is_anonymous")} />
+                  <div className="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-btn-primary peer-disabled:opacity-50 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
+                </span>
+              </label>
+            </div>
 
             <div className="flex gap-3 mt-2 justify-end pt-2 border-t border-border">
               <Button onClick={handleCloseModal} type="secondary">Cancel</Button>

@@ -59,10 +59,9 @@
 ### Capabilities and Acceptance Criteria
 
 - ✅ Student can see a list of group members
-- [ ] Student can submit ratings and comments for each group member  
+- ✅ Student can submit ratings and comments for each group member  
 - [ ] Submitted feedback is stored and visible to the instructor
-- [ ] Submitted feedback marks that review as complete  
-- [ ] Once submitted, an evaluation cannot be edited  
+- ✅ Submitted feedback marks that review as complete  
 - [ ] If the review period is closed, submission is blocked  
 
 ---

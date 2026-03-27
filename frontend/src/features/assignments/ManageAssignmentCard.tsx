@@ -11,6 +11,8 @@ interface ManageFormData {
   start_date: string;
   due_date: string;
   is_anonymous: boolean;
+  individual_reviews: boolean;
+  group_reviews: boolean;
 }
 
 function toDatetimeLocal(value?: string) {
@@ -24,14 +26,14 @@ function toDatetimeLocal(value?: string) {
 
 interface Props {
   assignmentId: number;
-  assignment: { name: string; description?: string; start_date?: string; due_date?: string; is_anonymous?: boolean; courseID: number };
+  assignment: { name: string; description?: string; start_date?: string; due_date?: string; is_anonymous?: boolean; individual_reviews?: boolean; group_reviews?: boolean; courseID: number };
 }
 
 export default function ManageAssignmentCard({ assignmentId, assignment }: Props) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const { register, handleSubmit, reset } = useForm<ManageFormData>({
-    defaultValues: { name: "", description: "", start_date: "", due_date: "", is_anonymous: true },
+    defaultValues: { name: "", description: "", start_date: "", due_date: "", is_anonymous: true, individual_reviews: true, group_reviews: true },
   });
 
   const { mutate: editAssignment, isPending: isSaving } = useEditAssignment(assignmentId);
@@ -44,6 +46,8 @@ export default function ManageAssignmentCard({ assignmentId, assignment }: Props
       start_date: toDatetimeLocal(assignment.start_date),
       due_date: toDatetimeLocal(assignment.due_date),
       is_anonymous: assignment.is_anonymous ?? true,
+      individual_reviews: assignment.individual_reviews ?? true,
+      group_reviews: assignment.group_reviews ?? true,
     });
   }, [assignment, reset]);
 
@@ -54,10 +58,14 @@ export default function ManageAssignmentCard({ assignmentId, assignment }: Props
       start_date?: string;
       due_date?: string;
       is_anonymous?: boolean;
+      individual_reviews?: boolean;
+      group_reviews?: boolean;
     } = {
       name: data.name,
       description: data.description,
       is_anonymous: data.is_anonymous,
+      individual_reviews: data.individual_reviews,
+      group_reviews: data.group_reviews,
     };
     if (data.start_date) payload.start_date = new Date(data.start_date).toISOString();
     if (data.due_date) payload.due_date = new Date(data.due_date).toISOString();
@@ -96,10 +104,27 @@ export default function ManageAssignmentCard({ assignmentId, assignment }: Props
             <input type="datetime-local" className={inputClass} disabled={isSaving} {...register("due_date")} />
           </label>
 
-          <label className="flex flex-row items-center gap-2 cursor-pointer text-sm text-text-primary">
-            <input type="checkbox" className="w-4 h-4 accent-btn-primary" disabled={isSaving} {...register("is_anonymous")} />
-            Anonymous submissions/reviews
-          </label>
+          <div className="flex flex-col gap-2.5">
+            <span className="text-sm font-medium text-text-primary">Review Settings</span>
+            <label className="flex flex-row items-center gap-2 cursor-pointer text-sm text-text-primary">
+              <input type="checkbox" className="w-4 h-4 accent-btn-primary" disabled={isSaving} {...register("individual_reviews")} />
+              Individual reviews
+            </label>
+            <label className="flex flex-row items-center gap-2 cursor-pointer text-sm text-text-primary">
+              <input type="checkbox" className="w-4 h-4 accent-btn-primary" disabled={isSaving} {...register("group_reviews")} />
+              Group reviews
+            </label>
+            <label className="inline-flex flex-row items-center gap-2.5 cursor-pointer mt-1 self-start">
+              <span className="flex flex-col">
+                <span className="text-sm text-text-primary">Anonymous</span>
+                <span className="text-xs text-text-secondary">Hide reviewer identity from students</span>
+              </span>
+              <span className="relative inline-flex items-center shrink-0">
+                <input type="checkbox" className="sr-only peer" disabled={isSaving} {...register("is_anonymous")} />
+                <div className="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-btn-primary peer-disabled:opacity-50 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
+              </span>
+            </label>
+          </div>
 
           <div className="flex gap-3 flex-wrap pt-4 border-t border-border">
             <button type="submit" disabled={isSaving} className={btnPrimary}>

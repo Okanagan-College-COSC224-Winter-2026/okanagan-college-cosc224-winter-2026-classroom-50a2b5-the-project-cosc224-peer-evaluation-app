@@ -556,6 +556,82 @@ class TestListReviewsForAssignment:
 
 
 # ============================================================================
+# REVIEW TYPE ENFORCEMENT
+# ============================================================================
+
+
+class TestReviewTypeEnforcement:
+    """Submissions should be rejected when the review type is disabled on the assignment."""
+
+    def test_submit_individual_review_when_disabled(
+        self, db, auth_student_a, student_a, student_b, course, assignment, rubric_with_criteria
+    ):
+        """Individual review rejected when assignment.individual_reviews is False."""
+        assignment.individual_reviews = False
+        db.session.commit()
+
+        _, criteria = rubric_with_criteria
+        resp = auth_student_a.post(
+            "/review/submit",
+            json={
+                "assignmentID": assignment.id,
+                "revieweeID": student_b.id,
+                "criteria": [{"criterionRowID": criteria[0].id, "grade": 4, "comments": ""}],
+            },
+        )
+        assert resp.status_code == 400
+        assert "individual" in resp.get_json()["msg"].lower()
+
+    def test_submit_group_review_when_disabled(
+        self, db, test_client, student_a, course, assignment, rubric_with_criteria
+    ):
+        """Group review rejected when assignment.group_reviews is False."""
+        from api.models import CourseGroup, Group_Members, User_Course
+
+        assignment.group_reviews = False
+        db.session.commit()
+
+        # Set up groups
+        db.session.add(User_Course(userID=student_a.id, courseID=course.id))
+        group_a = CourseGroup(name="TeamA", courseID=course.id)
+        db.session.add(group_a)
+        db.session.flush()
+        db.session.add(Group_Members(userID=student_a.id, groupID=group_a.id))
+
+        target_group = CourseGroup(name="TeamB", courseID=course.id)
+        db.session.add(target_group)
+        db.session.commit()
+
+        test_client.post("/auth/login", json={"email": student_a.email, "password": "password123"})
+        resp = test_client.post(
+            "/review/submit",
+            json={
+                "assignmentID": assignment.id,
+                "revieweeID": target_group.id,
+                "review_type": "group",
+                "criteria": [],
+            },
+        )
+        assert resp.status_code == 400
+        assert "group" in resp.get_json()["msg"].lower()
+
+    def test_submit_individual_review_when_enabled(
+        self, auth_student_a, student_b, assignment, rubric_with_criteria
+    ):
+        """Individual review allowed when assignment.individual_reviews is True (default)."""
+        _, criteria = rubric_with_criteria
+        resp = auth_student_a.post(
+            "/review/submit",
+            json={
+                "assignmentID": assignment.id,
+                "revieweeID": student_b.id,
+                "criteria": [{"criterionRowID": criteria[0].id, "grade": 5, "comments": ""}],
+            },
+        )
+        assert resp.status_code == 201
+
+
+# ============================================================================
 # US3: ANONYMOUS PEER REVIEW
 # ============================================================================
 
