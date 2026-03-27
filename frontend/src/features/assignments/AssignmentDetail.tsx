@@ -97,26 +97,24 @@ export default function AssignmentDetail() {
                 </div>
               )}
 
-              {resourceList.length > 0 && (
+              {(resourceList.length > 0 || teacherMode) && (
                 <div className="flex flex-col gap-2 pt-3 border-t border-border">
                   <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
                     {teacherMode ? "Documents (Student Preview)" : "Supporting Documents"}
                   </span>
-                  <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
-                    {resourceList.map((resource) => (
-                      <li key={resource.id}>
-                        <a href={resource.download_url} target="_blank" rel="noreferrer" className="text-btn-primary text-sm hover:underline">
-                          {resource.original_name}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {resourceList.length === 0 && teacherMode && (
-                <div className="flex flex-col gap-1 pt-3 border-t border-border">
-                  <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Documents</span>
-                  <p className="text-text-secondary text-sm m-0">No supporting documents available.</p>
+                  {resourceList.length > 0 ? (
+                    <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
+                      {resourceList.map((resource) => (
+                        <li key={resource.id}>
+                          <a href={resource.download_url} target="_blank" rel="noreferrer" className="text-btn-primary text-sm hover:underline">
+                            {resource.original_name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-text-secondary text-sm m-0">No supporting documents available.</p>
+                  )}
                 </div>
               )}
             </div>
@@ -185,7 +183,6 @@ export default function AssignmentDetail() {
           <>
             <StudentSubmissionCard
               assignmentId={assignmentId}
-              resources={resourceList}
               mySubmission={mySubmission}
             />
             {(individualEnabled || groupEnabled) && (
