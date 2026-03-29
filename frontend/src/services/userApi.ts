@@ -15,6 +15,8 @@ export const getUser = async () => {
 export const updateUserProfile = async (data: {
   name?: string;
   email?: string;
+  preferred_name?: string | null;
+  pronouns?: string | null;
 }) => {
   const response = await fetch(`${BASE_URL}/user/`, {
     method: "PUT",

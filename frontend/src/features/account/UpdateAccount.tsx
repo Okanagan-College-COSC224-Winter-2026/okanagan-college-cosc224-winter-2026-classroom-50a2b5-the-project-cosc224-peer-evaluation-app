@@ -7,6 +7,9 @@ import Modal from '../../ui/Modal'
 interface UserProfile {
   id: number
   name: string
+  preferred_name: string | null
+  pronouns: string | null
+  display_name: string
   email: string
   role: string
   avatar_url: string | null
@@ -20,6 +23,8 @@ export default function Profile() {
   const deleteAccountMutation = useDeleteAccount()
 
   const [name, setName] = useState('')
+  const [preferredName, setPreferredName] = useState('')
+  const [pronouns, setPronouns] = useState('')
   const [email, setEmail] = useState('')
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -40,6 +45,8 @@ export default function Profile() {
   useEffect(() => {
     if (profile) {
       setName(profile.name ?? '')
+      setPreferredName(profile.preferred_name ?? '')
+      setPronouns(profile.pronouns ?? '')
       setEmail(profile.email ?? '')
     }
   }, [profile])
@@ -59,9 +66,11 @@ export default function Profile() {
         setAvatarFile(null)
       }
 
-      const payload: { name?: string; email?: string } = {}
+      const payload: { name?: string; email?: string; preferred_name?: string | null; pronouns?: string | null } = {}
       if (name !== profile?.name) payload.name = name
       if (email !== profile?.email) payload.email = email
+      if (preferredName !== (profile?.preferred_name ?? '')) payload.preferred_name = preferredName || null
+      if (pronouns !== (profile?.pronouns ?? '')) payload.pronouns = pronouns || null
 
       if (Object.keys(payload).length > 0) {
         await updateProfileMutation.mutateAsync(payload)
@@ -77,6 +86,8 @@ export default function Profile() {
 
   const handleProfileCancel = () => {
     setName(profile?.name ?? '')
+    setPreferredName(profile?.preferred_name ?? '')
+    setPronouns(profile?.pronouns ?? '')
     setEmail(profile?.email ?? '')
     setAvatarFile(null)
     setAvatarPreview(null)
@@ -150,7 +161,7 @@ export default function Profile() {
       {/* Section 1: Update user data */}
       <section className="bg-white rounded-2xl border border-border shadow-sm mb-6 overflow-hidden">
         <div className="px-6 py-4 border-b border-border">
-          <h2 className="text-base font-semibold text-text-primary m-0">Update user data</h2>
+          <h2 className="text-base font-semibold text-text-primary m-0">Profile Information</h2>
         </div>
 
         <div className="px-6 py-5 flex flex-col gap-5">
@@ -219,6 +230,35 @@ export default function Profile() {
               placeholder="Your full name"
               className={inputClass}
             />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-text-primary">Preferred name</label>
+            <input
+              type="text"
+              value={preferredName}
+              onChange={(e) => setPreferredName(e.target.value)}
+              placeholder="How you'd like to be called (optional)"
+              className={inputClass}
+            />
+            <p className="text-xs text-text-secondary m-0">If set, this name will be shown instead of your full name.</p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-text-primary">Pronouns</label>
+            <select
+              value={pronouns}
+              onChange={(e) => setPronouns(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Prefer not to say</option>
+              <option value="he/him">he/him</option>
+              <option value="she/her">she/her</option>
+              <option value="they/them">they/them</option>
+              <option value="he/they">he/they</option>
+              <option value="she/they">she/they</option>
+              <option value="other">Other</option>
+            </select>
           </div>
 
           <div className="flex gap-3 justify-end pt-2 border-t border-border">

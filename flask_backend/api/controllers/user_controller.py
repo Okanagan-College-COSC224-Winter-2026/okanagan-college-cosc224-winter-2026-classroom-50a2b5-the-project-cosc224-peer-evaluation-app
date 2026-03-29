@@ -29,6 +29,8 @@ class UserUpdateSchema(Schema):
 
     name = fields.Str(validate=validate.Length(min=1, max=255))
     email = fields.Email()
+    preferred_name = fields.Str(validate=validate.Length(max=255), allow_none=True)
+    pronouns = fields.Str(validate=validate.Length(max=50), allow_none=True)
 
 
 user_update_schema = UserUpdateSchema()
@@ -87,6 +89,10 @@ def update_current_user():
 
     if "name" in data:
         user.name = data["name"]
+    if "preferred_name" in data:
+        user.preferred_name = data["preferred_name"] or None
+    if "pronouns" in data:
+        user.pronouns = data["pronouns"] or None
 
     email_changed = False
     if "email" in data and data["email"] != user.email:

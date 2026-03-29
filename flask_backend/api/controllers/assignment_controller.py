@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from ..models import Course, Assignment, User, AssignmentSchema, User_Course
+from ..models import Course, Assignment, Notification, User, AssignmentSchema, User_Course
 from ..models.db import db
 from ..models.criterion_model import Criterion
 from ..models.review_model import Review
@@ -93,6 +93,22 @@ def create_assignment():
         is_anonymous=is_anonymous,
     )
     Assignment.create(new_assignment)
+
+    # Notify enrolled students about the new assignment
+    enrollments = User_Course.query.filter_by(courseID=course_id).all()
+    if enrollments:
+        notif_data = [
+            {
+                "userID": e.userID,
+                "type": "assignment_published",
+                "message": f"New assignment '{assignment_name}' published in {course.name}.",
+                "reference_id": new_assignment.id,
+                "reference_type": "assignment",
+            }
+            for e in enrollments
+        ]
+        Notification.create_bulk(notif_data)
+
     return (
         jsonify(
             {

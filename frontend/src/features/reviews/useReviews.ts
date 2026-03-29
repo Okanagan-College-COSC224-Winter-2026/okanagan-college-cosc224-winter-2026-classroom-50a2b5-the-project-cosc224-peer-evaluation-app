@@ -1,10 +1,15 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   submitReview,
   getReview,
   getReviewsForAssignment,
   getCourseGradeSummary,
 } from "../../services/reviewApi";
+import {
+  flagReview,
+  getFlaggedReviewsForCourse,
+  dismissFlag,
+} from "../../services/reviewFlagApi";
 
 export function useReview(assignmentId: number, revieweeId: number) {
   return useQuery({
@@ -48,5 +53,31 @@ export function useSubmitReview() {
         params.criteria,
         params.comments
       ),
+  });
+}
+
+// Review flagging hooks
+export function useFlagReview() {
+  return useMutation({
+    mutationFn: (params: { reviewID: number; reason: string }) =>
+      flagReview(params.reviewID, params.reason),
+  });
+}
+
+export function useFlaggedReviewsForCourse(courseId: number) {
+  return useQuery({
+    queryKey: ["flagged-reviews", courseId],
+    queryFn: () => getFlaggedReviewsForCourse(courseId),
+    enabled: !!courseId,
+  });
+}
+
+export function useDismissFlag() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (flagId: number) => dismissFlag(flagId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["flagged-reviews"] });
+    },
   });
 }

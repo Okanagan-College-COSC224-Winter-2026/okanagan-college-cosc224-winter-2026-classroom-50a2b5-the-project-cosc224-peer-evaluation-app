@@ -14,6 +14,8 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
+    preferred_name = db.Column(db.String(255), nullable=True)
+    pronouns = db.Column(db.String(50), nullable=True)
     email = db.Column(db.String(255), nullable=False, unique=True, index=True)
     hash_pass = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(50), default="student", nullable=False)
@@ -108,3 +110,8 @@ class User(db.Model):
     def has_role(self, *roles):
         """Check if the user has any of the specified roles"""
         return self.role in roles
+
+    @property
+    def display_name(self):
+        """Return preferred_name if set, otherwise name."""
+        return self.preferred_name or self.name

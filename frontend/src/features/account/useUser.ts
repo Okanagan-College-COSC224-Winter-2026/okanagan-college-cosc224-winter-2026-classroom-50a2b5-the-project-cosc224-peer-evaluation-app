@@ -12,7 +12,7 @@ export function useUser() {
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name?: string; email?: string }) =>
+    mutationFn: (data: { name?: string; email?: string; preferred_name?: string | null; pronouns?: string | null }) =>
       updateUserProfile(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user"] });

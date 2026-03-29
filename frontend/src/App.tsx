@@ -16,6 +16,8 @@ import ClassSettings from "./features/classes/ClassSettings";
 import ClassEvaluations from "./features/reviews/ClassEvaluations";
 import AssignmentDetail from "./features/assignments/AssignmentDetail";
 import ChangePasswordForm from "./features/authentication/ChangePasswordForm";
+import BrowseCourses from "./features/enrollment/BrowseCourses";
+import NotificationsPage from "./features/notifications/NotificationsPage";
 import { AuthProvider } from "./features/authentication/AuthProvider";
 import { Toaster } from "react-hot-toast";
 
@@ -54,6 +56,8 @@ function App() {
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/profile/:id" element={<UpdateAccount />} />
             <Route path="/classes/create" element={<CreateClassForm />} />
+            <Route path="/courses/browse" element={<BrowseCourses />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
 
             <Route path="/classes/:id" element={<ClassLayout />}>
               <Route path="home" element={<ClassHome />} />

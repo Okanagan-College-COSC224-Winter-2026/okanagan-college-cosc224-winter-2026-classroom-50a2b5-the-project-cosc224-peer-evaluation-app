@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom'
 import SidebarNavLink from '../ui/SidebarNavLink'
-import { isAdmin, logout } from '../util/login'
+import { isAdmin, isStudent, getUserId, logout } from '../util/login'
+import { useUnreadCount } from '../features/notifications/useNotifications'
 
 function HomeIcon() {
   return (
@@ -26,6 +27,22 @@ function UsersIcon() {
   )
 }
 
+function BellIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+    </svg>
+  )
+}
+
+function MagnifyingGlassIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+    </svg>
+  )
+}
+
 function ArrowRightOnRectangleIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -36,6 +53,9 @@ function ArrowRightOnRectangleIcon() {
 
 export default function Sidebar() {
   const { pathname } = useLocation()
+  const { data: unreadData } = useUnreadCount()
+  const unreadCount: number = unreadData?.count ?? 0
+  const userId = getUserId()
 
   return (
     <aside className="hidden md:flex w-64 min-w-64 h-screen bg-white border-r border-border flex-col sticky top-0 z-30">
@@ -54,9 +74,32 @@ export default function Sidebar() {
           Home
         </SidebarNavLink>
 
-        <SidebarNavLink to="/profile/1" icon={<UserCircleIcon />} active={pathname.includes('/profile')}>
+        <SidebarNavLink to={`/profile/${userId ?? 1}`} icon={<UserCircleIcon />} active={pathname.includes('/profile')}>
           My Account
         </SidebarNavLink>
+
+        <SidebarNavLink
+          to="/notifications"
+          icon={
+            <span className="relative">
+              <BellIcon />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </span>
+          }
+          active={pathname.includes('/notifications')}
+        >
+          Notifications
+        </SidebarNavLink>
+
+        {isStudent() && (
+          <SidebarNavLink to="/courses/browse" icon={<MagnifyingGlassIcon />} active={pathname.includes('/courses/browse')}>
+            Browse Courses
+          </SidebarNavLink>
+        )}
 
         {isAdmin() && (
           <SidebarNavLink to="/admin/users" icon={<UsersIcon />} active={pathname.includes('/admin/users')}>

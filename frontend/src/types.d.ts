@@ -7,6 +7,9 @@ interface Course {
 interface User {
   id: number;
   name: string;
+  preferred_name?: string | null;
+  pronouns?: string | null;
+  display_name?: string;
   email: string;
   role: 'student' | 'teacher' | 'admin';
 }

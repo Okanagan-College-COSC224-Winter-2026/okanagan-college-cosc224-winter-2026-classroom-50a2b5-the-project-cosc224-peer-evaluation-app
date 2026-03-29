@@ -20,6 +20,7 @@ from ..models import (
     CriteriaDescription,
     Criterion,
     CriterionSchema,
+    Notification,
     Review,
     ReviewSchema,
     Rubric,
@@ -132,6 +133,15 @@ def submit_review():
     except Exception as e:
         db.session.rollback()
         return jsonify({"msg": f"Failed to submit review: {str(e)}"}), 500
+
+    # Notify the reviewee that they received a review
+    Notification.create(
+        userID=reviewee_id,
+        type="assignment_graded",
+        message=f"You received a new peer review for '{assignment.name}'.",
+        reference_id=assignment_id,
+        reference_type="assignment",
+    )
 
     return (
         jsonify(

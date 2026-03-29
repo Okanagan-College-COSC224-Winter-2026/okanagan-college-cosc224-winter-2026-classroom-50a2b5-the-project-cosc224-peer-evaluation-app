@@ -4,10 +4,14 @@ import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "../ui/Sidebar";
 import MobileHeader from "../ui/MobileHeader";
 import { useAuth } from "../features/authentication/AuthProvider";
+import { useRealtimeNotifications } from "../features/notifications/useNotifications";
 
 export default function ProtectedLayout() {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Connect WebSocket for real-time notifications (must be before any early returns)
+  useRealtimeNotifications();
 
   useEffect(
     function () {

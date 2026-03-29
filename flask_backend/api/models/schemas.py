@@ -10,6 +10,9 @@ from .group_members_model import Group_Members
 from .review_model import Review
 from .rubric_model import Rubric
 from .submission_model import Submission
+from .enrollment_request_model import EnrollmentRequest
+from .notification_model import Notification
+from .review_flag_model import ReviewFlag
 from .user_course_model import User_Course
 from .user_model import User
 
@@ -31,6 +34,9 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
     # Explicit fields for clarity and validation
     id = fields.Int(dump_only=True)
     name = fields.Str(required=True, validate=validate.Length(min=1, max=255))
+    preferred_name = fields.Str(load_default=None, validate=validate.Length(max=255))
+    pronouns = fields.Str(load_default=None, validate=validate.Length(max=50))
+    display_name = fields.Method("get_display_name", dump_only=True)
     email = fields.Email(required=True)
     role = fields.Str(
         dump_default="student", validate=validate.OneOf(["student", "teacher", "admin"])
@@ -40,6 +46,9 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
 
     def get_avatar_url(self, obj):
         return f"/user/avatar/{obj.id}" if getattr(obj, "avatar_path", None) else None
+
+    def get_display_name(self, obj):
+        return getattr(obj, "preferred_name", None) or obj.name
 
 
 class UserRegistrationSchema(ma.Schema):
@@ -62,8 +71,13 @@ class UserListSchema(ma.SQLAlchemyAutoSchema):
 
     class Meta:
         model = User
-        fields = ("id", "name", "email", "role")
-        dump_only = ("id",)
+        fields = ("id", "name", "email", "role", "display_name", "pronouns")
+        dump_only = ("id", "display_name")
+
+    display_name = fields.Method("get_display_name")
+
+    def get_display_name(self, obj):
+        return getattr(obj, "preferred_name", None) or obj.name
 
 
 # ============================================================
@@ -242,4 +256,48 @@ class SubmissionSchema(ma.SQLAlchemyAutoSchema):
         model = Submission
         load_instance = True
         include_fk = False
+        sqla_session = db.session
+
+
+# ============================================================
+# REVIEW FLAG SCHEMAS
+# ============================================================
+
+
+class ReviewFlagSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = ReviewFlag
+        load_instance = True
+        include_fk = True
+        sqla_session = db.session
+
+    user = fields.Nested(UserListSchema, dump_only=True)
+
+
+# ============================================================
+# ENROLLMENT REQUEST SCHEMAS
+# ============================================================
+
+
+class EnrollmentRequestSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = EnrollmentRequest
+        load_instance = True
+        include_fk = True
+        sqla_session = db.session
+
+    student = fields.Nested(UserListSchema, dump_only=True)
+    course = fields.Nested(CourseListSchema, dump_only=True)
+
+
+# ============================================================
+# NOTIFICATION SCHEMAS
+# ============================================================
+
+
+class NotificationSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Notification
+        load_instance = True
+        include_fk = True
         sqla_session = db.session
