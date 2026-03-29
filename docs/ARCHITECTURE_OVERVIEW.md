@@ -258,6 +258,11 @@ Teacher views (same endpoint, sees all students):
 │                    │                          │
 │  ┌─────────────────▼──────────────────────┐  │
 │  │  Business Logic Layer                  │  │
+│  │  ├── Services (reusable logic)         │  │
+│  │  │   ├── grade_service (calculations)  │  │
+│  │  │   ├── progress_service (tracking)   │  │
+│  │  │   ├── review_masking (anonymity)    │  │
+│  │  │   └── review_tracking               │  │
 │  │  ├── JWT Authentication               │  │
 │  │  ├── Role-Based Authorization         │  │
 │  │  └── Data Validation (Marshmallow)    │  │
@@ -287,6 +292,7 @@ Teacher views (same endpoint, sees all students):
 
 **Separation of Concerns:**
 - **Controllers** handle HTTP requests/responses, delegating to business logic
+- **Services** encapsulate complex, reusable business logic (grade calculations, progress tracking, anonymity masking) for code modularity and testability
 - **Models** encapsulate data and database operations
 - **Schemas** validate and serialize data between layers
 
