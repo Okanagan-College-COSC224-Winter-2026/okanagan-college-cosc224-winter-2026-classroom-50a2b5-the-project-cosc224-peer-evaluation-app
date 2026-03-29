@@ -32,6 +32,11 @@ from ..models import (
 )
 from ..models.db import db
 from .auth_controller import jwt_teacher_required
+from ..services.group_service import get_user_group_in_course
+from ..services.review_masking import mask_reviewer
+from ..services.review_tracking import get_already_reviewed_reviewees
+from ..services.progress_service import get_review_progress
+from ..services.grade_service import compute_course_summary
 
 bp = Blueprint("review", __name__, url_prefix="/review")
 
@@ -39,19 +44,6 @@ bp = Blueprint("review", __name__, url_prefix="/review")
 # ============================================================================
 # HELPERS
 # ============================================================================
-
-
-def _get_user_group_in_course(user_id, course_id):
-    """Return the CourseGroup the user belongs to in this course, or None."""
-    membership = (
-        Group_Members.query
-        .join(CourseGroup, CourseGroup.id == Group_Members.groupID)
-        .filter(Group_Members.userID == user_id, CourseGroup.courseID == course_id)
-        .first()
-    )
-    if membership:
-        return CourseGroup.get_by_id(membership.groupID)
-    return None
 
 
 def _can_edit_review(user, review):
@@ -71,8 +63,8 @@ def _can_edit_review(user, review):
     if not assignment:
         return False
 
-    user_group = _get_user_group_in_course(user.id, assignment.courseID)
-    reviewer_group = _get_user_group_in_course(review.reviewerID, assignment.courseID)
+    user_group = get_user_group_in_course(user.id, assignment.courseID)
+    reviewer_group = get_user_group_in_course(review.reviewerID, assignment.courseID)
 
     return (
         user_group is not None
@@ -167,7 +159,7 @@ def submit_review():
             return jsonify({"msg": "Target group not found"}), 404
 
         # Reviewer must be in a group for this course
-        reviewer_group = _get_user_group_in_course(reviewer.id, assignment.courseID)
+        reviewer_group = get_user_group_in_course(reviewer.id, assignment.courseID)
         if not reviewer_group:
             return jsonify({"msg": "You must be in a group to submit a group review"}), 400
 
@@ -338,7 +330,7 @@ def lookup_review():
         if not assignment:
             return jsonify({"msg": "Assignment not found"}), 404
 
-        user_group = _get_user_group_in_course(reviewer.id, assignment.courseID)
+        user_group = get_user_group_in_course(reviewer.id, assignment.courseID)
         if not user_group:
             return jsonify({"msg": "Review not found"}), 404
 
@@ -407,8 +399,8 @@ def get_review(review_id):
         else:
             # Group review — user must be in the reviewer or reviewee group
             assignment = Assignment.get_by_id(review.assignmentID)
-            user_group = _get_user_group_in_course(user.id, assignment.courseID) if assignment else None
-            reviewer_group = _get_user_group_in_course(review.reviewerID, assignment.courseID) if assignment else None
+            user_group = get_user_group_in_course(user.id, assignment.courseID) if assignment else None
+            reviewer_group = get_user_group_in_course(review.reviewerID, assignment.courseID) if assignment else None
 
             is_in_reviewer_group = user_group and reviewer_group and user_group.id == reviewer_group.id
             is_in_reviewee_group = user_group and user_group.id == review.revieweeID
@@ -420,23 +412,13 @@ def get_review(review_id):
 
     result = ReviewSchema().dump(review)
 
-    # Strip or replace reviewer identity for students
+    # Apply reviewer masking/transformation for students
     assignment = Assignment.get_by_id(review.assignmentID)
     is_student = not user.is_teacher() and not user.is_admin()
     if assignment and is_student:
-        if review.review_type == "individual":
-            if assignment.is_anonymous and review.revieweeID == user.id:
-                result["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
-        elif review.review_type == "group":
-            if assignment.is_anonymous:
-                result["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
-            else:
-                reviewer_group = _get_user_group_in_course(review.reviewerID, assignment.courseID)
-                result["reviewer"] = {
-                    "id": None,
-                    "name": reviewer_group.name if reviewer_group else "Unknown Group",
-                    "email": None,
-                }
+        masked = mask_reviewer(review, assignment, False, assignment.courseID, user.id)
+        if masked:
+            result["reviewer"] = masked
 
     result["criteria"] = CriterionSchema(many=True).dump(criteria)
     return jsonify(result), 200
@@ -469,27 +451,7 @@ def my_reviewed(assignment_id):
 
     review_type = request.args.get("review_type", "individual")
 
-    if review_type == "group":
-        user_group = _get_user_group_in_course(user.id, assignment.courseID)
-        if not user_group:
-            return jsonify({"reviewee_ids": []}), 200
-
-        group_member_ids = [
-            m.userID for m in Group_Members.query.filter_by(groupID=user_group.id).all()
-        ]
-        reviews = Review.query.filter(
-            Review.assignmentID == assignment_id,
-            Review.reviewerID.in_(group_member_ids),
-            Review.review_type == "group",
-        ).all()
-    else:
-        reviews = Review.query.filter_by(
-            assignmentID=assignment_id,
-            reviewerID=user.id,
-            review_type="individual",
-        ).all()
-
-    reviewee_ids = list({r.revieweeID for r in reviews})
+    reviewee_ids = get_already_reviewed_reviewees(user, assignment_id, review_type)
     return jsonify({"reviewee_ids": reviewee_ids}), 200
 
 
@@ -530,7 +492,7 @@ def get_reviews_for_assignment(assignment_id):
     else:
         if review_type_filter == "group":
             # Students see group reviews targeting their group
-            user_group = _get_user_group_in_course(user.id, assignment.courseID)
+            user_group = get_user_group_in_course(user.id, assignment.courseID)
             if user_group:
                 reviews = query.filter_by(revieweeID=user_group.id).all()
             else:
@@ -547,20 +509,11 @@ def get_reviews_for_assignment(assignment_id):
         criteria = Criterion.query.filter_by(reviewID=review.id).all()
         dumped["criteria"] = CriterionSchema(many=True).dump(criteria)
 
-        # Anonymize or replace reviewer for students
+        # Apply reviewer masking/transformation for students
         if not is_teacher_or_admin:
-            if review.review_type == "individual" and assignment.is_anonymous:
-                dumped["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
-            elif review.review_type == "group":
-                if assignment.is_anonymous:
-                    dumped["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
-                else:
-                    reviewer_group = _get_user_group_in_course(review.reviewerID, assignment.courseID)
-                    dumped["reviewer"] = {
-                        "id": None,
-                        "name": reviewer_group.name if reviewer_group else "Unknown Group",
-                        "email": None,
-                    }
+            masked = mask_reviewer(review, assignment, False, assignment.courseID, user.id)
+            if masked:
+                dumped["reviewer"] = masked
 
         results.append(dumped)
 
@@ -593,60 +546,10 @@ def my_progress(course_id):
     if not course:
         return jsonify({"msg": "Course not found"}), 404
 
-    # Determine user's group and group members
-    user_group = _get_user_group_in_course(user.id, course_id)
-
-    if user_group:
-        group_member_ids = [
-            m.userID for m in Group_Members.query.filter_by(groupID=user_group.id).all()
-        ]
-        other_member_ids = [mid for mid in group_member_ids if mid != user.id]
-        individual_required = len(other_member_ids)
-
-        all_groups = CourseGroup.query.filter_by(courseID=course_id).all()
-        group_required = len([g for g in all_groups if g.id != user_group.id])
-    else:
-        group_member_ids = []
-        individual_required = 0
-        group_required = 0
-
     assignments = Assignment.get_by_class_id(course_id)
-    result = []
+    progress = get_review_progress(user, course_id, assignments)
 
-    for assignment in assignments:
-        # Individual: reviews by this user (only if enabled)
-        if assignment.individual_reviews:
-            ind_completed = Review.query.filter_by(
-                assignmentID=assignment.id,
-                reviewerID=user.id,
-                review_type="individual",
-            ).count()
-            ind_required = individual_required
-        else:
-            ind_completed = 0
-            ind_required = 0
-
-        # Group: reviews by any member of user's group (only if enabled)
-        if assignment.group_reviews and user_group and group_member_ids:
-            grp_completed = Review.query.filter(
-                Review.assignmentID == assignment.id,
-                Review.reviewerID.in_(group_member_ids),
-                Review.review_type == "group",
-            ).count()
-            grp_required = group_required
-        else:
-            grp_completed = 0
-            grp_required = 0
-
-        result.append({
-            "assignment_id": assignment.id,
-            "individual_completed": ind_completed,
-            "individual_required": ind_required,
-            "group_completed": grp_completed,
-            "group_required": grp_required,
-        })
-
-    return jsonify({"assignments": result}), 200
+    return jsonify({"assignments": progress}), 200
 
 
 # ============================================================================
@@ -697,159 +600,10 @@ def course_grade_summary(course_id):
         student_id_param = request.args.get("studentID", type=int)
         if student_id_param:
             target_student_id = student_id_param
-        else:
-            target_student_id = None
     else:
         target_student_id = user.id
 
-    # Determine target student's group for group review lookups
-    target_group = None
-    if target_student_id:
-        target_group = _get_user_group_in_course(target_student_id, course_id)
-
     assignments = Assignment.get_by_class_id(course_id)
-    assignment_summaries = []
+    summary = compute_course_summary(user, course_id, assignments, target_student_id)
 
-    # Track per-type averages across all assignments
-    individual_assignment_avgs = []
-    individual_max_values = []
-    group_assignment_avgs = []
-    group_max_values = []
-
-    for assignment in assignments:
-        # --- Individual reviews ---
-        if target_student_id:
-            ind_reviews = Review.query.filter_by(
-                assignmentID=assignment.id, revieweeID=target_student_id, review_type="individual"
-            ).all()
-        else:
-            ind_reviews = Review.query.filter_by(
-                assignmentID=assignment.id, review_type="individual"
-            ).all()
-
-        ind_totals = []
-        for review in ind_reviews:
-            criteria = Criterion.query.filter_by(reviewID=review.id).all()
-            scored = [c for c in criteria if c.grade is not None]
-            if scored:
-                ind_totals.append(sum(c.grade for c in scored))
-
-        ind_avg = sum(ind_totals) / len(ind_totals) if ind_totals else None
-        ind_max = _compute_max_score(assignment.id, "individual")
-
-        if ind_avg is not None:
-            individual_assignment_avgs.append(ind_avg)
-            if ind_max is not None:
-                individual_max_values.append(ind_max)
-
-        # --- Group reviews ---
-        if target_group:
-            grp_reviews = Review.query.filter_by(
-                assignmentID=assignment.id, revieweeID=target_group.id, review_type="group"
-            ).all()
-        elif target_student_id and not target_group:
-            grp_reviews = []
-        else:
-            grp_reviews = Review.query.filter_by(
-                assignmentID=assignment.id, review_type="group"
-            ).all()
-
-        grp_totals = []
-        for review in grp_reviews:
-            criteria = Criterion.query.filter_by(reviewID=review.id).all()
-            scored = [c for c in criteria if c.grade is not None]
-            if scored:
-                grp_totals.append(sum(c.grade for c in scored))
-
-        grp_avg = sum(grp_totals) / len(grp_totals) if grp_totals else None
-        grp_max = _compute_max_score(assignment.id, "group")
-
-        if grp_avg is not None:
-            group_assignment_avgs.append(grp_avg)
-            if grp_max is not None:
-                group_max_values.append(grp_max)
-
-        assignment_summaries.append(
-            {
-                "id": assignment.id,
-                "name": assignment.name,
-                "individualReviewCount": len(ind_reviews),
-                "individualAverage": round(ind_avg, 2) if ind_avg is not None else None,
-                "individualMax": ind_max,
-                "groupReviewCount": len(grp_reviews),
-                "groupAverage": round(grp_avg, 2) if grp_avg is not None else None,
-                "groupMax": grp_max,
-            }
-        )
-
-    # Compute per-type course totals (sum of scores / sum of maxes)
-    ind_course_avg = (
-        sum(individual_assignment_avgs)
-        if individual_assignment_avgs
-        else None
-    )
-    ind_course_max = (
-        sum(individual_max_values)
-        if individual_max_values
-        else None
-    )
-    grp_course_avg = (
-        sum(group_assignment_avgs)
-        if group_assignment_avgs
-        else None
-    )
-    grp_course_max = (
-        sum(group_max_values)
-        if group_max_values
-        else None
-    )
-
-    # Course total: sum all points earned / sum all points possible
-    course_avg_parts = []
-    course_max_parts = []
-    if ind_course_avg is not None:
-        course_avg_parts.append(ind_course_avg)
-        if ind_course_max is not None:
-            course_max_parts.append(ind_course_max)
-    if grp_course_avg is not None:
-        course_avg_parts.append(grp_course_avg)
-        if grp_course_max is not None:
-            course_max_parts.append(grp_course_max)
-
-    course_avg = sum(course_avg_parts) if course_avg_parts else None
-    course_max = sum(course_max_parts) if course_max_parts else None
-
-    return (
-        jsonify(
-            {
-                "assignments": assignment_summaries,
-                "individualAverage": round(ind_course_avg, 2) if ind_course_avg is not None else None,
-                "individualMax": round(ind_course_max, 2) if ind_course_max is not None else None,
-                "groupAverage": round(grp_course_avg, 2) if grp_course_avg is not None else None,
-                "groupMax": round(grp_course_max, 2) if grp_course_max is not None else None,
-                "courseAverage": round(course_avg, 2) if course_avg is not None else None,
-                "courseMax": round(course_max, 2) if course_max is not None else None,
-            }
-        ),
-        200,
-    )
-
-
-def _compute_max_score(assignment_id, rubric_type="individual"):
-    """Compute the max possible score for an assignment from its rubric criteria.
-
-    Sums scoreMax across all CriteriaDescription rows for the rubric
-    of the given type.  Returns None if no rubric exists.
-    """
-    rubric = Rubric.query.filter_by(
-        assignmentID=assignment_id, rubric_type=rubric_type
-    ).first()
-    if not rubric:
-        return None
-
-    descriptions = CriteriaDescription.query.filter_by(rubricID=rubric.id).all()
-    if not descriptions:
-        return None
-
-    total = sum(d.scoreMax for d in descriptions if d.scoreMax is not None)
-    return total if total > 0 else None
+    return jsonify(summary), 200
