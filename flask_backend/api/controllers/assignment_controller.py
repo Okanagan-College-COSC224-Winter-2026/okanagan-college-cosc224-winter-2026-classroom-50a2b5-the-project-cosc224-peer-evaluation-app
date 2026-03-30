@@ -11,12 +11,9 @@ from ..models import (
     Course,
     Group_Members,
     Submission,
-<<<<<<< HEAD
     User,
-=======
     SubmissionSchema,
     Group_Members,
->>>>>>> 80acb7f (finished us27/28. need more work when combining with file upload likely)
     User_Course,
     db,
 )
@@ -407,9 +404,6 @@ def submit_assignment(assignment_id):
     full_path = os.path.join(upload_dir, stored_name)
     submission_file.save(full_path)
 
-<<<<<<< HEAD
-    existing_submission = get_group_submission(assignment.id, group_member_ids)
-=======
     existing_submission = (
         get_group_submission(assignment.id, group_member_ids)
         if group_member_ids
@@ -418,21 +412,15 @@ def submit_assignment(assignment_id):
             assignment.id,
         )
     )
->>>>>>> 80acb7f (finished us27/28. need more work when combining with file upload likely)
 
     if existing_submission:
         if existing_submission.path and os.path.exists(existing_submission.path):
             os.remove(existing_submission.path)
 
-<<<<<<< HEAD
-        existing_submission.path = full_path
-        existing_submission.studentID = user.id
-=======
         existing_submission.file_name = safe_name
         existing_submission.file_path = full_path
         existing_submission.studentID = user.id
         existing_submission.submitted_at = datetime.utcnow()
->>>>>>> 80acb7f (finished us27/28. need more work when combining with file upload likely)
         existing_submission.update()
 
         return jsonify(

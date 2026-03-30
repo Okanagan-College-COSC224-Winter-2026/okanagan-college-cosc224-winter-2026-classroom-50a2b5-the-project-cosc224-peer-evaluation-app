@@ -14,6 +14,7 @@ from ..models import (
     User_Course,
 )
 from .auth_controller import jwt_role_required
+from flask_jwt_extended import get_jwt_identity
 
 bp = Blueprint("review", __name__, url_prefix="")
 
@@ -86,6 +87,23 @@ def create_criterion():
         return jsonify({"msg": "Review not found"}), 404
 
     criteria_desc = CriteriaDescription.get_by_id(criterion_row_id)
+    if not criteria_desc:
+        # Backward compatibility: some frontend flows send the 0-based
+        # rubric row index instead of Criteria_Description.id.
+        assignment = Assignment.get_by_id(review.assignmentID)
+        rubric = (
+            assignment.rubrics.order_by(Rubric.id.asc()).first()
+            if assignment
+            else None
+        )
+        if rubric:
+            rubric_rows = rubric.criteria_descriptions.order_by(
+                CriteriaDescription.id.asc()
+            ).all()
+            if 0 <= criterion_row_id < len(rubric_rows):
+                criteria_desc = rubric_rows[criterion_row_id]
+                criterion_row_id = criteria_desc.id
+
     if not criteria_desc:
         return jsonify({"msg": "Criteria description not found"}), 404
 
@@ -174,7 +192,12 @@ def get_review():
 @bp.route("/reviews/received", methods=["GET"])
 @jwt_role_required("student", "teacher", "admin")
 def get_received_reviews():
-    """Get received reviews for a target student in an assignment."""
+    """Get received reviews for a target student in an assignment.
+
+    Students can only see their own received reviews and reviewer names are
+    anonymized. Teachers/admins can view a specific student's received reviews
+    with reviewer names visible.
+    """
     assignment_id = request.args.get("assignmentID")
     requested_reviewee_id = request.args.get("revieweeID")
 
@@ -267,7 +290,9 @@ def get_received_reviews():
 
         reviewer = User.get_by_id(review.reviewerID)
         reviewer_name = (
-            reviewer.name if (is_teacher_or_admin and reviewer) else "Anonymous"
+            reviewer.name
+            if (is_teacher_or_admin and reviewer)
+            else "Anonymous"
         )
 
         serialized_reviews.append(

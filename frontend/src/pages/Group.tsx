@@ -18,7 +18,7 @@ import { useParams } from "react-router-dom";
 import "./Group.css";
 import TabNavigation from "../components/TabNavigation";
 import StatusMessage from "../components/StatusMessage";
-import { hasRole, isTeacher } from "../util/login";
+import { hasRole } from "../util/login";
 import Textbox from "../components/Textbox";
 
 function fisherYates<T>(array: T[]): T[] {
@@ -377,11 +377,7 @@ export default function Group() {
             <div>
               
             </div>
-
-            <div>
-              
-            </div>
-        {isTeacher() ? (
+        {canManageGroups ? (
           <>
             <div className="assignmentTables">
               <table className="table">
