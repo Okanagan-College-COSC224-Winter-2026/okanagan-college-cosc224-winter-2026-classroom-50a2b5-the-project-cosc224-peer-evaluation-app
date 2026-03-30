@@ -13,6 +13,7 @@ import CreateClassForm from "./features/classes/CreateClassForm";
 import DashboardLayout from "./features/dashboard/DashboardLayout";
 import ClassSettings from "./features/classes/ClassSettings";
 import ClassEvaluations from "./features/reviews/ClassEvaluations";
+import Gradebook from "./features/gradebook/Gradebook";
 import AssignmentDetail from "./features/assignments/AssignmentDetail";
 import ChangePasswordForm from "./features/authentication/ChangePasswordForm";
 import { AuthProvider } from "./features/authentication/AuthProvider";
@@ -58,6 +59,7 @@ function App() {
               <Route path="members" element={<ClassMembers />} />
               <Route path="groups" element={<GroupManager />} />
               <Route path="evaluations" element={<ClassEvaluations />} />
+              <Route path="gradebook" element={<Gradebook />} />
               <Route path="settings" element={<ClassSettings />} />
               <Route path="assignments/:assignmentId" element={<AssignmentDetail />} />
               <Route path="assignments/:assignmentId/manage" element={<AssignmentDetail />} />

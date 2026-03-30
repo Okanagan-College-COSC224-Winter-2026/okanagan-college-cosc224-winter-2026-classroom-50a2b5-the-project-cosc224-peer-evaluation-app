@@ -5,6 +5,7 @@ from .course_model import Course
 from .criteria_description_model import CriteriaDescription
 from .criterion_model import Criterion
 from .db import db, ma
+from .grade_override_model import GradeOverride
 from .group_members_model import Group_Members
 from .review_model import Review
 from .rubric_model import Rubric
@@ -42,6 +43,7 @@ __all__ = [
     "Criterion",
     "Review",
     "CourseGroup",
+    "GradeOverride",
     "Group_Members",
     "User_Course",
     "Submission",
