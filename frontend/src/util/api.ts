@@ -407,7 +407,9 @@ export const createCriteria = async (
   maybeHandleExpire(response);
 
   if (!response.ok) {
-    throw new Error(`Response status: ${response.status}`);
+    const data = await response.json().catch(() => ({}));
+    const msg = (data && (data.msg || data.message)) || `Response status: ${response.status}`;
+    throw new Error(msg);
   }
 };
 
@@ -430,7 +432,9 @@ export const createRubric = async (
   maybeHandleExpire(response);
 
   if (!response.ok) {
-    throw new Error(`Response status: ${response.status}`);
+    const data = await response.json().catch(() => ({}));
+    const msg = (data && (data.msg || data.message)) || `Response status: ${response.status}`;
+    throw new Error(msg);
   }
 
   return await response.json();
@@ -467,7 +471,9 @@ export const deleteRubric = async (rubricID: number) => {
   maybeHandleExpire(response);
 
   if (!response.ok) {
-    throw new Error(`Response status: ${response.status}`);
+    const data = await response.json().catch(() => ({}));
+    const msg = (data && (data.msg || data.message)) || `Response status: ${response.status}`;
+    throw new Error(msg);
   }
 
   return await response.json();
