@@ -18,13 +18,13 @@ import {
   listClasses,
 } from "../util/api";
 
-// US9 - import the model for assignment editor
 import AssignmentEditor from "../components/AssignmentEditor";
 
 type AssignmentUpdate = {
   name?: string;
   due_date?: string | null;
   rubric?: string | null;
+  file?: File | null;
 };
 
 export default function ClassHome() {
@@ -49,7 +49,7 @@ export default function ClassHome() {
       const resp = await listAssignments(String(id));
       const classes = await listClasses();
       const currentClass = classes.find(
-        (c: { id: number }) => c.id === Number(id)
+        (c: { id: number; name: string }) => c.id === Number(id)
       );
 
       if (cancelled) return;
@@ -85,11 +85,14 @@ export default function ClassHome() {
     } catch (error) {
       console.error("Error creating assignment:", error);
       setStatusType("error");
-      setStatusMessage("Error creating assignment.");
+      setStatusMessage(
+        error instanceof Error
+          ? error.message
+          : "Error creating assignment."
+      );
     }
   };
 
-  // US9 - handle edit assignment
   const handleEditAssignment = async (updates: AssignmentUpdate) => {
     if (!editingAssignment) return;
 
@@ -98,7 +101,6 @@ export default function ClassHome() {
       setStatusType("success");
       setStatusMessage("Assignment updated successfully!");
 
-      // Refresh assignments list
       const resp = await listAssignments(String(id));
       setAssignments(resp);
 
@@ -106,11 +108,14 @@ export default function ClassHome() {
     } catch (error) {
       console.error("Error updating assignment:", error);
       setStatusType("error");
-      setStatusMessage("Error updating assignment.");
+      setStatusMessage(
+        error instanceof Error
+          ? error.message
+          : "Error updating assignment."
+      );
     }
   };
 
-  // US9 - handle delete assignment
   const handleDeleteAssignment = async (assignmentId: number) => {
     try {
       await deleteAssignment(assignmentId);
@@ -121,7 +126,11 @@ export default function ClassHome() {
     } catch (error) {
       console.error("Error deleting assignment:", error);
       setStatusType("error");
-      setStatusMessage("Error deleting assignment.");
+      setStatusMessage(
+        error instanceof Error
+          ? error.message
+          : "Error deleting assignment."
+      );
     }
   };
 
