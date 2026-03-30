@@ -16,7 +16,6 @@ import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
 import Dashboard from "./pages/Dashboard";
 
-
 function AppContent() {
   const location = useLocation();
   const noSidebarPaths = ["/", "/login", "/register", "/change-password"];
@@ -30,59 +29,86 @@ function AppContent() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/change-password" element={<ChangePassword />} />
 
-          <Route path="/home" element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
 
-           <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/admin/create-teacher" element={
-            <ProtectedRoute>
-              <CreateTeacher />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/admin/create-teacher"
+            element={
+              <ProtectedRoute>
+                <CreateTeacher />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/classes/create" element={
-            <ProtectedRoute>
-              <CreateClass />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/classes/create"
+            element={
+              <ProtectedRoute>
+                <CreateClass />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/profile/:id" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/profile/:id"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/classes/:id/home" element={
-            <ProtectedRoute>
-              <ClassHome />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/classes/:id/home"
+            element={
+              <ProtectedRoute>
+                <ClassHome />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/classes/:id/members" element={
-            <ProtectedRoute>
-              <ClassMembers />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/classes/:id/members"
+            element={
+              <ProtectedRoute>
+                <ClassMembers />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/assignments/:id" element={
-            <ProtectedRoute>
-              <Assignment />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/assignments/:id"
+            element={
+              <ProtectedRoute>
+                <Assignment />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/assignments/:id/group" element={
-            <ProtectedRoute>
-              <Group />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/assignments/:id/group"
+            element={
+              <ProtectedRoute>
+                <Group />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
     </div>

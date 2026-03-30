@@ -1,11 +1,13 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
+from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash
 
 from ..models import (
     Assignment,
     Course,
     CourseGroup,
+    CourseSearchSchema,
     CriteriaDescription,
     Criterion,
     Group_Members,
@@ -138,6 +140,69 @@ def get_user_classes():
         courses = []
 
     return jsonify([{"id": c.id, "name": c.name} for c in courses]), 200
+
+
+# ── Course search (US-17) ──────────────────────────────────
+
+search_schema = CourseSearchSchema(many=True)
+
+
+def _matches_query(course_name: str, tokens: list[str]) -> bool:
+    """Return True when every search token appears in the course name
+    (case-insensitive, order-independent)."""
+    lower_name = course_name.lower()
+    return all(token in lower_name for token in tokens)
+
+
+@bp.route("/search_course", methods=["GET"])
+@jwt_required()
+def search_courses():
+    """Search courses by name.
+
+    - Admin:   searches all courses
+    - Teacher: searches own courses only
+    - Student: searches enrolled courses only
+
+    Query params:
+        q (str): space-separated search tokens (order-independent).
+                 Each token must appear in the course name.
+                 Empty / missing returns all courses within scope.
+
+    Returns:
+        200: list of matching courses with teacher_name
+    """
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    # ── build base query scoped by role ──
+    if user.is_admin():
+        query = Course.query.options(joinedload(Course.teacher))
+    elif user.is_teacher():
+        query = (
+            Course.query.options(joinedload(Course.teacher))
+            .filter(Course.teacherID == user.id)
+        )
+    elif user.is_student():
+        query = (
+            Course.query.options(joinedload(Course.teacher))
+            .join(User_Course, User_Course.courseID == Course.id)
+            .filter(User_Course.userID == user.id)
+        )
+    else:
+        # Fallback for any unrecognised role — return empty list as a safe default
+        return jsonify([]), 200
+
+    courses = query.all()
+
+    # ── apply text search in Python ──
+    raw_q = request.args.get("q", "").strip()
+    if raw_q:
+        tokens = [t.lower() for t in raw_q.split() if t]
+        courses = [c for c in courses if _matches_query(c.name or "", tokens)]
+
+    return search_schema.jsonify(courses), 200
 
 
 @bp.route("/<int:class_id>/members", methods=["GET"])

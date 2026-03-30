@@ -95,6 +95,23 @@ class CourseListSchema(ma.SQLAlchemyAutoSchema):
         include_fk = True  # Allow teacherID to be serialized
 
 
+class CourseSearchSchema(ma.SQLAlchemyAutoSchema):
+    """Course schema for search results — includes teacher name"""
+
+    class Meta:
+        model = Course
+        fields = ("id", "name", "teacherID", "teacher_name")
+        dump_only = ("id",)
+        include_fk = True
+
+    teacher_name = fields.Method("get_teacher_name")
+
+    def get_teacher_name(self, obj):
+        if obj.teacher:
+            return obj.teacher.name
+        return None
+
+
 # ============================================================
 # ASSIGNMENT SCHEMAS
 # ============================================================
