@@ -24,9 +24,7 @@ def create_app(test_config=None):
     """Create and configure the Flask application"""
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
-    app.config["UPLOAD_FOLDER"] = os.path.join(app.instance_path, "uploads")
-    app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
-    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+
     # Determine if we're in production based on FLASK_ENV or explicit PRODUCTION flag
     is_production = (
         os.environ.get("FLASK_ENV") == "production"

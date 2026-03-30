@@ -14,6 +14,7 @@ import Group from "./pages/Group";
 import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
+import AdminUserManagement from "./pages/AdminUserManagement";
 import Dashboard from "./pages/Dashboard";
 
 function AppContent() {
@@ -52,6 +53,15 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <CreateTeacher />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <AdminUserManagement />
               </ProtectedRoute>
             }
           />

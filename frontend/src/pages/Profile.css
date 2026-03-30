@@ -1,52 +1,33 @@
 .Profile {
   display: flex;
-  gap: 32px;
-  padding: 24px;
+  flex-direction: row;
+  justify-content: flex-start;
   align-items: flex-start;
+  padding: 4rem;
 }
 
-.profile-image img {
+.Profile .profile-image {
   width: 200px;
   height: 200px;
-  object-fit: cover;
-  border-radius: 12px;
-  border: 1px solid #ccc;
+  border-radius: 50%;
+  overflow: hidden;
 }
 
-.profile-info {
+.Profile .profile-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.Profile .profile-info {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-width: 300px;
+  justify-content: center;
+  align-items: flex-start;
+  margin-left: 1rem;
 }
 
-.profile-info h1 {
-  font-size: 20px;
-  margin: 12px 0 4px;
-}
-
-.profile-info span {
-  font-size: 16px;
-}
-
-.profile-info input,
-.profile-info textarea {
-  padding: 10px;
-  font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-}
-
-.profile-info button {
-  width: fit-content;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.profile-buttons {
-  display: flex;
-  gap: 12px;
-  margin-top: 12px;
+.Profile .profile-info h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
 }

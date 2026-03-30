@@ -1,4 +1,4 @@
-import { logout } from "../util/login";
+import { logout, isAdmin, isTeacher } from "../util/login";
 import "./Sidebar.css";
 
 export default function Sidebar() {
@@ -19,12 +19,24 @@ export default function Sidebar() {
         <SidebarRow selected={location === "/home"} href="/home">
           Home
         </SidebarRow>
+        {isTeacher() && (
+          <SidebarRow selected={location === "/dashboard"} href="/dashboard">
+            Dashboard
+          </SidebarRow>
+        )}
 
-        <SidebarRow selected={location === "/dashboard"} href="/dashboard">
-          Dashboard
+        {isTeacher() && (
+                  <SidebarRow selected={location === "/classes/create"} href="/classes/create">
+          Create Class
         </SidebarRow>
+        )}
+      
+      {isAdmin() && (
+        <SidebarRow selected={location === "/admin/create-teacher"} href="/admin/create-teacher">
+          Student Enrollment
+        </SidebarRow>
+      )}
 
-        {/* TODO: make this ID match who is logged in */}
         <SidebarRow selected={location.includes("/profile")} href="/profile/1">
           My Info
         </SidebarRow>
@@ -34,6 +46,15 @@ export default function Sidebar() {
         >
           Change Password
         </SidebarRow>
+
+        {isAdmin() && (
+          <SidebarRow 
+            selected={location === '/admin/users'} 
+            href="/admin/users"
+          >
+            Manage Users
+          </SidebarRow>
+        )}
       </div>
     </div>
   );
