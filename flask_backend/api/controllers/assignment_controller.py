@@ -67,11 +67,11 @@ def is_student_in_course(student_id, course_id):
 @bp.route("/create_assignment", methods=["POST"])
 @jwt_teacher_required
 def create_assignment():
-    form = request.form
-    course_id = form.get("courseID")
-    assignment_name = form.get("name")
-    rubric_text = form.get("rubric")
-    due_date = form.get("due_date")
+    data = request.get_json(silent=True) or request.form
+    course_id = data.get("courseID")
+    assignment_name = data.get("name")
+    rubric_text = data.get("rubric")
+    due_date = data.get("due_date")
     teacher_file = request.files.get("file")
 
     if not due_date:
@@ -144,7 +144,6 @@ def create_assignment():
         201,
     )
 
-
 @bp.route("/edit_assignment/<int:assignment_id>", methods=["PATCH"])
 @jwt_teacher_required
 def edit_assignment(assignment_id):
@@ -171,11 +170,11 @@ def edit_assignment(assignment_id):
             {"msg": "Assignment cannot be edited after its due date"}
         ), 400
 
-    form = request.form
-    assignment.name = form.get("name", assignment.name)
-    assignment.rubric_text = form.get("rubric", assignment.rubric_text)
+    data = request.get_json(silent=True) or request.form
+    assignment.name = data.get("name", assignment.name)
+    assignment.rubric_text = data.get("rubric", assignment.rubric_text)
 
-    due_date = form.get("due_date")
+    due_date = data.get("due_date")
     if due_date:
         assignment.due_date = datetime.fromisoformat(due_date)
 

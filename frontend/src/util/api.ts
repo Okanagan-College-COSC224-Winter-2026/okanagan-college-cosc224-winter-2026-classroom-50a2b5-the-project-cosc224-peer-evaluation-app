@@ -810,3 +810,47 @@ export const downloadStudentSubmissionFile = async (
 
   window.URL.revokeObjectURL(url);
 };
+
+export const updateMyProfile = async (
+  name: string,
+  profilePicture?: File | null
+) => {
+  const formData = new FormData();
+  formData.append("name", name);
+
+  if (profilePicture) {
+    formData.append("profile_picture", profilePicture);
+  }
+
+  const response = await fetch(`${BASE_URL}/user/profile`, {
+    method: "PATCH",
+    body: formData,
+    credentials: "include",
+  });
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.msg || "Failed to update profile");
+  }
+
+  return await response.json();
+};
+
+export const getMyProfile = async () => {
+  const response = await fetch(`${BASE_URL}/user/profile`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  maybeHandleExpire(response);
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.msg || "Failed to load profile");
+  }
+
+  return data;
+};

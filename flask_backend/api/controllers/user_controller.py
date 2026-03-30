@@ -2,16 +2,25 @@
 User management endpoints
 """
 
-from flask import Blueprint, jsonify, request
+import os
+from uuid import uuid4
+
+from flask import (
+    Blueprint,
+    current_app,
+    jsonify,
+    request,
+    send_from_directory,
+)
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from marshmallow import Schema, ValidationError, fields, validate
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 from ..models import User, UserSchema
 
 bp = Blueprint("user", __name__, url_prefix="/user")
 
-# Create schema instances once (reusable)
 user_schema = UserSchema()
 
 
@@ -24,10 +33,21 @@ class UserUpdateSchema(Schema):
 user_update_schema = UserUpdateSchema()
 
 
+def ensure_upload_dir(path):
+    os.makedirs(path, exist_ok=True)
+
+
+def allowed_profile_picture(filename):
+    allowed_extensions = {"png", "jpg", "jpeg", "webp"}
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower() in allowed_extensions
+    )
+
+
 @bp.route("/", methods=["GET"])
 @jwt_required()
 def get_current_user():
-    """Get current authenticated user information"""
     email = get_jwt_identity()
     user = User.get_by_email(email)
 
@@ -36,10 +56,21 @@ def get_current_user():
     return jsonify(user_schema.dump(user)), 200
 
 
+@bp.route("/profile", methods=["GET"])
+@jwt_required()
+def get_profile():
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    return jsonify(user_schema.dump(user)), 200
+
+
 @bp.route("/<int:user_id>", methods=["GET"])
 @jwt_required()
 def get_user_by_id(user_id):
-    """Get user by ID (users can view their own info, teachers/admins can view anyone)"""
     current_email = get_jwt_identity()
     current_user = User.get_by_email(current_email)
 
@@ -50,7 +81,6 @@ def get_user_by_id(user_id):
     if not user:
         return jsonify({"msg": "User not found"}), 404
 
-    # Users can view their own info, teachers and admins can view anyone
     if current_user.id != user_id and not current_user.has_role("teacher", "admin"):
         return jsonify({"msg": "Insufficient permissions"}), 403
 
@@ -60,15 +90,15 @@ def get_user_by_id(user_id):
 @bp.route("/", methods=["PUT"])
 @jwt_required()
 def update_current_user():
-    """Update current user information"""
     if not request.is_json:
         return jsonify({"msg": "Missing JSON in request"}), 400
 
-    # Validate input with Marshmallow
     try:
         data = user_update_schema.load(request.json)
     except ValidationError as err:
-        return jsonify({"msg": "Validation error", "errors": err.messages}), 400
+        return jsonify(
+            {"msg": "Validation error", "errors": err.messages}
+        ), 400
 
     email = get_jwt_identity()
     user = User.get_by_email(email)
@@ -76,7 +106,6 @@ def update_current_user():
     if not user:
         return jsonify({"msg": "User not found"}), 404
 
-    # Update allowed fields
     if "name" in data:
         user.name = data["name"]
 
@@ -85,10 +114,73 @@ def update_current_user():
     return jsonify(user_schema.dump(user)), 200
 
 
+@bp.route("/profile", methods=["PATCH"])
+@jwt_required()
+def update_profile():
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    name = request.form.get("name")
+    profile_picture = request.files.get("profile_picture")
+
+    if name is not None:
+        cleaned_name = name.strip()
+        if not cleaned_name:
+            return jsonify({"msg": "Name cannot be empty"}), 400
+        if len(cleaned_name) > 255:
+            return jsonify({"msg": "Name is too long"}), 400
+        user.name = cleaned_name
+
+    if profile_picture:
+        if profile_picture.filename == "":
+            return jsonify({"msg": "No selected file"}), 400
+
+        if not allowed_profile_picture(profile_picture.filename):
+            return jsonify({"msg": "Invalid image type"}), 400
+
+        safe_name = secure_filename(profile_picture.filename)
+        unique_name = f"{uuid4().hex}_{safe_name}"
+
+        upload_dir = os.path.join(
+            current_app.config["UPLOAD_FOLDER"],
+            "profile_pictures",
+            str(user.id),
+        )
+        ensure_upload_dir(upload_dir)
+
+        full_path = os.path.join(upload_dir, unique_name)
+        profile_picture.save(full_path)
+
+        user.profile_picture = (
+            f"profile_pictures/{user.id}/{unique_name}"
+        )
+
+    user.update()
+
+    return jsonify(
+        {
+            "msg": "Profile updated",
+            "user": user_schema.dump(user),
+        }
+    ), 200
+
+
+@bp.route("/profile_pictures/<int:user_id>/<filename>", methods=["GET"])
+def get_profile_picture(user_id, filename):
+    upload_dir = os.path.join(
+        current_app.config["UPLOAD_FOLDER"],
+        "profile_pictures",
+        str(user_id),
+    )
+    return send_from_directory(upload_dir, filename)
+
+
 @bp.route("/<int:user_id>", methods=["DELETE"])
 @jwt_required()
 def delete_user(user_id):
-    """Delete user (admin only or own account)"""
     current_email = get_jwt_identity()
     current_user = User.get_by_email(current_email)
 
@@ -99,7 +191,6 @@ def delete_user(user_id):
     if not user:
         return jsonify({"msg": "User not found"}), 404
 
-    # Users can delete their own account, admins can delete anyone
     if current_user.id != user_id and not current_user.is_admin():
         return jsonify({"msg": "Insufficient permissions"}), 403
 
@@ -111,7 +202,6 @@ def delete_user(user_id):
 @bp.route("/password", methods=["PATCH"])
 @jwt_required()
 def change_password():
-    """Change current user's password (only if must_change_password is True)"""
     if not request.is_json:
         return jsonify({"msg": "Missing JSON in request"}), 400
 
@@ -123,7 +213,9 @@ def change_password():
     if not new_password:
         return jsonify({"msg": "New password is required"}), 400
     if len(new_password) < 6:
-        return jsonify({"msg": "New password must be at least 6 characters"}), 400
+        return jsonify(
+            {"msg": "New password must be at least 6 characters"}
+        ), 400
 
     email = get_jwt_identity()
     user = User.get_by_email(email)
@@ -131,11 +223,9 @@ def change_password():
     if not user:
         return jsonify({"msg": "User not found"}), 404
 
-    # Verify current password
     if not check_password_hash(user.hash_pass, current_password):
         return jsonify({"msg": "Current password is incorrect"}), 401
 
-    # Update password and clear must_change_password flag
     user.hash_pass = generate_password_hash(new_password)
     user.must_change_password = False
     user.update()
