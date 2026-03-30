@@ -9,10 +9,10 @@ import {
   listGroupMembers,
   listGroups,
   listStuGroup,
-  listUnassignedGroups,
   saveGroups,
   deleteGroup,
   getAssignment,
+  listUnassignedGroups,
 } from "../util/api";
 import { useParams } from "react-router-dom";
 import "./Group.css";
@@ -50,9 +50,15 @@ export default function Group() {
   const [statusMessage, setStatusMessage] = useState("");
   const [statusType, setStatusType] = useState<"error" | "success">("error");
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
   const nameFromId = (userId: number) => {
     return classMembers.find((mem) => mem.id === userId)?.name || "N/A";
+  };
+
+  const displayName = (userId: number) => {
+    const name = nameFromId(userId);
+    return currentUserId === userId ? `${name} (you)` : name;
   };
 
   const toggleExpand = (gId: number) => {
@@ -112,6 +118,9 @@ export default function Group() {
     }
 
     setGroupTable(newTable);
+    // Randomize assigns students directly into groups in local state.
+    // Clear the unassigned table so names do not appear in both places.
+    setMemberTable({ [-1]: [] });
 
     setStatusType("success");
     setStatusMessage("Groups cleared and randomized. Click Confirm Changes to save.");
@@ -147,6 +156,7 @@ export default function Group() {
 
     const stuId = await getUserId();
     if (cancelled()) return;
+    setCurrentUserId(stuId);
 
     const stus = await listStuGroup(Number(id), stuId);
     if (cancelled()) return;
@@ -390,10 +400,11 @@ export default function Group() {
                         <tr key={`ua-${ua.userID}`}>
                           <td>
                             <span className="StudentName">
-                              {nameFromId(ua.userID)}
+                              {displayName(ua.userID)}
                               <button
                                 onClick={() => {
                                   const localGroup = { ...groupTable };
+                                  const newMemberTable = { ...memberTable };
 
                                   const memObj = memberTable[-1].find(
                                     (mem) => ua.userID === mem.userID
@@ -414,12 +425,21 @@ export default function Group() {
                                   }
 
                                   // Add to selected group
-                                  memObj.groupID = selectedGroup;
+                                  const updatedMember = {
+                                    ...memObj,
+                                    groupID: selectedGroup,
+                                  };
                                   localGroup[selectedGroup] =
                                     localGroup[selectedGroup] || [];
-                                  localGroup[selectedGroup].push(memObj);
+                                  localGroup[selectedGroup].push(updatedMember);
+
+                                  // Remove from unassigned students table
+                                  newMemberTable[-1] = (newMemberTable[-1] || []).filter(
+                                    (mem) => mem.userID !== updatedMember.userID
+                                  );
 
                                   setGroupTable(localGroup);
+                                  setMemberTable(newMemberTable);
                                 }}
                               >
                                 Add
@@ -480,7 +500,7 @@ export default function Group() {
                                 <tr key={`m-${stu.userID}-${stu.groupID}`}>
                                   <td>
                                     <span className="StudentName">
-                                      {nameFromId(stu.userID)}
+                                      {displayName(stu.userID)}
                                       <button
                                         className="remove-btn"
                                         title="Remove from group"
@@ -544,7 +564,7 @@ export default function Group() {
                         <tr key={`stu-${stu.userID}`}>
                           <td>
                             <span className="StudentName">
-                              {nameFromId(stu.userID)}
+                              {displayName(stu.userID)}
                             </span>
                           </td>
                         </tr>

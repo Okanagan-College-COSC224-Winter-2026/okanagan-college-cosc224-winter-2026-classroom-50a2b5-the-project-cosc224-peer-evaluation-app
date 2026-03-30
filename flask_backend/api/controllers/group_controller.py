@@ -158,7 +158,6 @@ def list_student_group(assignment_id, student_id):
         assignmentID=assignment_id,
         groupID=membership.groupID,
     ).all()
-
     return (
         jsonify(
             [

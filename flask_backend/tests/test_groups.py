@@ -3,6 +3,8 @@ import json
 import pytest
 import datetime
 
+from api.models import User
+
 
 @pytest.fixture
 def course_with_assignment(test_client, make_admin):
@@ -179,6 +181,101 @@ class TestGetGroups:
         response = test_client.get("/groups/9999")
         assert response.status_code == 404
         assert "Assignment not found" in response.json["msg"]
+
+    def test_enrolled_student_can_view_groups(
+        self, test_client, course_with_assignment, enroll_user_in_course
+    ):
+        """Test enrolled students can retrieve groups for an assignment."""
+        test_client = course_with_assignment["test_client"]
+        assignment_id = course_with_assignment["assignment_id"]
+        course_id = course_with_assignment["course_id"]
+
+        create_response = test_client.post(
+            "/groups/create",
+            data=json.dumps({"assignmentID": assignment_id, "name": "Group A"}),
+            headers={"Content-Type": "application/json"},
+        )
+        assert create_response.status_code == 201
+
+        test_client.post(
+            "/auth/register",
+            data=json.dumps(
+                {
+                    "name": "Student User",
+                    "email": "student@example.com",
+                    "password": "password123",
+                }
+            ),
+            headers={"Content-Type": "application/json"},
+        )
+        student = User.get_by_email("student@example.com")
+        enroll_user_in_course(student.id, course_id)
+
+        test_client.post("/auth/logout")
+        test_client.post(
+            "/auth/login",
+            data=json.dumps({"email": "student@example.com", "password": "password123"}),
+            headers={"Content-Type": "application/json"},
+        )
+
+        response = test_client.get(f"/groups/{assignment_id}")
+        assert response.status_code == 200
+        assert len(response.json) == 1
+
+    def test_enrolled_student_can_view_their_group_membership(
+        self, test_client, course_with_assignment, enroll_user_in_course
+    ):
+        """Test list_stu_groups returns membership-shaped rows for enrolled student group view."""
+        test_client = course_with_assignment["test_client"]
+        assignment_id = course_with_assignment["assignment_id"]
+        course_id = course_with_assignment["course_id"]
+
+        group_response = test_client.post(
+            "/groups/create",
+            data=json.dumps({"assignmentID": assignment_id, "name": "Group A"}),
+            headers={"Content-Type": "application/json"},
+        )
+        group_id = group_response.json["group"]["id"]
+
+        test_client.post(
+            "/auth/register",
+            data=json.dumps(
+                {
+                    "name": "Student User",
+                    "email": "student2@example.com",
+                    "password": "password123",
+                }
+            ),
+            headers={"Content-Type": "application/json"},
+        )
+        student = User.get_by_email("student2@example.com")
+        enroll_user_in_course(student.id, course_id)
+
+        test_client.post(
+            "/groups/save_groups",
+            data=json.dumps(
+                {
+                    "groupID": group_id,
+                    "userID": student.id,
+                    "assignmentID": assignment_id,
+                }
+            ),
+            headers={"Content-Type": "application/json"},
+        )
+
+        test_client.post("/auth/logout")
+        test_client.post(
+            "/auth/login",
+            data=json.dumps({"email": "student2@example.com", "password": "password123"}),
+            headers={"Content-Type": "application/json"},
+        )
+
+        response = test_client.get(f"/groups/list_stu_groups/{assignment_id}/{student.id}")
+        assert response.status_code == 200
+        assert len(response.json) == 1
+        assert response.json[0]["userID"] == student.id
+        assert response.json[0]["groupID"] == group_id
+        assert response.json[0]["assignmentID"] == assignment_id
 
 
 class TestEditGroup:

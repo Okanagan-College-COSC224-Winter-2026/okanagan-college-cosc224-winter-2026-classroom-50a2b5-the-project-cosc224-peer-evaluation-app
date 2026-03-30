@@ -570,5 +570,5 @@ def download_student_submission(assignment_id, student_id):
     return send_file(
         submission.path,
         as_attachment=True,
-        download_name=original_filename_from_path(submission.path),
+        download_name=submission.file_name,
     )
