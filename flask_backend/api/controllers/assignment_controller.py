@@ -103,7 +103,7 @@ def get_group_member_ids_for_assignment(assignment_id, user_id):
     ).first()
 
     if not membership:
-        return [], None
+        return [user_id], None
 
     members = Group_Members.query.filter_by(
         assignmentID=assignment_id,
@@ -122,7 +122,7 @@ def get_group_submission(assignment_id, member_ids):
             Submission.assignmentID == assignment_id,
             Submission.studentID.in_(member_ids),
         )
-        .order_by(Submission.submitted_at.desc(), Submission.id.desc())
+        .order_by(Submission.id.desc())
         .first()
     )
 
@@ -417,10 +417,8 @@ def submit_assignment(assignment_id):
         if existing_submission.path and os.path.exists(existing_submission.path):
             os.remove(existing_submission.path)
 
-        existing_submission.file_name = safe_name
-        existing_submission.file_path = full_path
+        existing_submission.path = full_path
         existing_submission.studentID = user.id
-        existing_submission.submitted_at = datetime.utcnow()
         existing_submission.update()
 
         return jsonify(
@@ -570,5 +568,5 @@ def download_student_submission(assignment_id, student_id):
     return send_file(
         submission.path,
         as_attachment=True,
-        download_name=submission.file_name,
+        download_name=original_filename_from_path(submission.path),
     )
