@@ -3,7 +3,6 @@ import ClassCard from "../components/ClassCard";
 
 import "./Home.css";
 import { listAssignments, searchCourses } from "../util/api";
-import { isTeacher, isAdmin } from "../util/login";
 
 export default function Home() {
   const [allCourses, setAllCourses] = useState<CourseWithAssignments[]>([]);
