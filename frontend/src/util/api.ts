@@ -149,7 +149,6 @@ export const importStudentsForCourse = async (
   courseID: number,
   students: string,
 ) => {
-  
   const response = await fetch(`${BASE_URL}/class/enroll_students`, {
     method: "POST",
     body: JSON.stringify({
