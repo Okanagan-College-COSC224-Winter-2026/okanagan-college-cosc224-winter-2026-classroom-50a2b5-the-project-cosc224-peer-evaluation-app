@@ -18,7 +18,6 @@ class User(db.Model):
     hash_pass = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(50), default="student", nullable=False)
     must_change_password = db.Column(db.Boolean, default=False, nullable=False)
-    profile_picture = db.Column(db.String(500), nullable=True)
 
     __table_args__ = (
         CheckConstraint("role IN ('student', 'teacher', 'admin')", name="check_valid_role"),
@@ -108,4 +107,3 @@ class User(db.Model):
     def has_role(self, *roles):
         """Check if the user has any of the specified roles"""
         return self.role in roles
-    

@@ -6,16 +6,15 @@ interface Assignment {
   name: string
   due_date?: string
   rubric_text?: string
-  attachment_filename?: string
 }
 
 interface Props {
   assignment: Assignment
+  // Use a structured update type instead of `any` to satisfy eslint
   onSave: (updates: {
     name?: string
     due_date?: string | null
     rubric?: string | null
-    file?: File | null
   }) => Promise<void>
   onCancel: () => void
 }
@@ -24,22 +23,19 @@ export default function AssignmentEditor(props: Props) {
   const [name, setName] = useState(props.assignment.name)
   const [dueDate, setDueDate] = useState(props.assignment.due_date || '')
   const [rubric, setRubric] = useState(props.assignment.rubric_text || '')
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const handleSave = async () => {
     setLoading(true)
     setError('')
-
     try {
       await props.onSave({
         name,
         due_date: dueDate || null,
         rubric: rubric || null,
-        file: selectedFile,
       })
-      props.onCancel()
+      props.onCancel() // Close modal on success
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
       setError(msg || 'Failed to save assignment')
@@ -52,7 +48,7 @@ export default function AssignmentEditor(props: Props) {
     <div className="modal-overlay" onClick={props.onCancel}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <h2>Edit Assignment</h2>
-
+        
         {error && <div className="error-message">{error}</div>}
 
         <div className="form-group">
@@ -87,35 +83,11 @@ export default function AssignmentEditor(props: Props) {
           />
         </div>
 
-        <div className="form-group">
-          <label>Replace Assignment File</label>
-          <input
-            type="file"
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null
-              setSelectedFile(file)
-            }}
-            disabled={loading}
-          />
-          {props.assignment.attachment_filename && (
-            <p>Current file: {props.assignment.attachment_filename}</p>
-          )}
-          {selectedFile && <p>New file: {selectedFile.name}</p>}
-        </div>
-
         <div className="modal-actions">
-          <button
-            onClick={props.onCancel}
-            disabled={loading}
-            className="btn-cancel"
-          >
+          <button onClick={props.onCancel} disabled={loading} className="btn-cancel">
             Cancel
           </button>
-          <button
-            onClick={handleSave}
-            disabled={loading}
-            className="btn-save"
-          >
+          <button onClick={handleSave} disabled={loading} className="btn-save">
             {loading ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
