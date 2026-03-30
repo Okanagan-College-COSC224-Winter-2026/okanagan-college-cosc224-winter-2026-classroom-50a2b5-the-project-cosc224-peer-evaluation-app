@@ -113,9 +113,6 @@ export const listClasses = async () => {
   return await resp.json();
 };
 
-export const importStudentsForCourse = async (
-  courseID: number,
-  students: string
 /**
  * Search courses by name (US-17).
  * Tokens are space-separated, order-independent, case-insensitive.
