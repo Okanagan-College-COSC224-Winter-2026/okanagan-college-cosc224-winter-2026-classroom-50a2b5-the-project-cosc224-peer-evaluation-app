@@ -59,7 +59,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
   if (!isOpen) return null;
 
   return (
-    <div className="ChangePasswordOverlay" onClick={onClose}>
+    <div className="ChangePasswordOverlay">
       <div className="ChangePasswordModal" onClick={(e) => e.stopPropagation()}>
         <div className="PasswordBlock">
           <h1>Change Password</h1>
@@ -126,7 +126,7 @@ export default function ChangePasswordPage() {
   const navigate = useNavigate();
   
   const handleClose = () => {
-    navigate('/home');
+    navigate('/home'); 
   };
 
   return <ChangePasswordModal isOpen={true} onClose={handleClose} />;

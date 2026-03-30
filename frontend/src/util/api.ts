@@ -625,18 +625,31 @@ export const changePassword = async (
   return await response.json();
 };
 
-export const getDashboard = async () => {
-  const resp = await fetch("http://localhost:5000/dashboard/", {
-    method: "GET",
-    credentials: "include", // important to send JWT cookie
+// export const getDashboard = async () => {
+//   const resp = await fetch("http://localhost:5000/dashboard/", {
+//     method: "GET",
+//     credentials: "include", // important to send JWT cookie
+//   });
+
+//   if (!resp.ok) {
+//     throw new Error(`Dashboard fetch failed: ${resp.status}`);
+//   }
+
+//   return await resp.json();
+// };
+
+export async function getDashboard(){
+  const resp = await fetch(`${BASE_URL}/dashboard`, {
+    method:"GET",
+    credentials:"include",
+    headers:{'Content-type':'application/json'},
   });
 
-  if (!resp.ok) {
+  if(!resp.ok){
     throw new Error(`Dashboard fetch failed: ${resp.status}`);
+    return resp.json();
   }
-
-  return await resp.json();
-};
+}
 
 // US9 - edit assignment
 export const editAssignment = async (

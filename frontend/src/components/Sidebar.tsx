@@ -25,6 +25,18 @@ export default function Sidebar() {
           </SidebarRow>
         )}
 
+        {isTeacher() && (
+                  <SidebarRow selected={location === "/classes/create"} href="/classes/create">
+          Create Class
+        </SidebarRow>
+        )}
+      
+      {isAdmin() && (
+        <SidebarRow selected={location === "/admin/create-teacher"} href="/admin/create-teacher">
+          Student Enrollment
+        </SidebarRow>
+      )}
+
         <SidebarRow selected={location.includes("/profile")} href="/profile/1">
           My Info
         </SidebarRow>
