@@ -8,7 +8,9 @@ from flask_jwt_extended import JWTManager
 from .cli import init_app
 from .controllers import (
     admin_controller,
+    announcement_controller,
     auth_controller,
+    direct_message_controller,
     class_controller,
     fake_api_controller,
     user_controller,
@@ -103,10 +105,25 @@ def create_app(test_config=None):
 
     # Register blueprints
     app.register_blueprint(auth_controller.bp)
+    app.register_blueprint(announcement_controller.announcement_bp)
     app.register_blueprint(user_controller.bp)
     app.register_blueprint(admin_controller.bp)
     app.register_blueprint(class_controller.bp)
     app.register_blueprint(assignment_controller.bp)
     app.register_blueprint(fake_api_controller.fake)
+<<<<<<< Updated upstream
+=======
+    app.register_blueprint(student_controller.student_bp)
+    app.register_blueprint(review_controller.review_bp)
+    app.register_blueprint(group_controller.group_bp)
+    app.register_blueprint(file_controller.file_bp)
+    app.register_blueprint(review_file_controller.review_file_bp)
+    app.register_blueprint(teacher_controller.teacher_bp)
+    app.register_blueprint(notification_controller.notification_bp)
+    app.register_blueprint(review_history_controller.review_history_bp)
+    app.register_blueprint(rubric_builder_controller.rubric_builder_bp)
+    app.register_blueprint(message_controller.message_bp)
+    app.register_blueprint(direct_message_controller.direct_message_bp)
+>>>>>>> Stashed changes
 
     return app

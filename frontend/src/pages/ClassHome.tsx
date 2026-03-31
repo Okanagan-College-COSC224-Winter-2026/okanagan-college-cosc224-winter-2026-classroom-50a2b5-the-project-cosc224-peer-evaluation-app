@@ -10,14 +10,32 @@ import Textbox from "../components/Textbox";
 import StatusMessage from "../components/StatusMessage";
 import { isTeacher } from "../util/login";
 
+interface Announcement {
+  id: number;
+  title: string;
+  content: string;
+  author_name: string;
+  created_at: string;
+}
+
 export default function ClassHome() {
   const { id } = useParams();
   const idNew = Number(id)
+<<<<<<< Updated upstream
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [newAssignmentName, setNewAssignmentName] = useState("");
   const [className, setClassName] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
+=======
+  const [assignments, setAssignments] = useState<Assignment[]>([])
+  const [newAssignmentName, setNewAssignmentName] = useState("")
+  const [newAssignmentDescription, setNewAssignmentDescription] = useState("")
+  const [className, setClassName] = useState<string | null>(null)
+  const [statusMessage, setStatusMessage] = useState("")
+  const [statusType, setStatusType] = useState<"error" | "success">("error")
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
+>>>>>>> Stashed changes
 
   useEffect(() => {
     (async () => {
