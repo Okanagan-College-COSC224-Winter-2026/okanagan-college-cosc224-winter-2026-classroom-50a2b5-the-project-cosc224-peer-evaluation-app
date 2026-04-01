@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import AssignmentCard from "../components/AssignmentCard";
 import Button from "../components/Button";
 import "./ClassHome.css";
@@ -9,15 +10,51 @@ import { importCSV } from "../util/csv";
 import Textbox from "../components/Textbox";
 import StatusMessage from "../components/StatusMessage";
 import { isTeacher } from "../util/login";
+=======
+import AssignmentCard from "../components/AssignmentCard"
+import Button from "../components/Button"
+import "./ClassHome.css"
+import { useParams } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { listAssignments, listClasses, createAssignment, getCourseAnnouncements, createAnnouncement, deleteAnnouncement } from "../util/api"
+import TabNavigation from "../components/TabNavigation"
+import { importCSV } from "../util/csv"
+import Textbox from "../components/Textbox"
+import StatusMessage from "../components/StatusMessage"
+import { isTeacher, isAdmin } from "../util/login"
+import RichTextEditor from "../components/RichTextEditor"
+import AnnouncementCard from "../components/AnnouncementCard"
+import AnnouncementForm from "../components/AnnouncementForm"
+import { useNavigate } from 'react-router-dom';
+
+interface Announcement {
+  id: number;
+  title: string;
+  content: string;
+  author_name: string;
+  created_at: string;
+}
+>>>>>>> Stashed changes
 
 export default function ClassHome() {
   const { id } = useParams();
   const idNew = Number(id)
+<<<<<<< Updated upstream
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [newAssignmentName, setNewAssignmentName] = useState("");
   const [className, setClassName] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
+=======
+  const [assignments, setAssignments] = useState<Assignment[]>([])
+  const [newAssignmentName, setNewAssignmentName] = useState("")
+  const [newAssignmentDescription, setNewAssignmentDescription] = useState("")
+  const [className, setClassName] = useState<string | null>(null)
+  const [statusMessage, setStatusMessage] = useState("")
+  const [statusType, setStatusType] = useState<"error" | "success">("error")
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const navigate = useNavigate();
+>>>>>>> Stashed changes
 
   useEffect(() => {
     (async () => {
@@ -62,7 +99,16 @@ export default function ClassHome() {
             <Button onClick={() => importCSV(id as string)}>
               Add Students via CSV
             </Button>
+<<<<<<< Updated upstream
           ) : null}
+=======
+          )}
+          {isTeacher() && (
+            <Button onClick={() => navigate(`/classes/${id}/progress`)}>
+              Student Progress
+            </Button>
+          )}
+>>>>>>> Stashed changes
         </div>
       </div>
 

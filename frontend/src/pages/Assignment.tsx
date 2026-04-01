@@ -80,6 +80,7 @@ export default function Assignment() {
 
       <TabNavigation
         tabs={[
+<<<<<<< Updated upstream
           {
             label: "Home",
             path: `/assignment/${id}`,
@@ -88,6 +89,14 @@ export default function Assignment() {
             label: "Group",
             path: `/assignment/${id}/group`,
           }
+=======
+        { label: "Home",  path: `/assignments/${id}` },
+        { label: "Group", path: `/assignments/${id}/group` },
+        ...(isTeacher()
+        ? [{ label: "Reviews", path: `/assignments/${id}/reviews` }]
+        : [{ label: "Team Submissions", path: `/assignments/${id}/team-submissions` }]
+        ),
+>>>>>>> Stashed changes
         ]}
       />
 
