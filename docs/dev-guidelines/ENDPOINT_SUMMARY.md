@@ -333,6 +333,19 @@ Teacher-uploaded supporting documents for assignments (e.g., instructions, rubri
 
 ---
 
+## Gradebook Endpoints
+
+Teacher-facing gradebook with grade overrides for all students in a course.
+
+| Method | Path | Body | Response | Notes |
+|--------|------|------|----------|-------|
+| GET | `/gradebook/course/<course_id>` | — | `{ assignments, students }` | ✅ Full gradebook data (teacher only) |
+| PUT | `/gradebook/course/<course_id>/override` | `{ studentID, assignmentID, overrideScore }` | `{ msg, overrideScore }` | ✅ Set/update grade override |
+| DELETE | `/gradebook/course/<course_id>/override` | `{ studentID, assignmentID }` | `{ msg }` | ✅ Clear grade override |
+| GET | `/gradebook/course/<course_id>/reviews?studentID=X&assignmentID=Y` | — | `{ individualReviews, groupReviews }` | ✅ Reviews for student+assignment |
+
+---
+
 ## Not Yet Implemented (Planned)
 
 These endpoints are planned based on the database schema but not yet implemented in Flask:

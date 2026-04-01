@@ -1,86 +1,31 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
+import { useGradebook, useSetGradeOverride, useClearGradeOverride } from "./useGradebook";
 import GradeCell from "./GradeCell";
 import ReviewDetailModal from "./ReviewDetailModal";
 
-// ── Fake data for UI prototyping ──────────────────────────────────────────
+interface GradeData {
+  individualAverage: number | null;
+  individualMax: number | null;
+  groupAverage: number | null;
+  groupMax: number | null;
+  overrideScore: number | null;
+  effectiveGrade: number | null;
+  effectiveMax: number | null;
+}
 
-const FAKE_ASSIGNMENTS = [
-  { id: 1, name: "Assignment 1" },
-  { id: 2, name: "Assignment 2" },
-  { id: 3, name: "Midterm Project" },
-  { id: 4, name: "Assignment 3" },
-  { id: 5, name: "Final Project" },
-];
+interface StudentRow {
+  id: number;
+  name: string;
+  email: string;
+  grades: Record<string, GradeData>;
+  courseTotal: { earned: number; max: number };
+}
 
-const FAKE_STUDENTS = [
-  {
-    id: 1,
-    name: "Alice Johnson",
-    email: "alice@example.com",
-    grades: {
-      1: { effectiveGrade: 17.5, effectiveMax: 20, isOverridden: false },
-      2: { effectiveGrade: 14, effectiveMax: 20, isOverridden: false },
-      3: { effectiveGrade: 42, effectiveMax: 50, isOverridden: true },
-      4: { effectiveGrade: 18, effectiveMax: 20, isOverridden: false },
-      5: { effectiveGrade: null, effectiveMax: null, isOverridden: false },
-    },
-    courseTotal: { earned: 91.5, max: 110 },
-  },
-  {
-    id: 2,
-    name: "Bob Smith",
-    email: "bob@example.com",
-    grades: {
-      1: { effectiveGrade: 15, effectiveMax: 20, isOverridden: false },
-      2: { effectiveGrade: 18, effectiveMax: 20, isOverridden: false },
-      3: { effectiveGrade: 38, effectiveMax: 50, isOverridden: false },
-      4: { effectiveGrade: 16, effectiveMax: 20, isOverridden: true },
-      5: { effectiveGrade: null, effectiveMax: null, isOverridden: false },
-    },
-    courseTotal: { earned: 87, max: 110 },
-  },
-  {
-    id: 3,
-    name: "Charlie Davis",
-    email: "charlie@example.com",
-    grades: {
-      1: { effectiveGrade: 19, effectiveMax: 20, isOverridden: false },
-      2: { effectiveGrade: 19.5, effectiveMax: 20, isOverridden: false },
-      3: { effectiveGrade: 47, effectiveMax: 50, isOverridden: false },
-      4: { effectiveGrade: 20, effectiveMax: 20, isOverridden: false },
-      5: { effectiveGrade: null, effectiveMax: null, isOverridden: false },
-    },
-    courseTotal: { earned: 105.5, max: 110 },
-  },
-  {
-    id: 4,
-    name: "Diana Lee",
-    email: "diana@example.com",
-    grades: {
-      1: { effectiveGrade: 12, effectiveMax: 20, isOverridden: false },
-      2: { effectiveGrade: null, effectiveMax: null, isOverridden: false },
-      3: { effectiveGrade: 30, effectiveMax: 50, isOverridden: false },
-      4: { effectiveGrade: 14, effectiveMax: 20, isOverridden: false },
-      5: { effectiveGrade: null, effectiveMax: null, isOverridden: false },
-    },
-    courseTotal: { earned: 56, max: 110 },
-  },
-  {
-    id: 5,
-    name: "Ethan Brown",
-    email: "ethan@example.com",
-    grades: {
-      1: { effectiveGrade: 16, effectiveMax: 20, isOverridden: false },
-      2: { effectiveGrade: 17, effectiveMax: 20, isOverridden: false },
-      3: { effectiveGrade: 44, effectiveMax: 50, isOverridden: false },
-      4: { effectiveGrade: 15, effectiveMax: 20, isOverridden: true },
-      5: { effectiveGrade: null, effectiveMax: null, isOverridden: false },
-    },
-    courseTotal: { earned: 92, max: 110 },
-  },
-];
-
-// ── Component ─────────────────────────────────────────────────────────────
+interface AssignmentCol {
+  id: number;
+  name: string;
+}
 
 interface ModalTarget {
   studentId: number;
@@ -90,16 +35,41 @@ interface ModalTarget {
 }
 
 export default function Gradebook() {
+  const { id } = useParams();
+  const courseId = Number(id);
+
+  const { data, isLoading } = useGradebook(courseId);
+  const setOverride = useSetGradeOverride(courseId);
+  const clearOverride = useClearGradeOverride(courseId);
+
   const [modalTarget, setModalTarget] = useState<ModalTarget | null>(null);
 
-  const openReviewModal = (
-    studentId: number,
-    studentName: string,
-    assignmentId: number,
-    assignmentName: string
-  ) => {
-    setModalTarget({ studentId, studentName, assignmentId, assignmentName });
-  };
+  const assignments: AssignmentCol[] = data?.assignments ?? [];
+  const students: StudentRow[] = data?.students ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="p-4 md:p-8 w-full mx-auto">
+        <h2 className="text-2xl font-semibold text-text-primary m-0 mb-6">Gradebook</h2>
+        <p className="text-text-secondary text-sm">Loading gradebook...</p>
+      </div>
+    );
+  }
+
+  if (assignments.length === 0 && students.length === 0) {
+    return (
+      <div className="p-4 md:p-8 w-full mx-auto">
+        <h2 className="text-2xl font-semibold text-text-primary m-0 mb-6">Gradebook</h2>
+        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="px-5 md:px-8 py-8 flex flex-col items-center gap-2">
+            <p className="text-text-secondary text-sm m-0">
+              No students or assignments in this course yet.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -114,7 +84,7 @@ export default function Gradebook() {
                   <th className="text-left px-4 py-3 font-semibold text-text-primary sticky left-0 bg-bg-secondary z-10 min-w-[200px] border-r border-border">
                     Student
                   </th>
-                  {FAKE_ASSIGNMENTS.map((a) => (
+                  {assignments.map((a) => (
                     <th
                       key={a.id}
                       className="text-center px-4 py-3 font-semibold text-text-primary min-w-[120px]"
@@ -128,7 +98,7 @@ export default function Gradebook() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {FAKE_STUDENTS.map((student) => {
+                {students.map((student) => {
                   const totalPct =
                     student.courseTotal.max > 0
                       ? ((student.courseTotal.earned / student.courseTotal.max) * 100).toFixed(0)
@@ -154,20 +124,34 @@ export default function Gradebook() {
                           </div>
                         </div>
                       </td>
-                      {FAKE_ASSIGNMENTS.map((a) => {
-                        const grade =
-                          student.grades[a.id as keyof typeof student.grades];
+                      {assignments.map((a) => {
+                        const grade = student.grades[String(a.id)];
                         return (
                           <GradeCell
                             key={a.id}
                             effectiveGrade={grade?.effectiveGrade ?? null}
                             effectiveMax={grade?.effectiveMax ?? null}
-                            isOverridden={grade?.isOverridden ?? false}
-                            onClickGrade={() => {
-                              /* will wire up inline edit later */
-                            }}
+                            isOverridden={grade?.overrideScore != null}
+                            onSetOverride={(score) =>
+                              setOverride.mutate({
+                                studentID: student.id,
+                                assignmentID: a.id,
+                                overrideScore: score,
+                              })
+                            }
+                            onClearOverride={() =>
+                              clearOverride.mutate({
+                                studentID: student.id,
+                                assignmentID: a.id,
+                              })
+                            }
                             onClickDetails={() =>
-                              openReviewModal(student.id, student.name, a.id, a.name)
+                              setModalTarget({
+                                studentId: student.id,
+                                studentName: student.name,
+                                assignmentId: a.id,
+                                assignmentName: a.name,
+                              })
                             }
                           />
                         );
@@ -192,6 +176,9 @@ export default function Gradebook() {
       <ReviewDetailModal
         isOpen={modalTarget !== null}
         onClose={() => setModalTarget(null)}
+        courseId={courseId}
+        studentId={modalTarget?.studentId ?? 0}
+        assignmentId={modalTarget?.assignmentId ?? 0}
         studentName={modalTarget?.studentName ?? ""}
         assignmentName={modalTarget?.assignmentName ?? ""}
       />

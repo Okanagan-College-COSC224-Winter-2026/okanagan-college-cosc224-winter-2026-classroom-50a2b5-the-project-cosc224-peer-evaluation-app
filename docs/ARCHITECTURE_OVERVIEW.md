@@ -228,6 +228,27 @@ Teacher views (same endpoint, sees all students):
   └── Weighted course average
 ```
 
+### Gradebook Phase (Teacher)
+```
+Teacher opens Gradebook tab (GET /gradebook/course/<courseId>):
+  Returns all students × all assignments with computed grades
+
+  For each student × assignment cell:
+    ├── individualAverage / individualMax (from peer reviews)
+    ├── groupAverage / groupMax (from group reviews)
+    ├── overrideScore (teacher manual override, if set)
+    ├── effectiveGrade = overrideScore ?? (individualAvg + groupAvg)
+    └── effectiveMax = max possible from rubric criteria
+
+  Teacher actions:
+    ├── Click grade → inline edit → PUT /gradebook/course/<id>/override
+    ├── Clear override → DELETE /gradebook/course/<id>/override
+    └── Click eye icon → modal shows all reviews (individual + group)
+
+  Grade overrides are stored separately (GradeOverride table),
+  never overwriting the underlying peer review data.
+```
+
 ---
 
 ## System Architecture
@@ -253,6 +274,7 @@ Teacher views (same endpoint, sees all students):
 │  │  ├── /groups (course-level groups)    │  │
 │  │  ├── /rubric (evaluation criteria)    │  │
 │  │  ├── /submission (student uploads)    │  │
+│  │  ├── /gradebook (teacher gradebook)  │  │
 │  │  └── /admin (user administration)     │  │
 │  └─────────────────┬──────────────────────┘  │
 │                    │                          │
@@ -262,7 +284,8 @@ Teacher views (same endpoint, sees all students):
 │  │  │   ├── grade_service (calculations)  │  │
 │  │  │   ├── progress_service (tracking)   │  │
 │  │  │   ├── review_masking (anonymity)    │  │
-│  │  │   └── review_tracking               │  │
+│  │  │   ├── review_tracking               │  │
+│  │  │   └── group_service (group utils)   │  │
 │  │  ├── JWT Authentication               │  │
 │  │  ├── Role-Based Authorization         │  │
 │  │  └── Data Validation (Marshmallow)    │  │
@@ -277,7 +300,8 @@ Teacher views (same endpoint, sees all students):
 │  │  ├── Submission Model                 │  │
 │  │  ├── Group Models (CourseGroup, etc.) │  │
 │  │  ├── Rubric/CriteriaDescription       │  │
-│  │  └── Review/Criterion Models          │  │
+│  │  ├── Review/Criterion Models          │  │
+│  │  └── GradeOverride Model             │  │
 │  └─────────────────┬──────────────────────┘  │
 └────────────────────┼────────────────────────┘
                      │ SQL Queries

@@ -98,6 +98,17 @@ entity "Criteria_Description" as CD {
   hasScore : BOOLEAN
 }
 
+entity "GradeOverride" as GO {
+  * id : SERIAL <<PK>>
+  --
+  studentID : INT <<FK User.id>>
+  assignmentID : INT <<FK Assignment.id>>
+  courseID : INT <<FK Course.id>>
+  override_score : FLOAT
+  teacherID : INT <<FK User.id>>
+  UNIQUE(studentID, assignmentID, courseID)
+}
+
 ' Relationships (FK -> PK)
 U ||--o{ C    : teaches (teacherID)
 C ||--o{ A    : has (courseID)
@@ -121,5 +132,10 @@ CD ||--o{ CR : referenced_by (criterionRowID)
 
 A ||--o{ RB  : may_have (assignmentID)
 RB ||--o{ CD : describes (rubricID)
+
+U ||--o{ GO  : overrides_for (studentID)
+A ||--o{ GO  : overrides_on (assignmentID)
+C ||--o{ GO  : overrides_in (courseID)
+U ||--o{ GO  : set_by (teacherID)
 
 @enduml
