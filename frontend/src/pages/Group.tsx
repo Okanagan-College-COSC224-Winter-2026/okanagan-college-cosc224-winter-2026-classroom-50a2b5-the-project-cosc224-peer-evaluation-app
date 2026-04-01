@@ -5,7 +5,7 @@ import {
   getUserId,
   listCourseMembers,
   listGroupMembers,
-  listGroups,
+  listAllGroups,
   listStuGroup,
   listUnassignedGroups,
   saveGroups,
@@ -18,6 +18,7 @@ import TabNavigation from "../components/TabNavigation";
 import StatusMessage from "../components/StatusMessage";
 import { isTeacher } from "../util/login";
 import Textbox from "../components/Textbox";
+import GroupChat from "../components/GroupChat";
 
 function fisherYates<T>(array: T[]): T[] {
   let m = array.length, t, i;
@@ -44,6 +45,7 @@ export default function Group() {
   const [groupName, setGroupName] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
+  const [stuId, setStuId] = useState<number>(0);
 
   const nameFromId = (id: number) => {
     return classMembers.find((mem) => mem.id === id)?.name || 'N/A';
@@ -109,10 +111,11 @@ export default function Group() {
 
       const classMembers = await listCourseMembers(courseId);
       setclassMembers(classMembers);
-      const groups = await listGroups(Number(id));
+      const groups = await listAllGroups(Number(id));
       setGroups(groups);
       const ua = await listUnassignedGroups(Number(id));
       const stuId = await getUserId();
+      setStuId(stuId);
       const stus = await listStuGroup(Number(id), stuId);
       setStuGroup(stus);
 
@@ -324,7 +327,7 @@ export default function Group() {
                   const newId = Number(nextGid) + 1;
                   await createGroup(Number(id), groupName, newId);
                   // Reload groups
-                  const updatedGroups = await listGroups(Number(id));
+                  const updatedGroups = await listAllGroups(Number(id));
                   setGroups(updatedGroups);
                   const grLocal: GroupTable = { ...groupTable };
                   grLocal[newId] = [];
@@ -355,6 +358,23 @@ export default function Group() {
               })}
               </tbody>
             </table>
+
+            {/* Group chat — only shown when student has a group */}
+            {stuGroup.length > 0 && (() => {
+              const myGroupId = stuGroup[0].groupID;
+              const otherMembers = stuGroup
+                .filter(s => s.userID !== stuId)
+                .map(s => ({ userId: s.userID, name: nameFromId(s.userID) }));
+              const groupName = groups.find(g => g.id === myGroupId)?.name ?? 'Group Chat';
+              return (
+                <GroupChat
+                  groupId={myGroupId}
+                  groupName={groupName}
+                  members={otherMembers}
+                  currentUserId={stuId}
+                />
+              );
+            })()}
           </div>
         )}
       </div>

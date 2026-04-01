@@ -17,7 +17,7 @@ interface StudentGroups {
   assignmentID: number;
 }
 
-interface CourseGroup{
+interface CourseGroup {
   id: number;
   name: string;
   assignmentID: number;
@@ -27,7 +27,7 @@ interface GroupTable {
   [key: number]: GroupTableValue[];
 }
 
-interface GroupTableValue{
+interface GroupTableValue {
   groupID: number;
   userID: number;
   assignmentID: number;
@@ -51,7 +51,6 @@ interface Assignment {
   has_attachment?: boolean;
 }
 
-
 interface CourseWithAssignments extends Course {
   assignments?: Assignment[];
   assignmentCount?: number;
@@ -60,7 +59,6 @@ interface CourseWithAssignments extends Course {
 // ============================================================
 // STUDENT GRADES (US20)
 // ============================================================
-
 interface CourseGrade {
   course_id: number;
   course_name: string;
@@ -79,7 +77,6 @@ interface StudentGradesResponse {
 // ============================================================
 // PEER REVIEW SUBMISSION (US1/US11)
 // ============================================================
-
 interface RubricCriteria {
   id: number;
   question: string;
@@ -109,10 +106,9 @@ interface ReviewSubmission {
 // ============================================================
 // STUDENT FEEDBACK (US12)
 // ============================================================
-
 interface CriteriaFeedback {
   question: string;
-  average_score: number;
+  avg_score: number;
   score_max: number;
   comments: string[];
 }
@@ -120,7 +116,7 @@ interface CriteriaFeedback {
 interface FeedbackResponse {
   assignment_id: number;
   assignment_name: string;
-  total_reviews_received: number;
-  criteria: CriteriaFeedback[];
+  total_reviews: number;
+  criteria_feedback: CriteriaFeedback[];
   overall_avg: number;
 }

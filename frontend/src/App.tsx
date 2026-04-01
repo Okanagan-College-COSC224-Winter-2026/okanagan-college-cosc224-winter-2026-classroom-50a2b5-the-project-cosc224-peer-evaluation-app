@@ -20,6 +20,7 @@ import AdminUsersPage from "./pages/AdminUsersPage";
 import AssignmentAnalytics from "./pages/AssignmentAnalytics";
 import ActivityFeedPage from "./pages/ActivityFeedPage";
 import RubricBuilderPage from "./pages/RubricBuilderPage";
+import FeedbackView from "./pages/FeedbackView";
 
 function AppContent() {
   const location = useLocation();
@@ -156,6 +157,15 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <RubricBuilderPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/student/feedback/:id"
+            element={
+              <ProtectedRoute>
+                <FeedbackView />
               </ProtectedRoute>
             }
           />

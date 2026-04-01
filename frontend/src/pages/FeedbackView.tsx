@@ -45,7 +45,7 @@ export default function FeedbackView() {
   }
 
   // Empty state — no reviews submitted yet
-  if (!feedback || feedback.total_reviews_received === 0) {
+  if (!feedback || feedback.total_reviews === 0) {
     return (
       <div className="FeedbackView">
         <h1>Your Feedback</h1>
@@ -58,7 +58,7 @@ export default function FeedbackView() {
   }
 
   // Calculate overall percentage for the summary
-  const criteria = feedback.criteria ?? [];
+  const criteria = feedback.criteria_feedback ?? [];
   const overallMaxPossible = criteria.length > 0
     ? criteria.reduce((sum, c) => sum + c.score_max, 0) / criteria.length
     : 0
@@ -83,7 +83,7 @@ export default function FeedbackView() {
         <div className="FeedbackView__summaryItem">
           <span className="FeedbackView__summaryLabel">Reviewers</span>
           <span className="FeedbackView__summaryValue">
-            {feedback.total_reviews_received}
+            {feedback.total_reviews}
           </span>
         </div>
       </div>
@@ -94,7 +94,7 @@ export default function FeedbackView() {
           <FeedbackCard
             key={index}
             question={criterion.question}
-            avgScore={criterion.average_score}
+            avgScore={criterion.avg_score}
             maxScore={criterion.score_max}
             comments={criterion.comments}
           />

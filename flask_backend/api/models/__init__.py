@@ -1,3 +1,4 @@
+from .announcement_model import Announcement
 from .assignment_model import Assignment
 from .conclusion_model import Conclusion
 from .conclusion_file_model import ConclusionFile
@@ -6,6 +7,7 @@ from .course_model import Course
 from .criteria_description_model import CriteriaDescription
 from .criterion_model import Criterion
 from .db import db, ma
+from .direct_message_model import DirectMessage
 from .group_members_model import Group_Members
 from .message_model import Message
 from .notification_model import Notification
@@ -36,6 +38,8 @@ from .schemas import (
 
 __all__ = [
     # Models
+    "Announcement",
+    "DirectMessage",
     "User",
     "Course",
     "CourseGroup",

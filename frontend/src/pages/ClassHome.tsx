@@ -13,6 +13,14 @@ import RichTextEditor from "../components/RichTextEditor"
 import AnnouncementCard from "../components/AnnouncementCard"
 import AnnouncementForm from "../components/AnnouncementForm"
 
+interface Announcement {
+  id: number;
+  title: string;
+  content: string;
+  author_name: string;
+  created_at: string;
+}
+
 export default function ClassHome() {
   const { id } = useParams()
   const idNew = Number(id)
@@ -22,7 +30,7 @@ export default function ClassHome() {
   const [className, setClassName] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState("")
   const [statusType, setStatusType] = useState<"error" | "success">("error")
-  const [announcements, setAnnouncements] = useState<string[]>([])
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
 
   useEffect(() => {
     (async () => {

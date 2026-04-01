@@ -120,20 +120,8 @@ export const listStuGroup = async (assignmentId: number, studentId: number) => {
   return await resp.json()
 }
 
-export const listGroups = async (assignmentId: number) => {
-  const resp = await fetch(`${BASE_URL}/list_all_groups/` + assignmentId, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-  })
-  maybeHandleExpire(resp);
-  if (!resp.ok) {
-    throw new Error(`Response status: ${resp.status}`);
-  }
-  return await resp.json()
-}
+// NOTE: listGroups was removed — it was an exact duplicate of listAllGroups.
+// Use listAllGroups(assignmentId) for all group fetching needs.
 
 export const listUnassignedGroups = async (assignmentId: number) => {
   const resp = await fetch(`${BASE_URL}/list_ua_groups/` + assignmentId, {
@@ -144,6 +132,9 @@ export const listUnassignedGroups = async (assignmentId: number) => {
     credentials: 'include',
   })
   maybeHandleExpire(resp);
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
   return await resp.json()
 }
 
@@ -194,7 +185,7 @@ export const getUserId = async () => {
 }
 
 export const saveGroups = async (groupID: number, userID: number, assignmentID: number) => {
-  await fetch(`${BASE_URL}/save_groups`, {
+  const resp = await fetch(`${BASE_URL}/save_groups`, {
     method: 'POST',
     body: JSON.stringify({ groupID, userID, assignmentID }),
     headers: {
@@ -202,10 +193,14 @@ export const saveGroups = async (groupID: number, userID: number, assignmentID: 
     },
     credentials: 'include',
   })
+  maybeHandleExpire(resp);
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
 }
 
 export const getCriteria = async (rubricID: number) => {
-  const resp = await fetch(`${BASE_URL}/criteria?rubricID=${rubricID}`, {
+  const resp = await fetch(`${BASE_URL}/assignment/criteria?rubricID=${rubricID}`, {
     credentials: 'include'
   })
   maybeHandleExpire(resp);
@@ -218,7 +213,7 @@ export const getCriteria = async (rubricID: number) => {
 export const createCriteria = async (rubricID: number, question: string, scoreMax: number, canComment: boolean, hasScore: boolean = true) => {
   const response = await fetch(`${BASE_URL}/assignment/rubric/${rubricID}/criteria`, {
     method: 'POST',
-    body: JSON.stringify({ question, scoreMax, hasScore }),
+    body: JSON.stringify({ question, scoreMax, hasScore, canComment }),
     headers: {
       'Content-Type': 'application/json',
     },
@@ -230,7 +225,7 @@ export const createCriteria = async (rubricID: number, question: string, scoreMa
   }
 }
 
-export const createRubric = async (id: number, assignmentID: number, canComment: boolean): Promise<{ id: number }> => {
+export const createRubric = async (assignmentID: number, canComment: boolean): Promise<{ id: number }> => {
   const response = await fetch(`${BASE_URL}/assignment/${assignmentID}/rubric`, {
     method: 'POST',
     body: JSON.stringify({ canComment }),
@@ -247,7 +242,7 @@ export const createRubric = async (id: number, assignmentID: number, canComment:
 }
 
 export const getRubric = async (rubricID: number) => {
-  const resp = await fetch(`${BASE_URL}/rubric?rubricID=${rubricID}`, {
+  const resp = await fetch(`${BASE_URL}/assignment/rubric/by-id?rubricID=${rubricID}`, {
     credentials: 'include'
   });
   maybeHandleExpire(resp);
@@ -274,7 +269,7 @@ export const createAssignment = async (courseID: number, name: string, descripti
 }
 
 export const deleteGroup = async (groupID: number) => {
-  await fetch(`${BASE_URL}/delete_group`, {
+  const resp = await fetch(`${BASE_URL}/delete_group`, {
     method: 'POST',
     body: JSON.stringify({ groupID }),
     headers: {
@@ -282,48 +277,18 @@ export const deleteGroup = async (groupID: number) => {
     },
     credentials: 'include',
   })
+  maybeHandleExpire(resp);
+  if (!resp.ok) {
+    throw new Error(`Response status: ${resp.status}`);
+  }
 }
 
-export const createReview = async (assignmentID: number, reviewerID: number, revieweeID: number) => {
-  const response = await fetch(`${BASE_URL}/create_review`, {
-    method: 'POST',
-    body: JSON.stringify({ assignmentID, reviewerID, revieweeID }),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include'
-  })
-  maybeHandleExpire(response);
-  if (!response.ok) {
-    throw new Error(`Response status: ${response.status}`);
-  }
-  return response
-}
-
-export const createCriterion = async (
-  reviewID: number,
-  criterionRowID: number,
-  grade: number,
-  comments: string
-) => {
-  const response = await fetch(`${BASE_URL}/create_criterion`, {
-    method: 'POST',
-    body: JSON.stringify({ reviewID, criterionRowID, grade, comments }),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include'
-  })
-  maybeHandleExpire(response);
-  if (!response.ok) {
-    throw new Error(`Response status: ${response.status}`);
-  }
-  return response
-}
+// NOTE: createReview and createCriterion were removed — use submitReview() instead.
+// submitReview() calls POST /api/reviews/submit and handles both in one atomic request.
 
 export const getReview = async (assignmentID: number, reviewerID: number, revieweeID: number) => {
   const resp = await fetch(
-    `${BASE_URL}/review?assignmentID=${assignmentID}&reviewerID=${reviewerID}&revieweeID=${revieweeID}`,
+    `${BASE_URL}/assignment/review?assignmentID=${assignmentID}&reviewerID=${reviewerID}&revieweeID=${revieweeID}`,
     { credentials: 'include' }
   )
   maybeHandleExpire(resp);
@@ -886,7 +851,7 @@ export const applyRubricTemplate = (templateId: number, assignmentId: number) =>
 // ── PDF Report Export ─────────────────────────────────────────────────────────
 
 export const exportAssignmentPDF = async (assignmentId: number): Promise<Blob> => {
-  const res = await fetch(`${BASE_URL}/assignments/${assignmentId}/export-pdf`, {
+  const res = await fetch(`${BASE_URL}/teacher/assignments/${assignmentId}/export-pdf`, {
     method: 'GET',
     credentials: 'include',
   });
@@ -894,3 +859,54 @@ export const exportAssignmentPDF = async (assignmentId: number): Promise<Blob> =
   if (!res.ok) throw new Error('Failed to export PDF');
   return res.blob();
 };
+
+// ── In-Group Messaging ────────────────────────────────────────────────────────
+
+export interface ChatMessage {
+  id: number;
+  sender_id: number;
+  sender_name: string;
+  content: string;
+  created_at: string;
+  is_read: boolean;
+  group_id?: number;
+  recipient_id?: number;
+}
+
+export const getGroupMessages = (groupId: number) =>
+  fetch(`${BASE_URL}/message/group/${groupId}`, {
+    credentials: 'include',
+  }).then(res => { maybeHandleExpire(res); return res; });
+
+export const sendGroupMessage = (groupId: number, content: string) =>
+  fetch(`${BASE_URL}/message/group/${groupId}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  }).then(res => { maybeHandleExpire(res); return res; });
+
+export const markGroupMessagesRead = (groupId: number) =>
+  fetch(`${BASE_URL}/message/group/${groupId}/read`, {
+    method: 'PUT',
+    credentials: 'include',
+  }).then(res => { maybeHandleExpire(res); return res; });
+
+export const getDirectMessages = (otherUserId: number) =>
+  fetch(`${BASE_URL}/message/direct/${otherUserId}`, {
+    credentials: 'include',
+  }).then(res => { maybeHandleExpire(res); return res; });
+
+export const sendDirectMessage = (otherUserId: number, content: string) =>
+  fetch(`${BASE_URL}/message/direct/${otherUserId}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  }).then(res => { maybeHandleExpire(res); return res; });
+
+export const markDirectMessagesRead = (otherUserId: number) =>
+  fetch(`${BASE_URL}/message/direct/${otherUserId}/read`, {
+    method: 'PUT',
+    credentials: 'include',
+  }).then(res => { maybeHandleExpire(res); return res; });

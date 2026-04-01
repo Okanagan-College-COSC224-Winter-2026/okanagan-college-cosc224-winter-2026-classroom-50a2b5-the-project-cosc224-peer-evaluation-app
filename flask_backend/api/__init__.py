@@ -8,7 +8,9 @@ from flask_jwt_extended import JWTManager
 from .cli import init_app
 from .controllers import (
     admin_controller,
+    announcement_controller,
     auth_controller,
+    direct_message_controller,
     class_controller,
     fake_api_controller,
     user_controller,
@@ -104,6 +106,7 @@ def create_app(test_config=None):
     init_app(app)
 
     app.register_blueprint(auth_controller.bp)
+    app.register_blueprint(announcement_controller.announcement_bp)
     app.register_blueprint(user_controller.bp)
     app.register_blueprint(admin_controller.bp)
     app.register_blueprint(class_controller.bp)
@@ -119,5 +122,6 @@ def create_app(test_config=None):
     app.register_blueprint(review_history_controller.review_history_bp)
     app.register_blueprint(rubric_builder_controller.rubric_builder_bp)
     app.register_blueprint(message_controller.message_bp)
+    app.register_blueprint(direct_message_controller.direct_message_bp)
 
     return app

@@ -99,4 +99,14 @@ def submit_review():
         link=f"/student/feedback/{assignment_id}",
     )
 
+    # Notify the teacher so their activity feed updates
+    teacher_id = assignment.course.teacherID
+    create_notification(
+        user_id=teacher_id,
+        type="review_received",
+        title="Review Submitted",
+        message=f"{reviewer.name} submitted a peer review in {assignment.name}.",
+        link=f"/assignments/{assignment_id}/reviews",
+    )
+
     return jsonify({"msg": "Review submitted successfully", "review_id": review.id}), 201
