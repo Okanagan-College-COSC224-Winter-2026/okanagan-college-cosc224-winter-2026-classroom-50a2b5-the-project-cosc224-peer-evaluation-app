@@ -14,8 +14,6 @@ import Group from "./pages/Group";
 import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
-<<<<<<< Updated upstream
-=======
 import ReviewHistoryPage from "./pages/ReviewHistoryPage";
 import TeacherReviewsPage from "./pages/TeacherReviewsPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
@@ -30,7 +28,6 @@ function TeamSubmissionsRoute() {
   const { id } = useParams<{ id: string }>();
   return <TeamSubmissionsPanel assignmentId={Number(id)} />;
 }
->>>>>>> Stashed changes
 
 function AppContent() {
   const location = useLocation();
@@ -45,55 +42,60 @@ function AppContent() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/change-password" element={<ChangePassword />} />
 
-          <Route path="/home" element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/admin/create-teacher" element={
-            <ProtectedRoute>
-              <CreateTeacher />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/admin/create-teacher"
+            element={
+              <ProtectedRoute>
+                <CreateTeacher />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/classes/create" element={
-            <ProtectedRoute>
-              <CreateClass />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/classes/create"
+            element={
+              <ProtectedRoute>
+                <CreateClass />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/profile/:id" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/profile/:id"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/classes/:id/home" element={
-            <ProtectedRoute>
-              <ClassHome />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/classes/:id/home"
+            element={
+              <ProtectedRoute>
+                <ClassHome />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/classes/:id/members" element={
-            <ProtectedRoute>
-              <ClassMembers />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/classes/:id/members"
+            element={
+              <ProtectedRoute>
+                <ClassMembers />
+              </ProtectedRoute>
+            }
+          />
 
-<<<<<<< Updated upstream
-          <Route path="/assignments/:id" element={
-            <ProtectedRoute>
-              <Assignment />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/assignments/:id/group" element={
-            <ProtectedRoute>
-              <Group />
-            </ProtectedRoute>
-          } />
-=======
           <Route
             path='/assignments/:id/team-submissions'
             element={<ProtectedRoute><TeamSubmissionsRoute /></ProtectedRoute>}
@@ -180,13 +182,12 @@ function AppContent() {
             }
           />
 
-          <Route 
-          path='/classes/:courseId/progress'
-          element={
-          <ProtectedRoute><StudentProgressPage /></ProtectedRoute>
-          } 
+          <Route
+            path='/classes/:courseId/progress'
+            element={
+              <ProtectedRoute><StudentProgressPage /></ProtectedRoute>
+            }
           />
->>>>>>> Stashed changes
         </Routes>
       </div>
     </div>
