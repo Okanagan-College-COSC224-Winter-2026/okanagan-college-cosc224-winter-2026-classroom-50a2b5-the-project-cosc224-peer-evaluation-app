@@ -207,16 +207,25 @@ def get_student_reviews(course_id):
     else:
         grp_reviews = []
 
-    def serialize_reviews(reviews):
+    def serialize_reviews(reviews, is_group=False):
         results = []
         for review in reviews:
             dumped = ReviewSchema().dump(review)
             criteria = Criterion.query.filter_by(reviewID=review.id).all()
             dumped["criteria"] = CriterionSchema(many=True).dump(criteria)
+            if is_group:
+                reviewer_group = get_user_group_in_course(review.reviewerID, course_id)
+                group_name = reviewer_group.name if reviewer_group else "Unknown Group"
+                student_name = dumped["reviewer"]["name"]
+                dumped["reviewer"] = {
+                    "id": None,
+                    "name": f"{group_name} | {student_name}",
+                    "email": None,
+                }
             results.append(dumped)
         return results
 
     return jsonify({
         "individualReviews": serialize_reviews(ind_reviews),
-        "groupReviews": serialize_reviews(grp_reviews),
+        "groupReviews": serialize_reviews(grp_reviews, is_group=True),
     }), 200

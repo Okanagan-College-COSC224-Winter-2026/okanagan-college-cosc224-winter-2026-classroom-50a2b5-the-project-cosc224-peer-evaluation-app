@@ -29,7 +29,11 @@ export default function GradeCell({
   }, [editing]);
 
   const startEdit = () => {
-    setEditValue(effectiveGrade !== null ? String(effectiveGrade) : "");
+    const pct =
+      effectiveMax && effectiveMax > 0 && effectiveGrade !== null
+        ? ((effectiveGrade / effectiveMax) * 100).toFixed(0)
+        : "";
+    setEditValue(pct);
     setEditing(true);
   };
 
@@ -40,9 +44,17 @@ export default function GradeCell({
       if (isOverridden) onClearOverride();
       return;
     }
-    const score = parseFloat(trimmed);
-    if (!isNaN(score) && score >= 0) {
-      onSetOverride(score);
+    const pct = parseFloat(trimmed);
+    if (!isNaN(pct) && pct >= 0 && pct <= 100) {
+      // Skip save if the percentage didn't actually change
+      const currentPct =
+        effectiveMax && effectiveMax > 0 && effectiveGrade !== null
+          ? Math.round((effectiveGrade / effectiveMax) * 100)
+          : null;
+      if (Math.round(pct) === currentPct) return;
+
+      const raw = effectiveMax && effectiveMax > 0 ? (pct / 100) * effectiveMax : pct;
+      onSetOverride(raw);
     }
   };
 
@@ -88,6 +100,7 @@ export default function GradeCell({
             type="number"
             step="any"
             min="0"
+            max="100"
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onBlur={commitEdit}
@@ -105,15 +118,44 @@ export default function GradeCell({
             {percentage !== null ? `${percentage}%` : effectiveGrade}
           </button>
         )}
-        <button
-          onClick={onClickDetails}
-          className="bg-transparent border-none cursor-pointer text-text-secondary hover:text-btn-primary transition-colors p-1 rounded-lg hover:bg-bg-secondary"
-          title="View reviews"
-        >
-          <EyeIcon />
-        </button>
+        {isOverridden && !editing ? (
+          <button
+            onClick={onClearOverride}
+            className="bg-transparent border-none cursor-pointer text-amber-600 hover:text-red-500 transition-colors p-1 rounded-lg hover:bg-bg-secondary"
+            title="Revert to peer review grade"
+          >
+            <UndoIcon />
+          </button>
+        ) : (
+          <button
+            onClick={onClickDetails}
+            className="bg-transparent border-none cursor-pointer text-text-secondary hover:text-btn-primary transition-colors p-1 rounded-lg hover:bg-bg-secondary"
+            title="View reviews"
+          >
+            <EyeIcon />
+          </button>
+        )}
       </div>
     </td>
+  );
+}
+
+function UndoIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="1 4 1 10 7 10" />
+      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+    </svg>
   );
 }
 
