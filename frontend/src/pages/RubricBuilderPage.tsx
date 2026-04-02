@@ -14,22 +14,6 @@ interface TemplateOption {
   criteria: CriterionData[];
 }
 
-interface RubricCriterionPayload {
-  id?: number;
-  name: string;
-  description: string;
-  max_score: number;
-  weight: number;
-  position: number;
-}
-
-interface RubricPayload {
-  name: string;
-  criteria: RubricCriterionPayload[];
-  is_template?: boolean;
-  template_name?: string;
-}
-
 export default function RubricBuilderPage() {
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const assignId = Number(assignmentId);
@@ -85,7 +69,7 @@ export default function RubricBuilderPage() {
   useEffect(() => { loadTemplates(); }, [loadTemplates]);
 
   // Criterion CRUD handlers
-  const handleChange = (index: number, field: keyof CriterionData, value: CriterionData[keyof CriterionData]) => {
+  const handleChange = (index: number, field: keyof CriterionData, value: string | number) => {
     setCriteria(prev => prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)));
   };
 
@@ -149,7 +133,7 @@ export default function RubricBuilderPage() {
 
     setSaving(true);
     try {
-      const payload: RubricPayload = {
+      const payload: Record<string, unknown> = {
         name: rubricName,
         criteria: criteria.map((c, i) => ({
           ...(c.id ? { id: c.id } : {}),
