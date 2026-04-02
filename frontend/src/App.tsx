@@ -2,27 +2,32 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./components/Sidebar";
-
-import "./App.css";
 import Profile from "./pages/Profile";
 import CreateClass from "./pages/CreateClass";
 import LoginPage from "./pages/LoginPage";
 import ClassHome from "./pages/ClassHome";
 import ClassMembers from "./pages/ClassMembers";
+import ClassGroupManagement from "./pages/ClassGroupManagement";
+import ClassStudentSubmissions from "./pages/ClassStudentSubmissions";
 import Assignment from "./pages/Assignment";
+import AssignmentMembers from "./pages/AssignmentMembers";
+import AssignmentGroups from "./pages/AssignmentGroups";
+import AssignmentRubric from "./pages/AssignmentRubric";
 import Group from "./pages/Group";
 import RegisterPage from "./pages/RegisterPage";
 import ChangePassword from "./pages/ChangePassword";
 import CreateTeacher from "./pages/CreateTeacher";
+import Browse from "./pages/Browse";
+import ManageUsers from "./pages/ManageUsers";
 
 function AppContent() {
   const location = useLocation();
   const noSidebarPaths = ["/", "/login", "/register", "/change-password"];
 
   return (
-    <div className="App">
+    <div className="flex h-screen bg-background">
       {!noSidebarPaths.includes(location.pathname) && <Sidebar />}
-      <div className="inner">
+      <main className="flex flex-1 flex-col overflow-auto">
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -34,15 +39,33 @@ function AppContent() {
             </ProtectedRoute>
           } />
 
+          <Route path="/browse" element={
+            <ProtectedRoute>
+              <Browse />
+            </ProtectedRoute>
+          } />
+
           <Route path="/admin/create-teacher" element={
             <ProtectedRoute>
               <CreateTeacher />
             </ProtectedRoute>
           } />
 
+          <Route path="/admin/users" element={
+            <ProtectedRoute>
+              <ManageUsers />
+            </ProtectedRoute>
+          } />
+
           <Route path="/classes/create" element={
             <ProtectedRoute>
               <CreateClass />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           } />
 
@@ -64,9 +87,39 @@ function AppContent() {
             </ProtectedRoute>
           } />
 
+          <Route path="/classes/:id/groups" element={
+            <ProtectedRoute>
+              <ClassGroupManagement />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/classes/:id/student-submissions" element={
+            <ProtectedRoute>
+              <ClassStudentSubmissions />
+            </ProtectedRoute>
+          } />
+
           <Route path="/assignments/:id" element={
             <ProtectedRoute>
               <Assignment />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/assignments/:id/members" element={
+            <ProtectedRoute>
+              <AssignmentMembers />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/assignments/:id/groups" element={
+            <ProtectedRoute>
+              <AssignmentGroups />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/assignments/:id/rubric" element={
+            <ProtectedRoute>
+              <AssignmentRubric />
             </ProtectedRoute>
           } />
 
@@ -75,8 +128,32 @@ function AppContent() {
               <Group />
             </ProtectedRoute>
           } />
+
+          <Route path="/assignments/:id/manage" element={
+            <ProtectedRoute>
+              <Assignment />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/assignments/:id/submission" element={
+            <ProtectedRoute>
+              <Assignment />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/assignments/:id/student-submissions" element={
+            <ProtectedRoute>
+              <Assignment />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/assignments/:id/peer-reviews" element={
+            <ProtectedRoute>
+              <Assignment />
+            </ProtectedRoute>
+          } />
         </Routes>
-      </div>
+      </main>
     </div>
   );
 }

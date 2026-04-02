@@ -16,16 +16,27 @@ class Assignment(db.Model):
     name = db.Column(db.String(255), nullable=True)
     rubric_text = db.Column("rubric", db.String(255), nullable=True)
 
+    # NEW: start date field (assignment not visible to students before this date)
+    start_date = db.Column(db.DateTime, nullable=True, index=True)
     # NEW: due date field (acceptance criteria: edit/delete allowed before due date)
     due_date = db.Column(db.DateTime, nullable=True, index=True)
+    
+    # Submission type: 'individual' or 'group'
+    submission_type = db.Column(db.String(20), default='individual', nullable=False)
+
+    # Peer review options
+    internal_review = db.Column(db.Boolean, default=False, nullable=False)  # Group only: teammates review each other
+    external_review = db.Column(db.Boolean, default=False, nullable=False)  # Group: groups review other groups; Individual: classmates review each other
+    anonymous_review = db.Column(db.Boolean, default=False, nullable=False)  # Hide reviewer names from students
+
+    # File attachment fields
+    attachment_filename = db.Column(db.String(255), nullable=True)  # Original filename
+    attachment_path = db.Column(db.String(500), nullable=True)  # Server-side path
 
     # relationships
     course = db.relationship("Course", back_populates="assignments", lazy="joined")
     rubrics = db.relationship(
         "Rubric", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
-    )
-    groups = db.relationship(
-        "CourseGroup", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
     )
     submissions = db.relationship(
         "Submission", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
@@ -33,15 +44,25 @@ class Assignment(db.Model):
     reviews = db.relationship(
         "Review", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
     )
-    group_members = db.relationship(
-        "Group_Members", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
+    files = db.relationship(
+        "AssignmentFile", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
+    )
+    student_submissions = db.relationship(
+        "StudentSubmission", back_populates="assignment", cascade="all, delete-orphan", lazy="dynamic"
     )
 
-    def __init__(self, courseID, name, rubric_text, due_date=None):
+    def __init__(self, courseID, name, rubric_text, start_date=None, due_date=None, submission_type='individual', internal_review=False, external_review=False, anonymous_review=False, attachment_filename=None, attachment_path=None):
         self.courseID = courseID
         self.name = name
         self.rubric_text = rubric_text
+        self.start_date = start_date
         self.due_date = due_date
+        self.submission_type = submission_type
+        self.internal_review = internal_review
+        self.external_review = external_review
+        self.anonymous_review = anonymous_review
+        self.attachment_filename = attachment_filename
+        self.attachment_path = attachment_path
 
     def __repr__(self):
         return f"<Assignment id={self.id} name={self.name}>"
@@ -76,6 +97,14 @@ class Assignment(db.Model):
         due = self._ensure_timezone_aware(self.due_date)
         now = self._get_current_utc_time()
         return (due is None) or (now < due)
+    
+    def is_visible_to_students(self):
+        """Check if the assignment is visible to students based on the start date."""
+        start = self._ensure_timezone_aware(self.start_date)
+        if start is None:
+            return True  # No start date means it's always visible
+        now = self._get_current_utc_time()
+        return now >= start
 
     def update(self):
         """Update assignment in the database"""

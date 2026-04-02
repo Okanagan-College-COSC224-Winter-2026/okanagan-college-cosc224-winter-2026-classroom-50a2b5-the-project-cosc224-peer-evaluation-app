@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Criteria from './Criteria';
 import { getCriteria, getRubric } from '../util/api';
-import './RubricDisplay.css';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface RubricDisplayProps {
     rubricId: number | null;
@@ -22,6 +22,7 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
     const questions: string[] = [];
     const scoreMaxes: number[] = [];
     const hasScores: boolean[] = [];
+    const descriptions: string[] = [];
 
     useEffect(() => {
         const loadData = async () => {
@@ -41,27 +42,35 @@ export default function RubricDisplay({ rubricId, onCriterionSelect, grades }: R
         questions.push(crit.question);
         scoreMaxes.push(crit.scoreMax);
         hasScores.push(crit.hasScore);
+        descriptions.push(crit.description || '');
     });
 
     if (!rubricId || criteria.length === 0) {
         return (
-            <div className="RubricDisplay">
-                <p>No rubric available yet</p>
-            </div>
+            <Card className="my-5">
+                <CardContent className="pt-6">
+                    <p>No rubric available yet</p>
+                </CardContent>
+            </Card>
         );
     }
 
     return (
-        <div className="RubricDisplay">
-            <h2>Rubric</h2>
-            <Criteria
-                questions={questions}
-                scoreMaxes={scoreMaxes}
-                canComment={rubricInfo?.canComment ?? false}
-                hasScores={hasScores}
-                onCriterionSelect={onCriterionSelect}
-                grades={grades}
-            />
-        </div>
+        <Card className="my-5">
+            <CardHeader>
+                <CardTitle>Rubric</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Criteria
+                    questions={questions}
+                    scoreMaxes={scoreMaxes}
+                    canComment={rubricInfo?.canComment ?? false}
+                    hasScores={hasScores}
+                    descriptions={descriptions}
+                    onCriterionSelect={onCriterionSelect}
+                    grades={grades}
+                />
+            </CardContent>
+        </Card>
     );
-} 
+}

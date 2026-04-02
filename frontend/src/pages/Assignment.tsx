@@ -1,17 +1,19 @@
-import { useEffect, useState, ChangeEvent } from "react";
-import { useParams } from "react-router-dom";
-import "./Assignment.css";
-import RubricCreator from "../components/RubricCreator";
-import RubricDisplay from "../components/RubricDisplay";
+import { useEffect, useState } from "react";
+import { useParams, useLocation, Link } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
 import TabNavigation from "../components/TabNavigation";
+import AssignmentSettings from "../components/AssignmentSettings";
+import AssignmentFileUpload from "../components/AssignmentFileUpload";
+import AssignmentFileDisplay from "../components/AssignmentFileDisplay";
+import StudentSubmissionUpload from "../components/StudentSubmissionUpload";
+import TeacherSubmissionView from "../components/TeacherSubmissionView";
+import RubricDisplay from "../components/RubricDisplay";
+import PeerReviews from "./PeerReviews";
 import { isTeacher } from "../util/login";
 
-import { 
-  listStuGroup,
-  getUserId,
-  createReview,
-  createCriterion,
-  getReview
+import {
+  getRubric,
+  getAssignmentDetails
 } from "../util/api";
 
 interface SelectedCriterion {
@@ -21,28 +23,52 @@ interface SelectedCriterion {
 
 export default function Assignment() {
   const { id } = useParams();
-  const [stuGroup, setStuGroup] = useState<StudentGroups[]>([]);
-  const [revieweeID, setRevieweeID] = useState<number>(0);
-  const [stuID, setStuID] = useState<number>(0);
+  const location = useLocation();
   const [selectedCriteria, setSelectedCriteria] = useState<SelectedCriterion[]>([]);
   const [review, setReview] = useState<number[]>([]);
+  // const [criteriaDescriptions, setCriteriaDescriptions] = useState<Criterion[]>([]);
+  const [assignmentName, setAssignmentName] = useState<string>("");
+  const [courseId, setCourseId] = useState<number | null>(null);
+  const [courseName, setCourseName] = useState<string>("");
 
+  // Determine which tab is active based on URL path
+  const isManageTab = location.pathname.includes('/manage');
+  const isSubmissionTab = location.pathname.includes('/submission');
+  const isStudentSubmissionsTab = location.pathname.includes('/student-submissions');
+  const isPeerReviewsTab = location.pathname.includes('/peer-reviews');
+
+  // Fetch assignment details to get the name
   useEffect(() => {
-      (async () => {
-        const stuID = await getUserId();
-      setStuID(stuID);
-      const stus = await listStuGroup(Number(id), stuID);
-      setStuGroup(stus);
-        try {
-          const reviewResponse = await getReview(Number(id), stuID, revieweeID);
-          const reviewData = await reviewResponse.json();
-          setReview(reviewData.grades);
-          console.log("Review data:", reviewData);
-        } catch (error) {
-          console.error('Error fetching review:', error);
+    (async () => {
+      try {
+        const assignmentData = await getAssignmentDetails(Number(id));
+        if (assignmentData && assignmentData.name) {
+          setAssignmentName(assignmentData.name);
         }
-      })();
-  }, [revieweeID, id, stuID]);
+        if (assignmentData && assignmentData.courseID) {
+          setCourseId(assignmentData.courseID);
+          // Fetch the course name
+          const { listClasses } = await import("../util/api");
+          const classes = await listClasses();
+          const course = classes.find((c: { id: number }) => c.id === assignmentData.courseID);
+          if (course) setCourseName(course.name);
+        }
+      } catch (error) {
+        console.error('Error fetching assignment details:', error);
+      }
+    })();
+  }, [id]);
+
+  // Load criteria descriptions for the rubric
+  useEffect(() => {
+    (async () => {
+      try {
+        await getRubric(Number(id), true); // true = use as assignmentID
+      } catch (error) {
+        console.error('Error fetching rubric:', error);
+      }
+    })();
+  }, [id]);
 
   const handleCriterionSelect = (row: number, column: number) => {
     // Check if this criterion is already selected
@@ -55,6 +81,12 @@ export default function Assignment() {
       setSelectedCriteria(prev => 
         prev.filter((_, index) => index !== existingIndex)
       );
+      // Also update the review grades array
+      setReview(prev => {
+        const newReview = [...prev];
+        newReview[row] = 0;
+        return newReview;
+      });
     } else {
       // Add the new criterion, removing any other selection in the same row
       setSelectedCriteria(prev => {
@@ -63,75 +95,113 @@ export default function Assignment() {
         // Add the new selection
         return [...filteredCriteria, { row, column }];
       });
+      // Also update the review grades array
+      setReview(prev => {
+        const newReview = [...prev];
+        newReview[row] = column;
+        return newReview;
+      });
     }
   };
 
-  function handleRadioChange(event: ChangeEvent<HTMLInputElement>): void {
-    const selectedID = Number(event.target.value);
-    setRevieweeID(selectedID);
-    console.log(`Selected group member ID: ${selectedID}`);
-  }
-
   return (
-    <>
-      <div className="AssignmentHeader">
-        <h2>Assignment {id}</h2>
+    <div className="flex flex-1 flex-col">
+      {courseId && (
+        <div className="px-3 py-2">
+          <Link
+            to={`/classes/${courseId}/home`}
+            className="text-sm text-muted-foreground no-underline hover:text-foreground transition-colors"
+          >
+            ← {courseName || "Back to class"}
+          </Link>
+        </div>
+      )}
+      <div className="flex flex-row items-center justify-between px-3 pb-3">
+        <h2 className="text-xl font-semibold">{assignmentName || "Loading..."}</h2>
       </div>
 
       <TabNavigation
-        tabs={[
-          {
-            label: "Home",
-            path: `/assignment/${id}`,
-          },
-          {
-            label: "Group",
-            path: `/assignment/${id}/group`,
-          }
-        ]}
+        tabs={
+          isTeacher() 
+            ? [
+                {
+                  label: "Home",
+                  path: `/assignments/${id}`,
+                },
+                {
+                  label: "Members",
+                  path: `/assignments/${id}/members`,
+                },
+                {
+                  label: "Groups",
+                  path: `/assignments/${id}/groups`,
+                },
+                {
+                  label: "Rubric",
+                  path: `/assignments/${id}/rubric`,
+                },
+                {
+                  label: "Student Submissions",
+                  path: `/assignments/${id}/student-submissions`,
+                },
+                {
+                  label: "Manage",
+                  path: `/assignments/${id}/manage`,
+                }
+              ]
+            : [
+                {
+                  label: "Home",
+                  path: `/assignments/${id}`,
+                },
+                {
+                  label: "Members",
+                  path: `/assignments/${id}/members`,
+                },
+                {
+                  label: "Submission",
+                  path: `/assignments/${id}/submission`,
+                },
+                {
+                  label: "Peer Reviews",
+                  path: `/assignments/${id}/peer-reviews`,
+                },
+              ]
+        }
       />
 
-      <div className='assignmentRubricDisplay'>
-        <RubricDisplay rubricId={Number(id)} onCriterionSelect={handleCriterionSelect} grades={review} />
-      </div>
-      {
-        isTeacher() && 
-          <div className='assignmentRubric'>
-            <RubricCreator id={Number(id)}/>
-          </div>
-      }
+      {isManageTab && isTeacher() ? (
+        <AssignmentSettings assignmentId={Number(id)} />
+      ) : isSubmissionTab && !isTeacher() ? (
+        /* Student submission upload tab */
+        <StudentSubmissionUpload assignmentId={Number(id)} />
+      ) : isStudentSubmissionsTab && isTeacher() ? (
+        /* Teacher view of all student submissions */
+        <TeacherSubmissionView assignmentId={Number(id)} />
+      ) : isPeerReviewsTab && !isTeacher() ? (
+        /* Student peer reviews tab */
+        <PeerReviews />
+      ) : (
+        /* Home tab - default view */
+        <div className="flex-1 space-y-6 p-6">
+          {/* File upload/display section */}
+          {isTeacher() ? (
+            <AssignmentFileUpload
+              assignmentId={Number(id)}
+            />
+          ) : (
+            <AssignmentFileDisplay
+              assignmentId={Number(id)}
+            />
+          )}
 
-{
-      //List group members as radio buttons to select for given review
-      !isTeacher() && <div className='groupMembers'>
-        <h3>Select a group member to review</h3>
-          {stuGroup.map((stus) => {
-                return (
-                  <>
-                  <input type='radio' id={stus.userID.toString()} value={stus.userID} name='groupMembers' onChange={handleRadioChange}></input>
-                  <label htmlFor={stus.userID.toString()}>{stus.userID}</label>
-                  <br></br>
-                  </>
-                )
-              }
-            )
-          }
-          <button className='submitReview' onClick={async () => {
-            console.log("Submitting review with selected criteria:", selectedCriteria);
-            try {
-              const reviewResponse = await createReview(Number(id), stuID, revieweeID);
-              const reviewData = await reviewResponse.json();
-              console.log("Review response:", reviewData);
-              for (const criterion of selectedCriteria) {
-                await createCriterion(reviewData.id, criterion.row, criterion.column, "");
-              }
-              console.log('Review submitted successfully');
-            } catch (error) {
-              console.error('Error submitting review:', error);
-            }
-          }}>Submit Review</button>
-      </div>}
-    </>
+          <Card>
+            <CardContent className="p-4">
+              <RubricDisplay rubricId={Number(id)} onCriterionSelect={handleCriterionSelect} grades={review} />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
   );
 }
-

@@ -10,9 +10,9 @@ import {
   listUnassignedGroups,
   saveGroups,
   deleteGroup,
+  getAssignmentDetails,
 } from "../util/api";
 import { useParams } from "react-router-dom";
-import "./Group.css";
 import TabNavigation from "../components/TabNavigation";
 import StatusMessage from "../components/StatusMessage";
 import { isTeacher } from "../util/login";
@@ -35,7 +35,7 @@ function fisherYates<T>(array: T[]): T[] {
 export default function Group() {
   const { id } = useParams();
   const [classMembers, setclassMembers] = useState<User[]>([]);
-  const [stuGroup, setStuGroup] = useState<StudentGroups[]>([]);
+  const [stuGroup, setStuGroup] = useState<User[]>([]);
   const [groups, setGroups] = useState<CourseGroup[]>([]);
   const [groupTable, setGroupTable] = useState<GroupTable>({});
   const [selectedGroup, setSelectedGroup] = useState<number>(-1);
@@ -43,6 +43,7 @@ export default function Group() {
   const [groupName, setGroupName] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'error' | 'success'>('error');
+  const [assignmentName, setAssignmentName] = useState<string>("");
 
   const nameFromId = (id: number) => {
     return classMembers.find((mem) => mem.id === id)?.name || 'N/A';
@@ -101,13 +102,23 @@ export default function Group() {
 
   useEffect(() => {
     (async () => {
+      // Fetch assignment name
+      try {
+        const assignmentData = await getAssignmentDetails(Number(id));
+        if (assignmentData && assignmentData.name) {
+          setAssignmentName(assignmentData.name);
+        }
+      } catch (error) {
+        console.error('Error fetching assignment details:', error);
+      }
+
       const classMembers = await listCourseMembers(String(id));
       setclassMembers(classMembers);
       const groups = await listGroups(Number(id));
       setGroups(groups);
       const ua = await listUnassignedGroups(Number(id));
-      const stuId = await getUserId();
-      const stus = await listStuGroup(Number(id), stuId);
+      const stuIdResponse = await getUserId();
+      const stus = await listStuGroup(Number(id), stuIdResponse.id);
       setStuGroup(stus);
 
       const groupMembers: {
@@ -138,43 +149,51 @@ export default function Group() {
       }
       setMemberTable(memLocal);
     })();
-  }, []);
+  }, [id]);
 
   return (
     <>
-      <div className="AssignmentHeader">
-        <h2>Assignment {id}</h2>
+      <div className="py-4 px-6 border-b border-border">
+        <h2 className="text-xl font-semibold text-foreground">{assignmentName || "Loading..."}</h2>
       </div>
 
       <TabNavigation
-        tabs={[
-          {
-            label: "Home",
-            path: `/assignment/${id}`,
-          },
-          {
-            label: "Group",
-            path: `/assignment/${id}/group`,
-          }
-        ]}
+        tabs={
+          isTeacher()
+            ? [
+                { label: "Home", path: `/assignments/${id}` },
+                { label: "Members", path: `/assignments/${id}/members` },
+                { label: "Groups", path: `/assignments/${id}/groups` },
+                { label: "Rubric", path: `/assignments/${id}/rubric` },
+                { label: "Student Submissions", path: `/assignments/${id}/student-submissions` },
+                { label: "Manage", path: `/assignments/${id}/manage` },
+              ]
+            : [
+                { label: "Home", path: `/assignments/${id}` },
+                { label: "Members", path: `/assignments/${id}/members` },
+                { label: "Submission", path: `/assignments/${id}/submission` },
+                { label: "Peer Reviews", path: `/assignments/${id}/peer-reviews` },
+              ]
+        }
       />
 
       <StatusMessage message={statusMessage} type={statusType} />
 
-      <div className="AssignmentPage">
+      <div className="p-6">
         {isTeacher() ? (
           <>
-            <div className="assignmentTables">
-              <table className="table">
+            <div className="flex gap-6 mb-6">
+              <table className="border-collapse w-full max-w-md border border-border rounded-lg overflow-hidden">
                 <tr>
-                  <th>Unassigned</th>
+                  <th className="bg-muted px-4 py-3 text-left font-semibold text-foreground">Unassigned</th>
                 </tr>
                 {memberTable[-1]
                   ? memberTable[-1].map((ua) => {
                       return (
-                        <tr>
-                          <span className="StudentName">{nameFromId(ua.userID)}</span>
+                        <tr className="border-t border-border">
+                          <span className="inline-block px-4 py-2 text-foreground">{nameFromId(ua.userID)}</span>
                           <button
+                            className="ml-2 px-3 py-1 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
                             onClick={() => {
                               // These need to be deep copies, or it won't update properly
                               const localMember = { ...memberTable };
@@ -207,22 +226,21 @@ export default function Group() {
                   : null}
               </table>
 
-              <table className="table">
+              <table className="border-collapse w-full max-w-md border border-border rounded-lg overflow-hidden">
                 <tr>
-                  <th>Groups</th>
+                  <th className="bg-muted px-4 py-3 text-left font-semibold text-foreground">Groups</th>
                 </tr>
                 {Object.keys(groupTable).map((gId) => {
                   return (
                     <>
                       <tr
-                        className={
-                          "groupNames " +
-                          (Number(gId) == selectedGroup ? "selected" : "")
-                        }
+                        className={`cursor-pointer px-4 py-2 flex items-center gap-2 border-t border-border hover:bg-accent transition-colors ${
+                          Number(gId) == selectedGroup ? "bg-accent" : ""
+                        }`}
                         onClick={() => setSelectedGroup(Number(gId))}
                       >
-                        <div className="GroupArrow">
-                          <img src="/icons/arrow.svg" alt="arrow" />
+                        <div className="w-4 h-4 flex items-center justify-center">
+                          <img src="/icons/arrow.svg" alt="arrow" className="w-3 h-3" />
                         </div>
                         {groups.find((gr) => gr.id === Number(gId))?.name}
                       </tr>
@@ -230,11 +248,12 @@ export default function Group() {
                       {selectedGroup !== -1 && selectedGroup == Number(gId)
                         ? groupTable[selectedGroup].map((stu) => {
                             return (
-                              <tr>
-                                <span className="StudentName">
+                              <tr className="border-t border-border bg-muted/50">
+                                <span className="inline-block px-4 py-2 pl-8 text-foreground">
                                   {nameFromId(stu.userID)}
                                 </span>
                                 <button
+                                  className="ml-2 px-3 py-1 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
                                   onClick={() => {
                                     // These need to be deep copies, or it won't update properly
                                     const localMember = { ...memberTable };
@@ -268,8 +287,9 @@ export default function Group() {
                 })}
               </table>
             </div>
-            <div>
+            <div className="flex gap-3 mb-4">
             <button
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
               onClick={() => {
                 const groupMems = Object.values(groupTable);
                 const uaMems = Object.values(memberTable);
@@ -292,12 +312,13 @@ export default function Group() {
             </button>
 
             <button
-              style={{ backgroundColor: "var(--background-tertiary)" }}
+              className="px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors font-medium"
               onClick={randomize}
             >
               Randomize
             </button>
             <button
+              className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors font-medium"
               onClick={() => {
                 if (selectedGroup == -1) return;
                 const localGroup = { ...groupTable}
@@ -311,11 +332,12 @@ export default function Group() {
               </button>
             </div>
 
-            <div>
+            <div className="flex gap-3 items-center">
               <button
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
                 onClick={() =>{
                   const nextGid = Number(getNextGroupID) + 1 ;
-                  createGroup(Number(id), groupName, Number(nextGid))           
+                  createGroup(Number(id), groupName, Number(nextGid))
                 }}
                 >
                   Create New Group
@@ -323,20 +345,24 @@ export default function Group() {
               <Textbox
                 placeholder="group name"
                 onInput={setGroupName}
-                className="groupNameInput"
+                className="w-48"
                 >
               </Textbox>
             </div>
           </>
         ) : (
-          <div className="assignment">
-            <table className="studentTable">
+          <div className="mt-4">
+            <table className="border-collapse w-full max-w-md border border-border rounded-lg overflow-hidden">
+              <thead>
               <tr>
-                <th>My group</th>
+                <th className="bg-muted px-4 py-3 text-left font-semibold text-foreground">My group</th>
               </tr>
+              </thead>
+              <tbody>
               {stuGroup.map((stus) => {
-                return <tr>{stus.userID}</tr>;
+                return <tr key={stus.id} className="border-t border-border"><td className="px-4 py-2 text-foreground">{stus.name || stus.id}</td></tr>;
               })}
+              </tbody>
             </table>
           </div>
         )}
