@@ -1,15 +1,33 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import ClassCard from "../classes/ClassCard";
 import { useClassesWithAssignments } from "../classes/useClasses";
 import { useDebounce } from "../../hooks/useDebounce";
 import { isTeacher, isAdmin } from "../../util/login";
 import { getCourseImageUrl } from "../../services/classApi";
+import { getCourseGradeSummary } from "../../services/reviewApi";
 
 export default function DashboardLayout() {
   const {
     data: courses = [],
     isLoading
   } = useClassesWithAssignments();
+
+  const [grades, setGrades] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    courses.forEach(async (course: CourseWithAssignments) => {
+      try {
+        const data = await getCourseGradeSummary(course.id);
+        setGrades(prev => ({
+          ...prev,
+          [course.id]: `Grade: ${data.courseAverage} / ${data.courseMax}`
+        }));
+      } catch {
+        // no grade available yet
+      }
+    });
+  }, [courses]);
+  
 
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedQuery = useDebounce(searchQuery, 300);
@@ -64,6 +82,7 @@ export default function DashboardLayout() {
             name={course.name}
             subtitle={`${course.assignmentCount || 0} assignments`}
             href={`/classes/${course.id}/home`}
+            grade={grades[course.id]}
           />
         ))}
 
