@@ -53,7 +53,7 @@ def sample_assignment(test_client, teacher_user):
     _db.session.add(course)
     _db.session.commit()
 
-    assignment = Assignment(name="PDF Test Assignment", courseID=course.id)
+    assignment = Assignment(name="PDF Test Assignment", courseID=course.id, rubric_text="Rubric")
     _db.session.add(assignment)
     _db.session.commit()
     return assignment
@@ -70,6 +70,11 @@ def test_teacher_can_export_pdf(test_client, teacher_user, sample_assignment):
 
 def test_student_cannot_export_pdf(test_client, student_user, sample_assignment):
     """Student gets 403 when trying to export PDF."""
+    # Re-login as student since sample_assignment fixture logs in as teacher
+    test_client.post(
+        "/auth/login",
+        json={"email": "pdf_student@example.com", "password": "Password1!"},
+    )
     resp = test_client.get(
         f"/teacher/assignments/{sample_assignment.id}/export-pdf"
     )
