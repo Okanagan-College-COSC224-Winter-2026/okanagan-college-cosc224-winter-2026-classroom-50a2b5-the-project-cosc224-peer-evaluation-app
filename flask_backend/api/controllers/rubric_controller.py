@@ -154,11 +154,21 @@ def update_rubric(rubric_id):
 
     # Create new criteria
     for item in criteria_data:
+        has_score = item.get("hasScore", True)
+        score_max = item.get("scoreMax", 0)
+
+        if has_score:
+            if not isinstance(score_max, int) or score_max < 1 or score_max > 100:
+                db.session.rollback()
+                return jsonify({"msg": "scoreMax must be an integer between 1 and 100"}), 400
+        else:
+            score_max = 1
+
         crit = CriteriaDescription(
             rubricID=rubric.id,
             question=item.get("question", ""),
-            scoreMax=item.get("scoreMax", 0),
-            hasScore=item.get("hasScore", True),
+            scoreMax=score_max,
+            hasScore=has_score,
         )
         db.session.add(crit)
 
@@ -205,6 +215,12 @@ def add_criterion(rubric_id):
 
     score_max = data.get("scoreMax", 0)
     has_score = data.get("hasScore", True)
+
+    if has_score:
+        if not isinstance(score_max, int) or score_max < 1 or score_max > 100:
+            return jsonify({"msg": "scoreMax must be an integer between 1 and 100"}), 400
+    else:
+        score_max = 1
 
     criterion = CriteriaDescription(
         rubricID=rubric_id,

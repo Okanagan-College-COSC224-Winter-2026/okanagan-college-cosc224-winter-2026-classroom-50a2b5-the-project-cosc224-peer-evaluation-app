@@ -5,6 +5,7 @@ interface Props {
   name: string
   subtitle: string
   href: string
+  grade?: string
   onClick?: () => void
 }
 
@@ -29,6 +30,11 @@ export default function ClassCard(props: Props) {
         <p className="text-text-secondary text-sm whitespace-nowrap overflow-hidden text-ellipsis m-0">
           {props.subtitle}
         </p>
+        {props.grade && (
+          <span className="text-text-tertiary text-xs font-medium bg-gray-100 py-1 px-2 rounded-full">
+            {props.grade}
+          </span>
+        )}
       </div>
     </Link>
   )

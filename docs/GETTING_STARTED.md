@@ -217,6 +217,7 @@ To stop the servers:
    ```bash
    cd flask_backend
    source venv/bin/activate  # or .\venv\Scripts\Activate.ps1 on Windows
+   export FLASK_APP=api #linux only
    flask run
    ```
 
