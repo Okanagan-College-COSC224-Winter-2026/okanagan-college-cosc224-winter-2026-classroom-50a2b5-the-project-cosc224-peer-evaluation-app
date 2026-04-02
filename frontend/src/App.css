@@ -14,3 +14,13 @@
 h2 {
   margin: 4px 0;
 }
+/* ── Responsive: Mobile ── */
+@media (max-width: 767px) {
+  .App { flex-direction: column; }
+
+  .inner {
+    margin-left: 0;
+    padding: 12px;
+    width: 100%;
+  }
+}
