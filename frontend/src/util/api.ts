@@ -821,7 +821,7 @@ export const getRubricBuilder = (assignmentId: number) =>
     credentials: 'include',
   }).then(res => { maybeHandleExpire(res); return res; });
 
-export const upsertRubric = (assignmentId: number, data: any) =>
+export const upsertRubric = (assignmentId: number, data: Record<string, unknown>) =>
   fetch(`${BASE_URL}/rubric-builder/assignment/${assignmentId}/rubric`, {
     method: 'PUT',
     credentials: 'include',

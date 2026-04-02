@@ -12,7 +12,7 @@ export interface CriterionData {
 interface Props {
   criterion: CriterionData;
   index: number;
-  onChange: (index: number, field: keyof CriterionData, value: any) => void;
+  onChange: (index: number, field: keyof CriterionData, value: CriterionData[keyof CriterionData]) => void;
   onDelete: (index: number) => void;
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;

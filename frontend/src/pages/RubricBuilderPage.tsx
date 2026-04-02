@@ -14,13 +14,29 @@ interface TemplateOption {
   criteria: CriterionData[];
 }
 
+interface RubricCriterionPayload {
+  id?: number;
+  name: string;
+  description: string;
+  max_score: number;
+  weight: number;
+  position: number;
+}
+
+interface RubricPayload {
+  name: string;
+  criteria: RubricCriterionPayload[];
+  is_template?: boolean;
+  template_name?: string;
+}
+
 export default function RubricBuilderPage() {
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const assignId = Number(assignmentId);
 
   const [rubricName, setRubricName] = useState('');
   const [criteria, setCriteria] = useState<CriterionData[]>([]);
-  const [rubricId, setRubricId] = useState<number | null>(null);
+  const [, setRubricId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState('');
@@ -69,7 +85,7 @@ export default function RubricBuilderPage() {
   useEffect(() => { loadTemplates(); }, [loadTemplates]);
 
   // Criterion CRUD handlers
-  const handleChange = (index: number, field: keyof CriterionData, value: any) => {
+  const handleChange = (index: number, field: keyof CriterionData, value: CriterionData[keyof CriterionData]) => {
     setCriteria(prev => prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)));
   };
 
@@ -133,7 +149,7 @@ export default function RubricBuilderPage() {
 
     setSaving(true);
     try {
-      const payload: any = {
+      const payload: RubricPayload = {
         name: rubricName,
         criteria: criteria.map((c, i) => ({
           ...(c.id ? { id: c.id } : {}),
