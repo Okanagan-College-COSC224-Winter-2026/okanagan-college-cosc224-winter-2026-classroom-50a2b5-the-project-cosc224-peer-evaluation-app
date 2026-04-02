@@ -42,7 +42,7 @@ class Assignment(db.Model):
         self,
         courseID,
         name,
-        rubric_text,
+        rubric_text=None,
         due_date=None,
         description_html=None,
         attachment_filename=None,

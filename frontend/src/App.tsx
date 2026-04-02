@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation, useParams } from "react-router-dom";
 import Home from "./pages/Home";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./components/Sidebar";
@@ -21,6 +21,13 @@ import AssignmentAnalytics from "./pages/AssignmentAnalytics";
 import ActivityFeedPage from "./pages/ActivityFeedPage";
 import RubricBuilderPage from "./pages/RubricBuilderPage";
 import FeedbackView from "./pages/FeedbackView";
+import StudentProgressPage from './pages/StudentProgressPage';
+import TeamSubmissionsPanel from './components/TeamSubmissionsPanel';
+
+function TeamSubmissionsRoute() {
+  const { id } = useParams<{ id: string }>();
+  return <TeamSubmissionsPanel assignmentId={Number(id)} />;
+}
 
 function AppContent() {
   const location = useLocation();
@@ -87,6 +94,11 @@ function AppContent() {
                 <ClassMembers />
               </ProtectedRoute>
             }
+          />
+
+          <Route
+            path='/assignments/:id/team-submissions'
+            element={<ProtectedRoute><TeamSubmissionsRoute /></ProtectedRoute>}
           />
 
           <Route
@@ -167,6 +179,13 @@ function AppContent() {
               <ProtectedRoute>
                 <FeedbackView />
               </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path='/classes/:courseId/progress'
+            element={
+              <ProtectedRoute><StudentProgressPage /></ProtectedRoute>
             }
           />
         </Routes>

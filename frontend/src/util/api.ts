@@ -910,3 +910,20 @@ export const markDirectMessagesRead = (otherUserId: number) =>
     method: 'PUT',
     credentials: 'include',
   }).then(res => { maybeHandleExpire(res); return res; });
+
+// ── Student Progress Dashboard (US5) ─────────────────────────────────────────
+
+export const getCourseProgress = (courseId: number) =>
+  fetch(`${BASE_URL}/teacher/classes/${courseId}/progress`, {
+    credentials: 'include',
+  }).then(res => { maybeHandleExpire(res); return res; });
+
+// ── Team Submissions (US22) ───────────────────────────────────────────────────
+
+export const getTeamSubmissions = (assignmentId: number) =>
+  fetch(`${BASE_URL}/student/assignments/${assignmentId}/team-submissions`, {
+    credentials: 'include',
+  }).then(res => { maybeHandleExpire(res); return res; });
+
+export const downloadTeamReviewFile = (fileId: number): string =>
+  `${BASE_URL}/student/review-file/${fileId}/download`;

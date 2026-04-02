@@ -12,6 +12,7 @@ import { isTeacher, isAdmin } from "../util/login"
 import RichTextEditor from "../components/RichTextEditor"
 import AnnouncementCard from "../components/AnnouncementCard"
 import AnnouncementForm from "../components/AnnouncementForm"
+import { useNavigate } from 'react-router-dom'
 
 interface Announcement {
   id: number;
@@ -31,6 +32,7 @@ export default function ClassHome() {
   const [statusMessage, setStatusMessage] = useState("")
   const [statusType, setStatusType] = useState<"error" | "success">("error")
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const navigate = useNavigate()
 
   useEffect(() => {
     (async () => {
@@ -91,6 +93,11 @@ export default function ClassHome() {
           {isTeacher() && (
             <Button onClick={() => importCSV(id as string)}>
               Add Students via CSV
+            </Button>
+          )}
+          {isTeacher() && (
+            <Button onClick={() => navigate(`/classes/${id}/progress`)}>
+              Student Progress
             </Button>
           )}
         </div>
