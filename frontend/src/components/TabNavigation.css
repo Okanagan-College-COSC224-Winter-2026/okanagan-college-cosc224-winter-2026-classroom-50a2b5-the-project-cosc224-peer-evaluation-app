@@ -27,15 +27,23 @@
 .TabNav .Tab.active {
   border-bottom: 2px solid black;
 }
-/* ── Responsive: Mobile ── */
+
+
+/* ================= MOBILE TAB NAV ================= */
 @media (max-width: 767px) {
-  .TabNavigation,
+
   .TabNav {
     overflow-x: auto;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
+    padding: 8px 0;
   }
 
-  .TabNavigation a,
-  .TabNav .Tab { display: inline-block; }
+  .TabNav .Tab {
+    display: inline-flex;
+    flex: 0 0 auto;
+    margin: 0 12px;
+    padding: 16px 6px;
+  }
+
 }
