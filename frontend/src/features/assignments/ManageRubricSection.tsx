@@ -48,17 +48,17 @@ function RubricEditor({
 
   const handleScoreMaxChange = (index: number, value: number) => {
     const updated = [...editCriteria];
-    updated[index] = { ...updated[index], scoreMax: Math.min(100, Math.max(0, value)) };
+    updated[index] = { ...updated[index], scoreMax: Math.min(100, Math.max(1, value)) };
     setEditCriteria(updated);
   };
 
   const handleHasScoreChange = (index: number, value: boolean) => {
     const updated = [...editCriteria];
-    updated[index] = { ...updated[index], hasScore: value, scoreMax: value ? updated[index].scoreMax : 0 };
+    updated[index] = {...updated[index], hasScore: value, scoreMax: value ? Math.max(1, updated[index].scoreMax) : 1};
     setEditCriteria(updated);
   };
 
-  const handleAdd = () => setEditCriteria(prev => [...prev, { question: "", scoreMax: 0, hasScore: true }]);
+  const handleAdd = () => setEditCriteria(prev => [...prev, { question: "", scoreMax: 1, hasScore: true }]);
 
   const handleRemove = (index: number) => setEditCriteria(prev => prev.filter((_, i) => i !== index));
 
