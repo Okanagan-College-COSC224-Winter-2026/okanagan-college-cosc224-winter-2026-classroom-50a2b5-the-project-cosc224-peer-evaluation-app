@@ -50,3 +50,16 @@
 .CourseGradeRow {
   padding: 4px 0 0 0;
 }
+
+/* ── Responsive: Mobile ── */
+@media (max-width: 767px) {
+  .Home .card-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .ClassCard {
+    width: 100%;
+    margin: 0;
+  }
+}
