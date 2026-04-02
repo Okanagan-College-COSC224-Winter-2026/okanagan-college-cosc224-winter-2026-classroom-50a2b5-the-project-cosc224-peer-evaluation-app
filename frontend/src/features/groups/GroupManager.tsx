@@ -74,19 +74,27 @@ export default function Group() {
 
   const loading = isTeacher() ? (groupsLoading || unassignedLoading) : myGroupLoading;
 
-  const handleCreateGroup = async () => {
-    if (!groupName.trim()) {
-      toast.error('Please enter a group name');
-      return;
-    }
-    try {
-      await createGroupMutation.mutateAsync(groupName);
-      setGroupName('');
-      toast.success('Group created!');
-    } catch {
-      toast.error('Error creating group');
-    }
-  };
+const handleCreateGroup = async () => {
+  const trimmedName = groupName.trim();
+
+  if (!trimmedName) {
+    toast.error('Please enter a group name');
+    return;
+  }
+
+  if (trimmedName.length > 50) {
+    toast.error('Group name must be 50 characters or fewer');
+    return;
+  }
+
+  try {
+    await createGroupMutation.mutateAsync(trimmedName);
+    setGroupName('');
+    toast.success('Group created!');
+  } catch {
+    toast.error('Error creating group');
+  }
+};
 
   const handleDeleteGroup = async () => {
     if (!deleteTarget) return;
@@ -176,6 +184,7 @@ export default function Group() {
           type="text"
           placeholder="New group name..."
           value={groupName}
+          maxLength={50}
           onChange={(e) => setGroupName(e.target.value)}
           className="flex-1 sm:max-w-xs px-3.5 py-2.5 border border-border rounded-lg bg-white text-text-primary text-sm font-[inherit] focus:outline-none focus:ring-2 focus:ring-btn-primary/30 focus:border-btn-primary transition-all"
         />
@@ -240,29 +249,42 @@ export default function Group() {
               {groups.map((group: CourseGroup) => (
                 <div key={group.id}>
                   <div
-                    className={`flex items-center justify-between px-5 md:px-8 py-3.5 cursor-pointer transition-colors ${
-                      selectedGroup === group.id
-                        ? "bg-btn-primary/[0.05]"
-                        : "hover:bg-btn-primary/[0.03]"
-                    }`}
-                    onClick={() => setSelectedGroup(selectedGroup === group.id ? -1 : group.id)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={`text-xs text-text-secondary transition-transform duration-200 ${selectedGroup === group.id ? "rotate-90" : ""}`}>
-                        &#9654;
+                  className={`flex items-start justify-between gap-3 px-5 md:px-8 py-3.5 cursor-pointer transition-colors ${
+                    selectedGroup === group.id
+                      ? "bg-btn-primary/[0.05]"
+                      : "hover:bg-btn-primary/[0.03]"
+                  }`}
+                  onClick={() => setSelectedGroup(selectedGroup === group.id ? -1 : group.id)}
+                >
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                    <span
+                      className={`mt-0.5 flex-shrink-0 text-xs text-text-secondary transition-transform duration-200 ${
+                        selectedGroup === group.id ? "rotate-90" : ""
+                      }`}
+                    >
+                      &#9654;
+                    </span>
+
+                    <div className="min-w-0 flex-1 flex items-start gap-2">
+                      <span className="text-sm font-medium text-text-primary break-words whitespace-normal">
+                        {group.name}
                       </span>
-                      <span className="text-sm font-medium text-text-primary">{group.name}</span>
                       {selectedGroup === group.id && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-btn-primary" />
+                        <span className="mt-1 w-1.5 h-1.5 rounded-full bg-btn-primary flex-shrink-0" />
                       )}
                     </div>
-                    <button
-                      className="text-xs px-2.5 py-1 rounded-md text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer font-medium"
-                      onClick={(e) => { e.stopPropagation(); setDeleteTarget(group); }}
-                    >
-                      Delete
-                    </button>
                   </div>
+
+                  <button
+                    className="flex-shrink-0 text-xs px-2.5 py-1 rounded-md text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer font-medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTarget(group);
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
                   <GroupMembersPanel
                     group={group}
                     isOpen={selectedGroup === group.id}

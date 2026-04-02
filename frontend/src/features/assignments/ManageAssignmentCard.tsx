@@ -51,7 +51,17 @@ export default function ManageAssignmentCard({ assignmentId, assignment }: Props
     });
   }, [assignment, reset]);
 
-  function onSubmit(data: ManageFormData) {
+    function onSubmit(data: ManageFormData) {
+    if (data.start_date && data.due_date) {
+      const start = new Date(data.start_date);
+      const due = new Date(data.due_date);
+
+      if (start > due) {
+        toast.error("Due date cannot be before start date.");
+        return;
+      }
+    }
+
     const payload: {
       name?: string;
       description?: string;
@@ -67,12 +77,14 @@ export default function ManageAssignmentCard({ assignmentId, assignment }: Props
       individual_reviews: data.individual_reviews,
       group_reviews: data.group_reviews,
     };
+
     if (data.start_date) payload.start_date = new Date(data.start_date).toISOString();
     if (data.due_date) payload.due_date = new Date(data.due_date).toISOString();
 
     editAssignment(payload, {
       onSuccess: () => toast.success("Assignment updated successfully."),
-      onError: (error) => toast.error(error instanceof Error ? error.message : "Failed to update assignment."),
+      onError: (error) =>
+        toast.error(error instanceof Error ? error.message : "Failed to update assignment."),
     });
   }
 
