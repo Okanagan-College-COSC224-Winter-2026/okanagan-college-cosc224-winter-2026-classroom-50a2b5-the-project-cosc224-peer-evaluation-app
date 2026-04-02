@@ -68,3 +68,34 @@
   color: #a0aec0;
   font-size: 0.9rem;
 }
+
+/* ── Responsive: Mobile ── */
+@media (max-width: 767px) {
+  .ClassHome .assignment-list,
+  .ClassHome .assignments-container {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .ClassHome .new-assignment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ClassHome .new-assignment-form input,
+  .ClassHome .new-assignment-form textarea,
+  .ClassHome .new-assignment-form select {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .ClassHome .new-assignment-form button,
+  .ClassHome .ClassHeaderRight button {
+    width: 100%;
+  }
+
+  .ClassHome .announcement-card {
+    padding: 12px;
+  }
+}

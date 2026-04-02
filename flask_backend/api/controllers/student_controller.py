@@ -3,10 +3,23 @@ Student controller for the peer evaluation app.
 Provides endpoints for student-specific data like grades and feedback.
 """
 
-from flask import Blueprint, jsonify
+import os
+
+from flask import Blueprint, jsonify, send_from_directory
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from api.models import User, User_Course, Assignment, Review, Criterion, CriteriaDescription, Rubric
+from api.models import (
+    Assignment,
+    Criterion,
+    CriteriaDescription,
+    Group_Members,
+    Review,
+    ReviewFile,
+    ConclusionFile,
+    Rubric,
+    User,
+    User_Course,
+)
 
 student_bp = Blueprint("student", __name__, url_prefix="/student")
 
@@ -203,3 +216,113 @@ def assignment_feedback(assignment_id):
     feedback = get_assignment_feedback(assignment_id, user.id)
 
     return jsonify(feedback), 200
+
+
+@student_bp.route("/assignments/<int:assignment_id>/team-submissions", methods=["GET"])
+@jwt_required()
+def team_submissions(assignment_id):
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    membership = Group_Members.query.filter_by(
+        userID=user.id, assignmentID=assignment_id
+    ).first()
+    if not membership:
+        return jsonify({"msg": "You are not in a group for this assignment"}), 403
+
+    all_members = Group_Members.query.filter_by(
+        groupID=membership.groupID, assignmentID=assignment_id
+    ).all()
+
+    conclusion_files = ConclusionFile.query.filter_by(assignmentID=assignment_id).all()
+    conclusion_files_data = [
+        {
+            "file_id": cf.id,
+            "filename": cf.filename,
+            "uploaded_at": cf.uploaded_at.isoformat(),
+        }
+        for cf in conclusion_files
+    ]
+
+    members_data = []
+    for m in all_members:
+        if m.userID == user.id:
+            continue
+
+        member_user = User.get_by_id(m.userID)
+        if not member_user:
+            continue
+
+        review_files = (
+            ReviewFile.query.join(Review, ReviewFile.reviewID == Review.id)
+            .filter(Review.reviewerID == m.userID, Review.assignmentID == assignment_id)
+            .all()
+        )
+        review_files_data = [
+            {
+                "file_id": rf.id,
+                "filename": rf.filename,
+                "uploaded_at": rf.uploaded_at.isoformat(),
+                "size_bytes": os.path.getsize(rf.file_path) if os.path.isfile(rf.file_path) else 0,
+            }
+            for rf in review_files
+        ]
+
+        members_data.append(
+            {
+                "member_id": member_user.id,
+                "member_name": member_user.name,
+                "review_files": review_files_data,
+                "conclusion_files": conclusion_files_data,
+            }
+        )
+
+    return jsonify(
+        {
+            "assignment_id": assignment.id,
+            "assignment_name": assignment.name,
+            "group_members": members_data,
+        }
+    ), 200
+
+
+@student_bp.route("/review-file/<int:file_id>/download", methods=["GET"])
+@jwt_required()
+def download_review_file(file_id):
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+
+    review_file = ReviewFile.get_by_id(file_id)
+    if not review_file:
+        return jsonify({"msg": "File not found"}), 404
+
+    review = review_file.review
+    assignment_id = review.assignmentID
+
+    requester_membership = Group_Members.query.filter_by(
+        userID=user.id, assignmentID=assignment_id
+    ).first()
+    owner_membership = Group_Members.query.filter_by(
+        userID=review.reviewerID, assignmentID=assignment_id
+    ).first()
+
+    if (
+        not requester_membership
+        or not owner_membership
+        or requester_membership.groupID != owner_membership.groupID
+    ):
+        return jsonify({"msg": "Access denied"}), 403
+
+    if not os.path.isfile(review_file.file_path):
+        return jsonify({"msg": "File not found on server"}), 404
+
+    return send_from_directory(
+        os.path.dirname(review_file.file_path),
+        os.path.basename(review_file.file_path),
+        as_attachment=True,
+        download_name=review_file.filename,
+    )
