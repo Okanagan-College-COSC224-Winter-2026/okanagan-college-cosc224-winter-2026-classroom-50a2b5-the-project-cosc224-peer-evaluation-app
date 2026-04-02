@@ -52,6 +52,7 @@ def create_assignment():
     is_anonymous = data.get("is_anonymous", True)
     individual_reviews = data.get("individual_reviews", True)
     group_reviews = data.get("group_reviews", True)
+    
 
     try:
         if start_date:
@@ -64,6 +65,8 @@ def create_assignment():
         else:
             due_date = datetime.fromisoformat(due_date)
         is_anonymous = _coerce_optional_bool(is_anonymous, "is_anonymous")
+        if start_date and due_date and start_date > due_date:
+            return jsonify({"msg": "Due date cannot be before start date"}), 400
         if is_anonymous is None:
             is_anonymous = True
         individual_reviews = _coerce_optional_bool(individual_reviews, "individual_reviews")
@@ -139,13 +142,22 @@ def edit_assignment(assignment_id):
     assignment.rubric_text = data.get("rubric", assignment.rubric_text)
 
     try:
+        new_start_date = assignment.start_date
+        new_due_date = assignment.due_date
+
         start_date = data.get("start_date")
         if start_date:
-            assignment.start_date = datetime.fromisoformat(start_date)
+            new_start_date = datetime.fromisoformat(start_date)
 
         due_date = data.get("due_date")
         if due_date:
-            assignment.due_date = datetime.fromisoformat(due_date)
+            new_due_date = datetime.fromisoformat(due_date)
+
+        if new_start_date and new_due_date and new_start_date > new_due_date:
+            return jsonify({"msg": "Due date cannot be before start date"}), 400
+
+        assignment.start_date = new_start_date
+        assignment.due_date = new_due_date
 
         if "is_anonymous" in data:
             assignment.is_anonymous = _coerce_optional_bool(data.get("is_anonymous"), "is_anonymous")
