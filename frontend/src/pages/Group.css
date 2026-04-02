@@ -1,0 +1,12 @@
+
+/* ── Responsive: Mobile ── */
+@media (max-width: 767px) {
+  .assignmentTables,
+  .studentTable,
+  .table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+}
