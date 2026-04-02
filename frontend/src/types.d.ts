@@ -34,6 +34,7 @@ interface GroupTableValue{
 }
 
 interface Criterion {
+  id: number;
   rubricID: number;
   question: string;
   scoreMax: number;
@@ -44,8 +45,11 @@ interface Assignment {
   id: number;
   name: string;
   courseID: number;
+  description?: string;
+  start_date?: string;
   rubric?: string;
   due_date?: string;
+  is_anonymous?: boolean;
 }
 
 interface CourseWithAssignments extends Course {
