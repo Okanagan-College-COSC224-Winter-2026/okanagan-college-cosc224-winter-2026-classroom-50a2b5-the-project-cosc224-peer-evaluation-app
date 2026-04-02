@@ -1,12 +1,57 @@
-from flask import Blueprint, jsonify
+"""
+Teacher Review Dashboard controller.
+Implements US13 (view review submissions), US14 (add conclusion note),
+and US7/US8 extension (assignment analytics & CSV export).
+
+Endpoints:
+    GET  /teacher/assignments/<assignment_id>/reviews
+    GET  /teacher/assignments/<assignment_id>/reviews/<review_id>
+    POST /teacher/reviews/<review_id>/conclusion
+    GET  /teacher/assignments/<assignment_id>/analytics
+    GET  /teacher/assignments/<assignment_id>/export
+    GET  /teacher/assignments/<assignment_id>/export-pdf
+    GET  /teacher/classes/<course_id>/progress
+"""
+
+import csv
+import io
+import statistics
+
+from io import BytesIO
+from flask import Blueprint, Response, jsonify, request, send_file
+from flask_jwt_extended import get_jwt_identity
 from sqlalchemy import func
 
-from ..models import Assignment, Course, Criterion, Group_Members, Review, User, User_Course
+from ..models import (
+    Assignment,
+    Course,
+    CriteriaDescription,
+    Criterion,
+    CourseGroup,
+    Group_Members,
+    Review,
+    Rubric,
+    User,
+    User_Course,
+)
+from ..models.conclusion_model import Conclusion
 from ..models.db import db
 from .auth_controller import jwt_teacher_required
+from ..services.pdf_report_service import generate_assignment_report
 
 teacher_bp = Blueprint("teacher", __name__, url_prefix="/teacher")
 
+
+# ── Private helper ────────────────────────────────────────────────────────────
+
+def _review_total_score(review) -> int:
+    return sum((c.grade or 0) for c in review.criteria.all())
+
+
+# ============================================================
+# GET /teacher/classes/<course_id>/progress
+# Per-student progress across all assignments in a course
+# ============================================================
 
 @teacher_bp.route('/classes/<int:course_id>/progress', methods=['GET'])
 @jwt_teacher_required
@@ -33,26 +78,22 @@ def course_student_progress(course_id):
                 .filter_by(userID=student.id, assignmentID=assignment.id)
                 .first() is not None
             )
-
             reviews_given = (
                 db.session.query(func.count(Review.id))
                 .filter(Review.reviewerID == student.id, Review.assignmentID == assignment.id)
                 .scalar() or 0
             )
-
             reviews_received = (
                 db.session.query(func.count(Review.id))
                 .filter(Review.revieweeID == student.id, Review.assignmentID == assignment.id)
                 .scalar() or 0
             )
-
             avg_score = (
                 db.session.query(func.avg(Criterion.grade))
                 .join(Review, Criterion.reviewID == Review.id)
                 .filter(Review.revieweeID == student.id, Review.assignmentID == assignment.id)
                 .scalar()
             )
-
             per_assignment[str(assignment.id)] = {
                 'in_group': in_group,
                 'reviews_given': reviews_given,
@@ -73,3 +114,13 @@ def course_student_progress(course_id):
         'assignments': [{'id': a.id, 'name': a.name} for a in assignments],
         'students': students_data,
     }), 200
+
+
+# ============================================================
+# GET /teacher/assignments/<assignment_id>/reviews
+# ============================================================
+
+@teacher_bp.route("/assignments/<int:assignment_id>/reviews", methods=["GET"])
+@jwt_teacher_required
+def list_assignment_reviews(assignment_id):
+    # ... (rest of dev's endpoints unchanged)
