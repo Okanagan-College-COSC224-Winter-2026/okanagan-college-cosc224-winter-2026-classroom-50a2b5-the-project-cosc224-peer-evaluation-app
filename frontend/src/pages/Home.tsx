@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ClassCard from "../components/ClassCard";
 import GradeBadge from "../components/GradeBadge";
+import CourseSearchBar from "../components/CourseSearchBar";
 
 import './Home.css'
 import { listClasses, listAssignments, getStudentGrades } from "../util/api";
@@ -14,12 +15,14 @@ export default function Home() {
   const [gradeMap, setGradeMap] = useState<Map<number, CourseGrade>>(new Map());
   const [gradesLoading, setGradesLoading] = useState(true);
 
+  // US17 — search state
+  const [searchQuery, setSearchQuery] = useState('');
+
   useEffect(() => {
     ;(async () => {
       try {
         const coursesResp = await listClasses();
         
-        // Fetch assignments for each course
         const coursesWithAssignments = await Promise.all(
           coursesResp.map(async (course: Course) => {
             try {
@@ -72,6 +75,11 @@ export default function Home() {
     })();
   }, []);
 
+  // US17 — filter courses by search query
+  const filteredCourses = courses.filter(c =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
+  );
+
   if (loading) {
     return (
       <div className="Home">
@@ -85,11 +93,22 @@ export default function Home() {
     <div className="Home">
       <h1>Peer Review Dashboard</h1>
 
+      {/* US17 — Search bar */}
+      <CourseSearchBar
+        query={searchQuery}
+        onQueryChange={setSearchQuery}
+        resultCount={filteredCourses.length}
+      />
+
+      {/* US17 — Empty state */}
+      {filteredCourses.length === 0 && searchQuery && (
+        <p className="Home__empty">No courses match your search.</p>
+      )}
+
       <div className="Classes">
         {
-          courses.map((course) => {
+          filteredCourses.map((course) => {
             const assignmentText = `${course.assignmentCount || 0} assignments`;
-            // Dev 5 — look up grade for this course
             const courseGrade = gradeMap.get(course.id);
             
             return (
@@ -102,7 +121,6 @@ export default function Home() {
                     window.location.href = `/classes/${course.id}/home`
                   }}
                 />
-                {/* Dev 5 — show grade badge for students only */}
                 {isStudent() && (
                   <div className="CourseGradeRow">
                     <GradeBadge
