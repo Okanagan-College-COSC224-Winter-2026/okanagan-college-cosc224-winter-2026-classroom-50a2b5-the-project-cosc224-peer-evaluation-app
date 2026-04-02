@@ -20,7 +20,7 @@ export default function RubricBuilderPage() {
 
   const [rubricName, setRubricName] = useState('');
   const [criteria, setCriteria] = useState<CriterionData[]>([]);
-  const [rubricId, setRubricId] = useState<number | null>(null);
+  const [, setRubricId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState('');
@@ -69,7 +69,7 @@ export default function RubricBuilderPage() {
   useEffect(() => { loadTemplates(); }, [loadTemplates]);
 
   // Criterion CRUD handlers
-  const handleChange = (index: number, field: keyof CriterionData, value: any) => {
+  const handleChange = (index: number, field: keyof CriterionData, value: string | number) => {
     setCriteria(prev => prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)));
   };
 
@@ -133,7 +133,7 @@ export default function RubricBuilderPage() {
 
     setSaving(true);
     try {
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         name: rubricName,
         criteria: criteria.map((c, i) => ({
           ...(c.id ? { id: c.id } : {}),
