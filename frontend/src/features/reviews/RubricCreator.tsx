@@ -45,7 +45,7 @@ export default function RubricCreator({ onRubricCreated, id, rubricType = "indiv
 
     const handleScoreMaxChange = (index: number, value: number) => {
         const updatedCriteria = [...newCriteria];
-        updatedCriteria[index].scoreMax = Math.max(0, value);
+        updatedCriteria[index].scoreMax = Math.min(100, Math.max(0, value));
         setNewCriteria(updatedCriteria);
     };
 
@@ -114,6 +114,7 @@ export default function RubricCreator({ onRubricCreated, id, rubricType = "indiv
                                     <input
                                         type="number"
                                         min="0"
+                                        max="100"
                                         value={item.scoreMax}
                                         onChange={(e) => handleScoreMaxChange(index, Number(e.target.value))}
                                         className="w-16 px-2.5 py-1.5 border border-border rounded-lg bg-white text-sm text-text-primary text-center focus:outline-none focus:ring-2 focus:ring-btn-primary/30 focus:border-btn-primary transition-all"

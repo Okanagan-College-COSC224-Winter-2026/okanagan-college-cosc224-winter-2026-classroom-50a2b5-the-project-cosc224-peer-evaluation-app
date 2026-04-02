@@ -48,7 +48,7 @@ function RubricEditor({
 
   const handleScoreMaxChange = (index: number, value: number) => {
     const updated = [...editCriteria];
-    updated[index] = { ...updated[index], scoreMax: Math.max(0, value) };
+    updated[index] = { ...updated[index], scoreMax: Math.min(100, Math.max(0, value)) };
     setEditCriteria(updated);
   };
 
@@ -116,6 +116,7 @@ function RubricEditor({
                   <input
                     type="number"
                     min="0"
+                    max="100"
                     value={item.scoreMax}
                     onChange={(e) => handleScoreMaxChange(index, Number(e.target.value))}
                     className="w-16 px-2.5 py-1.5 border border-border rounded-lg bg-white text-sm text-text-primary text-center focus:outline-none focus:ring-2 focus:ring-btn-primary/30 focus:border-btn-primary transition-all"
