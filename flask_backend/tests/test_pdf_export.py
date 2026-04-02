@@ -70,6 +70,11 @@ def test_teacher_can_export_pdf(test_client, teacher_user, sample_assignment):
 
 def test_student_cannot_export_pdf(test_client, student_user, sample_assignment):
     """Student gets 403 when trying to export PDF."""
+    # sample_assignment depends on teacher_user which logs in last; re-login as student
+    test_client.post(
+        "/auth/login",
+        json={"email": student_user.email, "password": "Password1!"},
+    )
     resp = test_client.get(
         f"/teacher/assignments/{sample_assignment.id}/export-pdf"
     )
