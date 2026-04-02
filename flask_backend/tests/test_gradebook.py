@@ -36,6 +36,7 @@ from api.models.grade_override_model import GradeOverride
 
 @pytest.fixture
 def teacher(db):
+    """Create a teacher user."""
     user = User(
         name="Gradebook Teacher",
         email="gb_teacher@test.com",
@@ -49,6 +50,7 @@ def teacher(db):
 
 @pytest.fixture
 def student_a(db):
+    """Create student Alice."""
     user = User(
         name="Alice",
         email="gb_alice@test.com",
@@ -62,6 +64,7 @@ def student_a(db):
 
 @pytest.fixture
 def student_b(db):
+    """Create student Bob."""
     user = User(
         name="Bob",
         email="gb_bob@test.com",
@@ -75,6 +78,7 @@ def student_b(db):
 
 @pytest.fixture
 def course(db, teacher):
+    """Create a course owned by the teacher."""
     c = Course(teacherID=teacher.id, name="Gradebook Course")
     db.session.add(c)
     db.session.commit()
@@ -83,6 +87,7 @@ def course(db, teacher):
 
 @pytest.fixture
 def enrolled(db, course, student_a, student_b):
+    """Enroll both students in the course."""
     for s in [student_a, student_b]:
         db.session.add(User_Course(userID=s.id, courseID=course.id))
     db.session.commit()
@@ -90,6 +95,7 @@ def enrolled(db, course, student_a, student_b):
 
 @pytest.fixture
 def assignment(db, course):
+    """Create first assignment in the course."""
     a = Assignment(courseID=course.id, name="HW1", is_anonymous=False)
     db.session.add(a)
     db.session.commit()
@@ -98,6 +104,7 @@ def assignment(db, course):
 
 @pytest.fixture
 def assignment2(db, course):
+    """Create second assignment in the course."""
     a = Assignment(courseID=course.id, name="HW2", is_anonymous=False)
     db.session.add(a)
     db.session.commit()
@@ -106,6 +113,7 @@ def assignment2(db, course):
 
 @pytest.fixture
 def individual_rubric(db, assignment):
+    """Create an individual rubric with two criteria (5 pts each, 10 max)."""
     rubric = Rubric(assignmentID=assignment.id, canComment=True, rubric_type="individual")
     db.session.add(rubric)
     db.session.flush()
@@ -157,12 +165,14 @@ def reviews_for_alice(db, assignment, student_a, student_b, enrolled, individual
 
 @pytest.fixture
 def auth_teacher(test_client, teacher):
+    """Log in as teacher — cookie is set on the test client."""
     test_client.post("/auth/login", json={"email": teacher.email, "password": "password123"})
     return test_client
 
 
 @pytest.fixture
 def auth_student(test_client, student_a):
+    """Log in as student — cookie is set on the test client."""
     test_client.post("/auth/login", json={"email": student_a.email, "password": "password123"})
     return test_client
 
@@ -173,8 +183,10 @@ def auth_student(test_client, student_a):
 
 
 class TestGradeOverrideModel:
+    """CRUD operations and constraints on the GradeOverride model."""
 
     def test_create_override(self, db, teacher, student_a, course, assignment, enrolled):
+        """Teacher can create a grade override for a student."""
         override = GradeOverride(
             studentID=student_a.id,
             assignmentID=assignment.id,
@@ -193,6 +205,7 @@ class TestGradeOverrideModel:
         assert fetched.teacherID == teacher.id
 
     def test_unique_constraint(self, db, teacher, student_a, course, assignment, enrolled):
+        """Only one override allowed per student+assignment+course."""
         o1 = GradeOverride(
             studentID=student_a.id,
             assignmentID=assignment.id,
@@ -215,6 +228,7 @@ class TestGradeOverrideModel:
             db.session.commit()
 
     def test_update_override(self, db, teacher, student_a, course, assignment, enrolled):
+        """Override score can be updated in place."""
         override = GradeOverride(
             studentID=student_a.id,
             assignmentID=assignment.id,
@@ -232,6 +246,7 @@ class TestGradeOverrideModel:
         assert fetched.override_score == 9.5
 
     def test_delete_override(self, db, teacher, student_a, course, assignment, enrolled):
+        """Override can be deleted."""
         override = GradeOverride(
             studentID=student_a.id,
             assignmentID=assignment.id,
@@ -255,10 +270,12 @@ class TestGradeOverrideModel:
 
 
 class TestGetGradebook:
+    """Tests for the full gradebook data endpoint."""
 
     def test_gradebook_returns_students_and_assignments(
         self, auth_teacher, course, assignment, assignment2, enrolled
     ):
+        """Gradebook returns all enrolled students and all assignments."""
         resp = auth_teacher.get(f"/gradebook/course/{course.id}")
         assert resp.status_code == 200
         data = resp.json
@@ -270,6 +287,7 @@ class TestGetGradebook:
     def test_gradebook_shows_peer_review_averages(
         self, auth_teacher, course, assignment, enrolled, reviews_for_alice, student_a
     ):
+        """Grades reflect peer review averages when no override is set."""
         resp = auth_teacher.get(f"/gradebook/course/{course.id}")
         assert resp.status_code == 200
 
@@ -281,7 +299,7 @@ class TestGetGradebook:
     def test_gradebook_shows_override_when_set(
         self, auth_teacher, db, course, assignment, enrolled, reviews_for_alice, student_a, teacher
     ):
-        # Create an override
+        """Override takes precedence as effectiveGrade; peer average is still returned."""
         override = GradeOverride(
             studentID=student_a.id,
             assignmentID=assignment.id,
@@ -305,6 +323,7 @@ class TestGetGradebook:
     def test_gradebook_includes_course_totals(
         self, auth_teacher, course, assignment, enrolled, reviews_for_alice, student_a
     ):
+        """Course totals sum effective grades across assignments."""
         resp = auth_teacher.get(f"/gradebook/course/{course.id}")
         assert resp.status_code == 200
 
@@ -314,10 +333,12 @@ class TestGetGradebook:
         assert alice["courseTotal"]["max"] == 10
 
     def test_gradebook_teacher_only(self, auth_student, course, enrolled):
+        """Students cannot access the gradebook endpoint."""
         resp = auth_student.get(f"/gradebook/course/{course.id}")
         assert resp.status_code == 403
 
     def test_gradebook_empty_course(self, auth_teacher, db, teacher):
+        """Empty course returns empty students and assignments lists."""
         empty_course = Course(teacherID=teacher.id, name="Empty Course")
         db.session.add(empty_course)
         db.session.commit()
@@ -334,10 +355,12 @@ class TestGetGradebook:
 
 
 class TestSetOverride:
+    """Tests for the set/update grade override endpoint."""
 
     def test_set_override_creates_record(
         self, auth_teacher, course, assignment, enrolled, student_a
     ):
+        """Teacher can create a new grade override via PUT."""
         resp = auth_teacher.put(
             f"/gradebook/course/{course.id}/override",
             json={"studentID": student_a.id, "assignmentID": assignment.id, "overrideScore": 8.5},
@@ -353,6 +376,7 @@ class TestSetOverride:
     def test_set_override_updates_existing(
         self, auth_teacher, db, course, assignment, enrolled, student_a, teacher
     ):
+        """PUT on an existing override updates the score rather than creating a duplicate."""
         override = GradeOverride(
             studentID=student_a.id,
             assignmentID=assignment.id,
@@ -375,6 +399,7 @@ class TestSetOverride:
         assert updated.override_score == 9.0
 
     def test_set_override_teacher_only(self, auth_student, course, assignment, enrolled, student_a):
+        """Students cannot set grade overrides."""
         resp = auth_student.put(
             f"/gradebook/course/{course.id}/override",
             json={"studentID": student_a.id, "assignmentID": assignment.id, "overrideScore": 8.0},
@@ -384,6 +409,7 @@ class TestSetOverride:
     def test_set_override_validates_student_enrolled(
         self, auth_teacher, db, course, assignment
     ):
+        """Cannot override a student who is not enrolled in the course."""
         outsider = User(
             name="Outsider",
             email="gb_outsider@test.com",
@@ -402,6 +428,7 @@ class TestSetOverride:
     def test_set_override_validates_assignment_in_course(
         self, auth_teacher, db, course, enrolled, student_a, teacher
     ):
+        """Cannot override with an assignment that belongs to a different course."""
         other_course = Course(teacherID=teacher.id, name="Other Course")
         db.session.add(other_course)
         db.session.flush()
@@ -422,10 +449,12 @@ class TestSetOverride:
 
 
 class TestClearOverride:
+    """Tests for the clear grade override endpoint."""
 
     def test_clear_override_deletes_record(
         self, auth_teacher, db, course, assignment, enrolled, student_a, teacher
     ):
+        """Teacher can delete an existing override."""
         override = GradeOverride(
             studentID=student_a.id,
             assignmentID=assignment.id,
@@ -449,6 +478,7 @@ class TestClearOverride:
     def test_clear_override_nonexistent(
         self, auth_teacher, course, assignment, enrolled, student_a
     ):
+        """Clearing a nonexistent override returns 404."""
         resp = auth_teacher.delete(
             f"/gradebook/course/{course.id}/override",
             json={"studentID": student_a.id, "assignmentID": assignment.id},
@@ -458,6 +488,7 @@ class TestClearOverride:
     def test_clear_override_teacher_only(
         self, auth_student, course, assignment, enrolled, student_a
     ):
+        """Students cannot clear grade overrides."""
         resp = auth_student.delete(
             f"/gradebook/course/{course.id}/override",
             json={"studentID": student_a.id, "assignmentID": assignment.id},
@@ -471,10 +502,12 @@ class TestClearOverride:
 
 
 class TestGetStudentReviews:
+    """Tests for the student+assignment review detail endpoint."""
 
     def test_get_reviews_for_student_assignment(
         self, auth_teacher, course, assignment, enrolled, reviews_for_alice, student_a
     ):
+        """Returns individual reviews with comments and criteria."""
         resp = auth_teacher.get(
             f"/gradebook/course/{course.id}/reviews",
             query_string={"studentID": student_a.id, "assignmentID": assignment.id},
@@ -490,6 +523,7 @@ class TestGetStudentReviews:
         self, auth_teacher, db, course, assignment, enrolled,
         student_a, student_b, group_setup
     ):
+        """Group reviews for the student's group are included in the response."""
         group_a, group_b, rubric, criteria = group_setup
 
         # Student B (in group Beta) reviews group Alpha
@@ -514,6 +548,7 @@ class TestGetStudentReviews:
         assert resp.json["groupReviews"][0]["comments"] == "Nice teamwork"
 
     def test_get_reviews_teacher_only(self, auth_student, course, assignment, enrolled, student_a):
+        """Students cannot access the review detail endpoint."""
         resp = auth_student.get(
             f"/gradebook/course/{course.id}/reviews",
             query_string={"studentID": student_a.id, "assignmentID": assignment.id},
