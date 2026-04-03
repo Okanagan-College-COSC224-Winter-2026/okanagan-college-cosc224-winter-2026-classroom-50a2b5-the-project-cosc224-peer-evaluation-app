@@ -100,6 +100,42 @@ def _get_group_submission(user_id: int, assignment: Assignment):
     ).first()
 
 
+@bp.route("/<int:assignment_id>/student/<int:student_id>", methods=["GET"])
+@jwt_role_required("student", "teacher", "admin")
+def get_student_submission(assignment_id, student_id):
+    """View another user's submission for an assignment.
+
+    Teachers/admins: always allowed.
+    Students: must be enrolled in the course.
+    """
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    user = _get_current_user()
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    # Students must be enrolled in the course
+    if user.is_student():
+        if not User_Course.get(user.id, assignment.courseID):
+            return jsonify({"msg": "Unauthorized: You do not have access to this class"}), 403
+
+    # Look up the target student's submission (or their group's)
+    target = User.get_by_id(student_id)
+    if not target:
+        return jsonify({"msg": "Student not found"}), 404
+
+    submission = Submission.query.filter_by(
+        assignmentID=assignment_id, studentID=student_id
+    ).first()
+
+    if not submission:
+        submission = _get_group_submission(student_id, assignment)
+
+    return jsonify({"submission": _attachment_payload(submission) if submission else None}), 200
+
+
 @bp.route("/<int:assignment_id>/mine", methods=["GET"])
 @jwt_role_required("student", "teacher", "admin")
 def get_my_submission(assignment_id):
