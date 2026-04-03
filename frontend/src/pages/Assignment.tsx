@@ -4,30 +4,22 @@ import "./Assignment.css";
 import RubricCreator from "../components/RubricCreator";
 import RubricDisplay from "../components/RubricDisplay";
 import TabNavigation from "../components/TabNavigation";
+import AssignmentAttachment from "../components/AssignmentAttachment";
+import ConclusionSection from "../components/ConclusionSection";
+import RubricForm from "../components/RubricForm";
 import { isTeacher } from "../util/login";
 import ReviewFileUpload from '../components/ReviewFileUpload';
 
-import { 
+import {
   listStuGroup,
   getUserId,
-<<<<<<< Updated upstream
-  createReview,
-  createCriterion,
-  getReview
-=======
   getReview,
   getAssignment,
   listCourseMembers,
   submitReview,
   getRubricByAssignment,
-  uploadReviewFiles
->>>>>>> Stashed changes
+  uploadReviewFiles,
 } from "../util/api";
-
-interface SelectedCriterion {
-  row: number;
-  column: number;
-}
 
 export default function Assignment() {
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -35,47 +27,71 @@ export default function Assignment() {
   const [stuGroup, setStuGroup] = useState<StudentGroups[]>([]);
   const [revieweeID, setRevieweeID] = useState<number>(0);
   const [stuID, setStuID] = useState<number>(0);
-  const [selectedCriteria, setSelectedCriteria] = useState<SelectedCriterion[]>([]);
-  const [review, setReview] = useState<number[]>([]);
+  const [assignmentName, setAssignmentName] = useState<string>("");
+  const [descriptionHtml, setDescriptionHtml] = useState<string>("");
+  const [memberNames, setMemberNames] = useState<Record<number, string>>({});
+  const [rubricCriteria, setRubricCriteria] = useState<RubricCriteria[]>([]);
+  const [submitStatus, setSubmitStatus] = useState<string>("");
+  const [alreadyReviewed, setAlreadyReviewed] = useState(false);
+  const [justSubmitted, setJustSubmitted] = useState(false);
 
+  // Load assignment details + student list once on mount
   useEffect(() => {
-      (async () => {
-        const stuID = await getUserId();
-      setStuID(stuID);
-      const stus = await listStuGroup(Number(id), stuID);
-      setStuGroup(stus);
-        try {
-          const reviewResponse = await getReview(Number(id), stuID, revieweeID);
-          const reviewData = await reviewResponse.json();
-          setReview(reviewData.grades);
-          console.log("Review data:", reviewData);
-        } catch (error) {
-          console.error('Error fetching review:', error);
+    (async () => {
+      try {
+        const assignment = await getAssignment(Number(id));
+        setAssignmentName(assignment.name || `Assignment ${id}`);
+        setDescriptionHtml(assignment.description_html || "");
+
+        // Load course members for name lookup
+        if (assignment.courseID) {
+          const members = await listCourseMembers(String(assignment.courseID));
+          const nameMap: Record<number, string> = {};
+          members.forEach((m: { id: number; name: string }) => {
+            nameMap[m.id] = m.name;
+          });
+          setMemberNames(nameMap);
         }
-      })();
+      } catch (e) {
+        console.error("Failed to load assignment details:", e);
+      }
+
+      // Load rubric criteria for RubricForm
+      try {
+        const rubricData = await getRubricByAssignment(Number(id));
+        setRubricCriteria(rubricData.criteria || []);
+      } catch {
+        // No rubric yet
+      }
+
+      // Load student's own group members
+      try {
+        const uid = await getUserId();
+        setStuID(uid);
+        const stus = await listStuGroup(Number(id), uid);
+        setStuGroup(stus);
+      } catch (e) {
+        console.error("Failed to load group:", e);
+      }
+    })();
+  }, [id]);
+
+  // Check if this reviewer already submitted a review for the selected reviewee
+  useEffect(() => {
+    setAlreadyReviewed(false);
+    setJustSubmitted(false);
+    if (!revieweeID || !stuID) return;
+    (async () => {
+      try {
+        const reviewResponse = await getReview(Number(id), stuID, revieweeID);
+        const reviewData = await reviewResponse.json();
+        if (reviewData?.id) setAlreadyReviewed(true);
+      } catch {
+        // No existing review — fine
+      }
+    })();
   }, [revieweeID, id, stuID]);
 
-<<<<<<< Updated upstream
-  const handleCriterionSelect = (row: number, column: number) => {
-    // Check if this criterion is already selected
-    const existingIndex = selectedCriteria.findIndex(
-      criterion => criterion.row === row && criterion.column === column
-    );
-    
-    if (existingIndex >= 0) {
-      // If already selected, remove it (toggle off)
-      setSelectedCriteria(prev => 
-        prev.filter((_, index) => index !== existingIndex)
-      );
-    } else {
-      // Add the new criterion, removing any other selection in the same row
-      setSelectedCriteria(prev => {
-        // Remove any existing selection for this row
-        const filteredCriteria = prev.filter(criterion => criterion.row !== row);
-        // Add the new selection
-        return [...filteredCriteria, { row, column }];
-      });
-=======
   const handleRadioChange = (event: ChangeEvent<HTMLInputElement>) => {
     setRevieweeID(Number(event.target.value));
     setSubmitStatus("");
@@ -103,86 +119,45 @@ export default function Assignment() {
       setJustSubmitted(true);
     } catch (error) {
       setSubmitStatus(error instanceof Error ? error.message : "Failed to submit review.");
->>>>>>> Stashed changes
     }
   };
-
-  function handleRadioChange(event: ChangeEvent<HTMLInputElement>): void {
-    const selectedID = Number(event.target.value);
-    setRevieweeID(selectedID);
-    console.log(`Selected group member ID: ${selectedID}`);
-  }
 
   return (
     <>
       <div className="AssignmentHeader">
-        <h2>Assignment {id}</h2>
+        <h2>{assignmentName || `Assignment ${id}`}</h2>
       </div>
 
       <TabNavigation
         tabs={[
-<<<<<<< Updated upstream
-          {
-            label: "Home",
-            path: `/assignment/${id}`,
-          },
-          {
-            label: "Group",
-            path: `/assignment/${id}/group`,
-          }
-=======
-          { label: "Home", path: `/assignments/${id}` },
+          { label: "Home",  path: `/assignments/${id}` },
           { label: "Group", path: `/assignments/${id}/group` },
           ...(isTeacher()
             ? [{ label: "Reviews", path: `/assignments/${id}/reviews` }]
             : [{ label: "Team Submissions", path: `/assignments/${id}/team-submissions` }]
           ),
->>>>>>> Stashed changes
         ]}
       />
 
-      <div className='assignmentRubricDisplay'>
-        <RubricDisplay rubricId={Number(id)} onCriterionSelect={handleCriterionSelect} grades={review} />
-      </div>
-      {
-        isTeacher() && 
-          <div className='assignmentRubric'>
-            <RubricCreator id={Number(id)}/>
-          </div>
-      }
+      {/* Assignment description (rich text from teacher) */}
+      {descriptionHtml && (
+        <div
+          className="assignmentDescription"
+          dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+          style={{ padding: "0 12px 12px" }}
+        />
+      )}
 
-<<<<<<< Updated upstream
-{
-      //List group members as radio buttons to select for given review
-      !isTeacher() && <div className='groupMembers'>
-        <h3>Select a group member to review</h3>
-          {stuGroup.map((stus) => {
-                return (
-                  <>
-                  <input type='radio' id={stus.userID.toString()} value={stus.userID} name='groupMembers' onChange={handleRadioChange}></input>
-                  <label htmlFor={stus.userID.toString()}>{stus.userID}</label>
-                  <br></br>
-                  </>
-                )
-              }
-            )
-          }
-          <button className='submitReview' onClick={async () => {
-            console.log("Submitting review with selected criteria:", selectedCriteria);
-            try {
-              const reviewResponse = await createReview(Number(id), stuID, revieweeID);
-              const reviewData = await reviewResponse.json();
-              console.log("Review response:", reviewData);
-              for (const criterion of selectedCriteria) {
-                await createCriterion(reviewData.id, criterion.row, criterion.column, "");
-              }
-              console.log('Review submitted successfully');
-            } catch (error) {
-              console.error('Error submitting review:', error);
-            }
-          }}>Submit Review</button>
-      </div>}
-=======
+      {/* PDF attachment — teachers can upload, everyone can download */}
+      <AssignmentAttachment assignmentId={Number(id)} />
+
+      {/* Conclusion files — teachers upload after review period, students download */}
+      <ConclusionSection assignmentId={Number(id)} />
+
+      <div className="assignmentRubricDisplay">
+        <RubricDisplay rubricId={Number(id)} />
+      </div>
+
       {isTeacher() && (
         <div className="assignmentRubric">
           <RubricCreator id={Number(id)} />
@@ -221,29 +196,26 @@ export default function Assignment() {
               </p>
             ) : rubricCriteria.length > 0 ? (
               <>
-              <ReviewFileUpload files={attachedFiles} onChange={setAttachedFiles} />
-              <RubricForm
-                criteria={rubricCriteria}
-                onSubmit={handleSubmitReview}
-              />
+                <ReviewFileUpload files={attachedFiles} onChange={setAttachedFiles} />
+                <RubricForm
+                  criteria={rubricCriteria}
+                  onSubmit={handleSubmitReview}
+                />
               </>
-      ) : (
-      <p style={{ color: "#888", marginTop: 12 }}>
-        No rubric assigned yet — the teacher hasn't created one.
-      </p>
-      )
+            ) : (
+              <p style={{ color: "#888", marginTop: 12 }}>
+                No rubric assigned yet — the teacher hasn't created one.
+              </p>
+            )
           )}
 
-      {submitStatus && (
-        <p style={{ marginTop: 8, color: submitStatus.includes("success") ? "#2e7d32" : "#c33" }}>
-          {submitStatus}
-        </p>
+          {submitStatus && (
+            <p style={{ marginTop: 8, color: submitStatus.includes("success") ? "#2e7d32" : "#c33" }}>
+              {submitStatus}
+            </p>
+          )}
+        </div>
       )}
-    </div >
-      )
-}
->>>>>>> Stashed changes
     </>
   );
 }
-

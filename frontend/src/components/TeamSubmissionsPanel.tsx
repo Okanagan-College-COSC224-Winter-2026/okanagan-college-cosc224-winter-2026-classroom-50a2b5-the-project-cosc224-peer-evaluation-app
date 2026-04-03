@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { getTeamSubmissions, downloadTeamReviewFile } from '../util/api';
+import { getTeamSubmissions, downloadTeamReviewFile, downloadConclusionFile } from '../util/api';
 import StatusMessage from './StatusMessage';
 import AvatarInitials from './AvatarInitials';
 import './TeamSubmissionsPanel.css';
-import { downloadConclusionFile } from '../util/api';
 
 interface ReviewFileEntry {
   file_id: number;

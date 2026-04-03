@@ -55,17 +55,16 @@ export default function ReviewSubmission() {
 
     try {
       const data = await submitReview({
-  assignment_id: Number(id),
-  reviewee_id: Number(revieweeId),
-  criteria,
-});
+        assignment_id: Number(id),
+        reviewee_id: Number(revieweeId),
+        criteria,
+      });
 
-if (attachedFiles.length > 0) {
-  await uploadReviewFiles(data.review_id, attachedFiles);
-}
+      if (attachedFiles.length > 0) {
+        await uploadReviewFiles(data.review_id, attachedFiles);
+      }
 
-setSuccess('Review submitted successfully!');
-
+      setSuccess('Review submitted successfully!');
       setTimeout(() => {
         window.location.href = `/assignments/${id}`;
       }, 2000);
@@ -104,10 +103,10 @@ setSuccess('Review submitted successfully!');
         <>
           <ReviewFileUpload files={attachedFiles} onChange={setAttachedFiles} />
           <RubricForm
-          criteria={rubric.criteria}
-          onSubmit={handleSubmit}
-          disabled={submitting}
-        />
+            criteria={rubric.criteria}
+            onSubmit={handleSubmit}
+            disabled={submitting}
+          />
         </>
       ) : (
         <p>No rubric criteria available for this assignment.</p>

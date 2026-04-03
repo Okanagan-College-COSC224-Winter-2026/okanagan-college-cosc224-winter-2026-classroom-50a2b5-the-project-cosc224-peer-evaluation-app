@@ -3,56 +3,49 @@ interface Course {
   teacherID: number;
   name: string;
 }
-
 interface User {
   id: number;
   name: string;
   email: string;
   role: 'student' | 'teacher' | 'admin';
 }
-
 interface StudentGroups {
   groupID: number;
   userID: number;
   assignmentID: number;
 }
-
-interface CourseGroup{
+interface CourseGroup {
   id: number;
   name: string;
   assignmentID: number;
 }
-
 interface GroupTable {
   [key: number]: GroupTableValue[];
 }
-
-interface GroupTableValue{
+interface GroupTableValue {
   groupID: number;
   userID: number;
   assignmentID: number;
 }
-
 interface Criterion {
   rubricID: number;
   question: string;
   scoreMax: number;
   hasScore: boolean;
 }
-
 interface Assignment {
   id: number;
   name: string;
   courseID: number;
   rubric?: string;
   due_date?: string;
+  description_html?: string;
+  attachment_filename?: string;
+  has_attachment?: boolean;
 }
-
 interface CourseWithAssignments extends Course {
   assignments?: Assignment[];
   assignmentCount?: number;
-<<<<<<< Updated upstream
-=======
 }
 // ============================================================
 // STUDENT GRADES (US20)
@@ -131,11 +124,4 @@ interface CourseProgressResponse {
   course_name: string;
   assignments: { id: number; name: string }[];
   students: ProgressStudent[];
-}
-
-interface CriterionSubmission {
-  criteria_description_id: number;
-  grade: number;
-  comments: string;
->>>>>>> Stashed changes
 }
