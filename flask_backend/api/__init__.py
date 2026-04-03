@@ -11,6 +11,7 @@ from .controllers import (
     auth_controller,
     class_controller,
     fake_api_controller,
+    gradebook_controller,
     user_controller,
     assignment_controller,
     assignment_resource_controller,
@@ -117,6 +118,7 @@ def create_app(test_config=None):
     app.register_blueprint(rubric_controller.bp)
     app.register_blueprint(review_controller.bp)
     app.register_blueprint(submission_controller.bp)
+    app.register_blueprint(gradebook_controller.bp)
     app.register_blueprint(fake_api_controller.fake)
 
     return app

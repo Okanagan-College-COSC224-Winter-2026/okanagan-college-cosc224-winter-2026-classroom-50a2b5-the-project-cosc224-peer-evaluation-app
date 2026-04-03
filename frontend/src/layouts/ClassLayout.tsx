@@ -33,7 +33,11 @@ export default function ClassLayout() {
           { label: "Home", path: `/classes/${id}/home` },
           { label: "Members", path: `/classes/${id}/members` },
           { label: "Groups", path: `/classes/${id}/groups` },
-          { label: "Evaluations", path: `/classes/${id}/evaluations` },
+          ...(isTeacher() ? [
+            { label: "Gradebook", path: `/classes/${id}/gradebook` },
+          ] : [
+            { label: "Evaluations", path: `/classes/${id}/evaluations` },
+          ]),
           ...(isTeacher() ? [{ label: "Settings", path: `/classes/${id}/settings` }] : []),
         ]}
       />

@@ -97,6 +97,18 @@ class CriteriaDescription {
 }
 }
 
+package "Grades" {
+class GradeOverride {
+  +id: Integer
+  +studentID: Integer
+  +assignmentID: Integer
+  +courseID: Integer
+  +override_score: Float
+  +teacherID: Integer
+  <<UNIQUE(studentID, assignmentID, courseID)>>
+}
+}
+
 ' Hidden layout hints to keep columns separated
 User -[hidden]-> Course
 Course -[hidden]-> Assignment
@@ -134,5 +146,11 @@ Review "1" --> "0..*" Criterion : criteria
 Assignment "1" --> "0..*" Rubric : rubrics
 Rubric "1" --> "0..*" CriteriaDescription : questions
 CriteriaDescription "1" --> "0..*" Criterion : responses
+
+' Grade overrides
+User "1" --> "0..*" GradeOverride : overrides for
+Assignment "1" --> "0..*" GradeOverride : overrides on
+Course "1" --> "0..*" GradeOverride : overrides in
+User "1" --> "0..*" GradeOverride : set by (teacher)
 
 @enduml

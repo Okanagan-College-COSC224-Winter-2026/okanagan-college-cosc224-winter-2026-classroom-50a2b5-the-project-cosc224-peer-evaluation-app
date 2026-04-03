@@ -73,6 +73,14 @@ Field types, primary keys, and notable constraints are included for quick refere
   - id (PK), reviewID (FK -> Review.id), criterionRowID (FK -> Criteria_Description.id), grade, comments
   - Captures the reviewer’s inputs for a single rubric row
 
+### Grade Overrides
+
+- GradeOverride
+  - id (PK), studentID (FK -> User.id, indexed), assignmentID (FK -> Assignment.id, indexed), courseID (FK -> Course.id, indexed), override_score (Float, not null), teacherID (FK -> User.id)
+  - UniqueConstraint on (studentID, assignmentID, courseID) — one override per student per assignment per course
+  - Allows teachers to manually set a grade that takes precedence over peer-review averages in the gradebook
+  - Relationships: `student`, `assignment`, `course`, `teacher`
+
 ## Constraints and Defaults
 
 - Auto-incrementing integer primary keys for all base tables except the two join tables, which use composite keys
