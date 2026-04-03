@@ -314,6 +314,7 @@ File upload/download for student assignment submissions.
 | Method | Path | Body | Response | Notes |
 |--------|------|------|----------|-------|
 | GET | `/submission/<assignment_id>/mine` | — | `Submission` or `404` | ✅ Get own or group member's submission |
+| GET | `/submission/<assignment_id>/student/<student_id>` | — | `{ submission }` or `{ submission: null }` | ✅ View another student's submission (teacher: always, student: must be enrolled) |
 | POST | `/submission/<assignment_id>/mine` | `file` (multipart) | `{ msg, submission }` | ✅ Upload/replace own or group submission |
 | DELETE | `/submission/<assignment_id>/mine` | — | `{ msg }` | ✅ Delete own or group submission |
 | GET | `/submission/file/<submission_id>` | — | File download | ✅ Download own or group member's file |
