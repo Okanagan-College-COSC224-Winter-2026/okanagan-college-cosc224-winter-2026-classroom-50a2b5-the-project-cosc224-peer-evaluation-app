@@ -45,7 +45,7 @@
 
 ---
 
-## US2 – Group Contribution Evaluation — **Backlog**
+## US2 – Group Contribution Evaluation — **In-Progress**
 
 **As a student, I want to evaluate my peers' contributions in group projects, so that individual efforts are recognized fairly.**
 
@@ -60,13 +60,13 @@
 
 - ✅ Student can see a list of group members
 - ✅ Student can submit ratings and comments for each group member  
-- [ ] Submitted feedback is stored and visible to the instructor
+- ✅ Submitted feedback is stored and visible to the instructor (via gradebook + review detail modal)
 - ✅ Submitted feedback marks that review as complete  
 - [ ] If the review period is closed, submission is blocked  
 
 ---
 
-## US3 – Anonymous Peer Review Process — **Backlog**
+## US3 – Anonymous Peer Review Process — **In-Progress**
 
 **As an instructor, I want the peer review process to be fair and anonymous, so that the system promotes collaboration, accountability, and skill development among students.**
 
@@ -79,14 +79,13 @@
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Students cannot see the names of their reviewers  
-- [ ] Students cannot see the names of the students they reviewed after submission  
-- [ ] Instructor can see who reviewed whom  
+- ✅ Students cannot see the names of their reviewers (when `is_anonymous` is enabled)
+- ✅ Instructor can see who reviewed whom (teacher always sees real reviewer identity)
 - [ ] Instructor can view completion status for all assigned peer reviews  
 
 ---
 
-## US4 – Class and Assignment Creation — **In-Progress**
+## US4 – Class and Assignment Creation — **Complete**
 
 **As an instructor, I want to be able to create classes and associated assignments with evaluation events, so that I can provide my students with evaluation and review materials.**
 
@@ -108,21 +107,21 @@
 
 ---
 
-## US5 – Student Progress Dashboard — **Backlog**
+## US5 – Student Progress Dashboard — **In-Progress**
 
 **As an instructor, I want a comprehensive view of student progress, so that I can effectively assess both individual and group performances.**
 
 ### Assumptions and Details
 
-- Instructor is signed in  
-- Students have submitted assignments and/or peer reviews  
-- There is at least one active assignment in the class  
+- Instructor is signed in
+- Students have submitted assignments and/or peer reviews
+- There is at least one active assignment in the class
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Instructor can see per-student submission status  
-- [ ] Instructor can see per-assignment submission status  
-- [ ] Instructor can see per-student review completion status  
+- [ ] Instructor can see per-student submission status
+- [ ] Instructor can see per-assignment submission status (gradebook shows all students × all assignments)
+- [ ] Instructor can see per-student review completion status (gradebook shows individual/group averages per student per assignment)  
 
 ---
 
@@ -132,15 +131,15 @@
 
 ### Assumptions and Details
 
-- Admin is signed in with admin privileges  
-- System is running  
+- Admin is signed in with admin privileges
+- System is running
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Admin can view all user accounts  
-- [ ] Admin can view system logs  
-- [ ] Admin-only options are not visible to non-admin users  
-- [ ] Admin has access to project files  
+- [ ] Admin can view all user accounts
+- [ ] Admin can view system logs
+- [ ] Admin-only options are not visible to non-admin users
+- [ ] Admin has access to project files
 
 ---
 
@@ -181,7 +180,7 @@
 
 ---
 
-## US9 – Assignment Management Interface — **In-Progress**
+## US9 – Assignment Management Interface — **Complete**
 
 **As an instructor, I want a simple interface for managing assignments and reviews, so that I can use the system easily and save time.**
 
@@ -194,7 +193,7 @@
 ### Capabilities and Acceptance Criteria
 
 - ✅ Instructor can view all assignments for a class in one place  
-- ✅ Instructor can open an assignment and view its peer review settings ⚠️
+- ✅ Instructor can open an assignment and view its peer review settings
 - ✅ Instructor can edit or delete an assignment from the same interface
 - ✅ Instructor can attach a file to the assignment
 - ✅ Actions provide clear success or error messages  
@@ -248,37 +247,37 @@
 
 ---
 
-## US12 – Student Feedback Viewing — **Backlog**
+## US12 – Student Feedback Viewing — **In-Progress**
 
 **As a student, I want to be able to view the feedback I receive from my peers, so that I can understand how to improve my work.**
 
 ### Assumptions and Details
 
-- Student is signed in  
-- Student has submitted an assignment that was peer reviewed  
+- Student is signed in
+- Student has submitted an assignment that was peer reviewed
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Student can open an assignment and see received feedback  
-- [ ] Feedback shows rubric scores and comments  
-- [ ] Feedback remains available after viewing  
+- ✅ Student can open an assignment and see received feedback (via course grade summary endpoint)
+- ✅ Feedback shows rubric scores and comments
+- ✅ Feedback remains available after viewing
 
 ---
 
-## US13 – Teacher Change Password — **Backlog**
+## US13 – Teacher Change Password — **Complete**
 
 **As a teacher, I want to change my password so that I can update my login information.**
 
 ### Assumptions and Details
 
-- Teacher has a current password  
-- A workflow to change the password exists  
+- Teacher has a current password
+- A workflow to change the password exists
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Given the teacher has a current password, when they submit a password change, the system updates it successfully  
-- [ ] Teacher receives confirmation that the password change occurred  
-- [ ] Updated credentials allow the teacher to log in immediately  
+- ✅ Given the teacher has a current password, when they submit a password change, the system updates it successfully
+- ✅ Teacher receives confirmation that the password change occurred
+- ✅ Updated credentials allow the teacher to log in immediately  
 
 ---
 
@@ -414,9 +413,9 @@
 - [ ] Students can request corrections if data is inaccurate  
 
 ---
-## US22.1 - Student Sumbits Group Assignment — **Backlog**
+## US22.1 - Student Submits Group Assignment — **In-Progress**
 
-**As a student, I want to submit a group assignment so that team members can review eachother's work**
+**As a student, I want to submit a group assignment so that team members can review each other's work**
 
 ### Assumptions and Details
 
@@ -424,26 +423,28 @@
 - Use Moodle submission as a reference
 
 ### Capabilities and Acceptance Criteria
-- [ ] Submission button on assignment page
-- [ ] Other group members can view the student's submission  
-- [ ] Submission is uploaded with status, timestamp, and attachments
+- ✅ Submission button on assignment page
+- ✅ Other group members can view the student's submission
+- ✅ Submission is uploaded as a file attachment
+- [ ] Submission displays status and timestamp
 
 ---
 
-## US22.2 – Student View Team Submissions — **Backlog**
+## US22.2 – Student View Team Submissions — **In-Progress**
 
-**As a student, I want to see my group's submission so that I can review my team members' work.**
+**As a student, I want to see my group’s submission so that I can review my team members’ work.**
 
 ### Assumptions and Details
 
 - Student is in a group
-- Group has made a submission for the assignment  
+- Group has made a submission for the assignment
 
 ### Capabilities and Acceptance Criteria
 
-- [ ] Given a group submission exists, the student has access to it on the assignment page 
-- [ ] Access is limited to the student’s own team  
-- [ ] Each submission shows status, timestamp, and attachments  
+- ✅ Given a group submission exists, the student has access to it on the assignment page
+- ✅ Access is limited to the student’s own team
+- ✅ Each submission shows the file attachment
+- [ ] Submission displays status and timestamp
 
 ---
 
@@ -477,7 +478,7 @@
 ### Capabilities and Acceptance Criteria
 
 - ✅ Admin can create a teacher account with required fields  
-- [ ] System prevents duplicate teacher emails  
+- ✅ System prevents duplicate teacher emails  
 - ✅ Newly created teachers receive the `teacher` role automatically  
 - [ ] Admin receives confirmation that the account was created  
 - [ ] Teacher can log in with the provided credentials and is prompted to change the temporary password  
