@@ -14,6 +14,36 @@ from .auth_controller import jwt_teacher_required
 bp = Blueprint("assignment", __name__, url_prefix="/assignment")
 
 
+def _cascade_delete_review_type(assignment, review_type):
+    """Delete the rubric and all reviews of the given type for an assignment.
+
+    Called when a teacher disables individual_reviews or group_reviews.
+    Returns a dict with counts of deleted items.
+    """
+    result = {f"{review_type}_rubric_deleted": False, f"{review_type}_reviews_deleted": 0}
+
+    # Delete reviews of this type
+    reviews = Review.query.filter_by(
+        assignmentID=assignment.id, review_type=review_type
+    ).all()
+    result[f"{review_type}_reviews_deleted"] = len(reviews)
+    for r in reviews:
+        db.session.delete(r)
+
+    # Delete the rubric of this type (cascade deletes criteria descriptions)
+    rubric = Rubric.query.filter_by(
+        assignmentID=assignment.id, rubric_type=review_type
+    ).first()
+    if rubric:
+        # Delete criteria descriptions (which cascade-delete criterion responses)
+        for crit in CriteriaDescription.query.filter_by(rubricID=rubric.id).all():
+            db.session.delete(crit)
+        db.session.delete(rubric)
+        result[f"{review_type}_rubric_deleted"] = True
+
+    return result
+
+
 def _coerce_optional_bool(value, field_name):
     if value is None:
         return None
@@ -180,12 +210,20 @@ def edit_assignment(assignment_id):
     except ValueError:
         return jsonify({"msg": "Invalid format. Use ISO format for start_date/due_date and boolean for is_anonymous."}), 400
 
+    # Cascade delete rubric + reviews when a review type is disabled
+    cascade_info = {}
+    if "individual_reviews" in data and assignment.individual_reviews is False:
+        cascade_info.update(_cascade_delete_review_type(assignment, "individual"))
+    if "group_reviews" in data and assignment.group_reviews is False:
+        cascade_info.update(_cascade_delete_review_type(assignment, "group"))
+
     assignment.update()
     return (
         jsonify(
             {
                 "msg": "Assignment updated",
                 "assignment": AssignmentSchema().dump(assignment),
+                **cascade_info,
             }
         ),
         200,

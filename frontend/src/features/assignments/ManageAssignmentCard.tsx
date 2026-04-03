@@ -31,8 +31,10 @@ interface Props {
 
 export default function ManageAssignmentCard({ assignmentId, assignment }: Props) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isCascadeModalOpen, setIsCascadeModalOpen] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState<Record<string, unknown> | null>(null);
 
-  const { register, handleSubmit, reset } = useForm<ManageFormData>({
+  const { register, handleSubmit, reset, watch } = useForm<ManageFormData>({
     defaultValues: { name: "", description: "", start_date: "", due_date: "", is_anonymous: true, individual_reviews: true, group_reviews: true },
   });
 
@@ -51,7 +53,40 @@ export default function ManageAssignmentCard({ assignmentId, assignment }: Props
     });
   }, [assignment, reset]);
 
-    function onSubmit(data: ManageFormData) {
+  // Build a human-readable warning about which review types are being disabled
+  function getCascadeWarnings(data: ManageFormData): string[] {
+    const warnings: string[] = [];
+    if (assignment.individual_reviews && !data.individual_reviews) {
+      warnings.push("Individual reviews");
+    }
+    if (assignment.group_reviews && !data.group_reviews) {
+      warnings.push("Group reviews");
+    }
+    return warnings;
+  }
+
+  function buildPayload(data: ManageFormData) {
+    const payload: Record<string, unknown> = {
+      name: data.name,
+      description: data.description,
+      is_anonymous: data.is_anonymous,
+      individual_reviews: data.individual_reviews,
+      group_reviews: data.group_reviews,
+    };
+    if (data.start_date) payload.start_date = new Date(data.start_date).toISOString();
+    if (data.due_date) payload.due_date = new Date(data.due_date).toISOString();
+    return payload;
+  }
+
+  function savePayload(payload: Record<string, unknown>) {
+    editAssignment(payload, {
+      onSuccess: () => toast.success("Assignment updated successfully."),
+      onError: (error) =>
+        toast.error(error instanceof Error ? error.message : "Failed to update assignment."),
+    });
+  }
+
+  function onSubmit(data: ManageFormData) {
     if (data.start_date && data.due_date) {
       const start = new Date(data.start_date);
       const due = new Date(data.due_date);
@@ -62,30 +97,16 @@ export default function ManageAssignmentCard({ assignmentId, assignment }: Props
       }
     }
 
-    const payload: {
-      name?: string;
-      description?: string;
-      start_date?: string;
-      due_date?: string;
-      is_anonymous?: boolean;
-      individual_reviews?: boolean;
-      group_reviews?: boolean;
-    } = {
-      name: data.name,
-      description: data.description,
-      is_anonymous: data.is_anonymous,
-      individual_reviews: data.individual_reviews,
-      group_reviews: data.group_reviews,
-    };
+    const payload = buildPayload(data);
+    const warnings = getCascadeWarnings(data);
 
-    if (data.start_date) payload.start_date = new Date(data.start_date).toISOString();
-    if (data.due_date) payload.due_date = new Date(data.due_date).toISOString();
+    if (warnings.length > 0) {
+      setPendingPayload(payload);
+      setIsCascadeModalOpen(true);
+      return;
+    }
 
-    editAssignment(payload, {
-      onSuccess: () => toast.success("Assignment updated successfully."),
-      onError: (error) =>
-        toast.error(error instanceof Error ? error.message : "Failed to update assignment."),
-    });
+    savePayload(payload);
   }
 
   return (
@@ -178,6 +199,43 @@ export default function ManageAssignmentCard({ assignmentId, assignment }: Props
               className="inline-flex items-center px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold border-none cursor-pointer transition-all duration-150 hover:bg-red-700 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isDeleting ? "Deleting..." : "Delete"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isCascadeModalOpen}
+        onClose={() => { setIsCascadeModalOpen(false); setPendingPayload(null); }}
+        title="Disable Review Type"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-text-secondary m-0">
+            You are about to disable{" "}
+            <strong className="text-text-primary">
+              {getCascadeWarnings(watch()).join(" and ").toLowerCase()}
+            </strong>{" "}
+            for this assignment. This will permanently delete the associated rubric and all submitted reviews of that type. This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-end pt-2 border-t border-border">
+            <button
+              onClick={() => { setIsCascadeModalOpen(false); setPendingPayload(null); }}
+              className="inline-flex items-center px-4 py-2 rounded-lg border border-border text-sm font-medium text-text-secondary hover:bg-bg-secondary transition-colors cursor-pointer bg-transparent"
+            >
+              Cancel
+            </button>
+            <button
+              disabled={isSaving}
+              onClick={() => {
+                if (pendingPayload) {
+                  savePayload(pendingPayload);
+                  setIsCascadeModalOpen(false);
+                  setPendingPayload(null);
+                }
+              }}
+              className="inline-flex items-center px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold border-none cursor-pointer transition-all duration-150 hover:bg-red-700 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isSaving ? "Saving..." : "Disable & Delete"}
             </button>
           </div>
         </div>
