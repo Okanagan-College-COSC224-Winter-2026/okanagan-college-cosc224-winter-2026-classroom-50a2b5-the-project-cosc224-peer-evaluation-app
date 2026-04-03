@@ -82,7 +82,7 @@ All require `role = 'admin'`.
 | GET | `/assignment/<course_id>` | — | `Array<Assignment>` | ✅ Get assignments for course |
 | GET | `/assignment/detail/<id>` | — | `Assignment` | ✅ Get single assignment |
 | POST | `/assignment/create_assignment` | `{ courseID, name, description?, start_date?, rubric?, due_date?, is_anonymous?, individual_reviews?, group_reviews? }` | `{ msg, assignment }` | ✅ Create assignment (teacher/admin only, must own course) |
-| PATCH | `/assignment/edit_assignment/<id>` | `{ name?, description?, start_date?, rubric?, due_date?, is_anonymous?, individual_reviews?, group_reviews? }` | `{ msg, assignment }` | ✅ Edit assignment (teacher/admin only, must own course) |
+| PATCH | `/assignment/edit_assignment/<id>` | `{ name?, description?, start_date?, rubric?, due_date?, is_anonymous?, individual_reviews?, group_reviews? }` | `{ msg, assignment, individual_reviews_deleted?, individual_rubric_deleted?, group_reviews_deleted?, group_rubric_deleted? }` | ✅ Edit assignment (teacher/admin only, must own course). Disabling a review type cascade-deletes its rubric and reviews. |
 | DELETE | `/assignment/delete_assignment/<id>` | — | `{ msg }` | ✅ Delete assignment (teacher/admin only, must own course) |
 
 ---
