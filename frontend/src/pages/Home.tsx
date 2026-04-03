@@ -44,6 +44,37 @@ export default function Home() {
     })();
   }, []);
 
+<<<<<<< Updated upstream
+=======
+  // Dev 5 — fetch grades for students only
+  useEffect(() => {
+    if (!isStudent()) {
+      setGradesLoading(false);
+      return;
+    }
+
+    ;(async () => {
+      try {
+        const data = await getStudentGrades();
+        const map = new Map<number, CourseGrade>();
+        data.courses.forEach((course: CourseGrade) => {
+          map.set(course.course_id, course);
+        });
+        setGradeMap(map);
+      } catch (error) {
+        console.error("Error fetching grades:", error);
+      } finally {
+        setGradesLoading(false);
+      }
+    })();
+  }, []);
+
+  // US17 — filter courses by search query
+  const filteredCourses = courses.filter(c =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
+  );
+
+>>>>>>> Stashed changes
   if (loading) {
     return (
       <div className="Home">
