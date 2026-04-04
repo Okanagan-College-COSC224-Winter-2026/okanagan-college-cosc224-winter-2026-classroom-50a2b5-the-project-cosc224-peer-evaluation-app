@@ -17,7 +17,10 @@ interface ManageFormData {
 
 function toDatetimeLocal(value?: string) {
   if (!value) return "";
-  const parsed = new Date(value);
+  // Backend returns naive UTC datetimes (no Z suffix).
+  // Append Z so JavaScript parses them as UTC, not local time.
+  const normalized = value.endsWith("Z") || value.includes("+") ? value : value + "Z";
+  const parsed = new Date(normalized);
   if (Number.isNaN(parsed.getTime())) return "";
   return new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60000)
     .toISOString()

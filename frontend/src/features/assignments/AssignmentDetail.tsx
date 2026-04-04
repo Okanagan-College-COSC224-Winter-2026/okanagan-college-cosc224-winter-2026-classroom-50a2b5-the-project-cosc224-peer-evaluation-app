@@ -8,6 +8,7 @@ import StudentSubmissionCard from "./StudentSubmissionCard";
 import PeerReviewSection from "./PeerReviewSection";
 import GroupReviewSection from "./GroupReviewSection";
 import RubricDisplay from "../reviews/RubricDisplay";
+import { formatDueDate } from "../../util/assignmentDates";
 
 type ReviewTab = "individual" | "group";
 
@@ -80,9 +81,9 @@ export default function AssignmentDetail() {
               </span>
               {(assignment.start_date || assignment.due_date) && (
                 <span className="text-white/80 text-xs">
-                  {assignment.start_date && new Date(assignment.start_date).toLocaleDateString()}
+                  {assignment.start_date && formatDueDate(assignment.start_date)}
                   {assignment.start_date && assignment.due_date && " — "}
-                  {assignment.due_date && new Date(assignment.due_date).toLocaleDateString()}
+                  {assignment.due_date && formatDueDate(assignment.due_date)}
                 </span>
               )}
             </div>
