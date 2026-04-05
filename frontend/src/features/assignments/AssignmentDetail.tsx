@@ -1,5 +1,5 @@
 import { useState } from "react";
-import TabNavigation from "../../ui/TabNavigation";
+import { Link } from "react-router-dom";
 import { useAssignmentDetail } from "./useAssignmentDetail";
 import ManageAssignmentCard from "./ManageAssignmentCard";
 import ManageResourcesCard from "./ManageResourcesCard";
@@ -13,7 +13,7 @@ import { formatDueDate } from "../../util/assignmentDates";
 type ReviewTab = "individual" | "group";
 
 const tabButtonClass = (active: boolean) =>
-  `px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer border-none ${
+  `px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer border-none no-underline ${
     active
       ? "bg-white text-text-primary shadow-sm"
       : "bg-transparent text-text-secondary hover:text-text-primary"
@@ -50,25 +50,27 @@ export default function AssignmentDetail() {
 
   return (
     <>
-      {teacherMode && (
-        <TabNavigation
-          tabs={[
-            { label: "Review", path: `/classes/${classId}/assignments/${assignmentId}` },
-            { label: "Management", path: `/classes/${classId}/assignments/${assignmentId}/manage` },
-          ]}
-        />
-      )}
-
       <div className="p-4 md:p-8 w-full max-w-260 mx-auto flex flex-col gap-6">
         {/* Header row */}
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-2xl font-semibold text-text-primary m-0">
             {assignment?.name ? assignment.name : `Assignment ${assignmentId}`}
           </h2>
-          {assignment && (
-            <span className="shrink-0 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide bg-btn-primary/10 text-btn-primary">
-              {isManageTab ? "Managing" : teacherMode ? "Reviewing" : "Active"}
-            </span>
+          {teacherMode && (
+            <div className="flex bg-bg-secondary rounded-lg p-0.5 shrink-0">
+              <Link
+                to={`/classes/${classId}/assignments/${assignmentId}`}
+                className={tabButtonClass(!isManageTab)}
+              >
+                Preview
+              </Link>
+              <Link
+                to={`/classes/${classId}/assignments/${assignmentId}/manage`}
+                className={tabButtonClass(isManageTab)}
+              >
+                Manage
+              </Link>
+            </div>
           )}
         </div>
 
@@ -101,7 +103,7 @@ export default function AssignmentDetail() {
               {(resourceList.length > 0 || teacherMode) && (
                 <div className="flex flex-col gap-2 pt-3 border-t border-border">
                   <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
-                    {teacherMode ? "Documents (Student Preview)" : "Supporting Documents"}
+                    Supporting Documents
                   </span>
                   {resourceList.length > 0 ? (
                     <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
@@ -126,7 +128,7 @@ export default function AssignmentDetail() {
         {teacherMode && !isManageTab && (rubricId || groupRubricId) && (
           <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
             <div className="px-5 md:px-8 py-4 border-b border-border flex items-center justify-between gap-4">
-              <h3 className="text-base font-semibold text-text-primary m-0">Rubric Preview</h3>
+              <h3 className="text-base font-semibold text-text-primary m-0">Rubric</h3>
               {rubricId && groupRubricId && (
                 <div className="flex bg-bg-secondary rounded-lg p-0.5">
                   <button onClick={() => setPreviewTab("individual")} className={tabButtonClass(previewTab === "individual")}>
