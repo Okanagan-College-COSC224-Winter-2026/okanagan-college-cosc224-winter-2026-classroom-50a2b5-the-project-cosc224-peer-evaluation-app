@@ -4,15 +4,14 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useAssignments, useCreateAssignment } from "../assignments/useAssignments";
 import { isTeacher } from "../../util/login";
-import { formatDueDate, getAssignmentStatus } from "../../util/assignmentDates";
+import { formatDueDate, getAssignmentStatus, getTeacherAssignmentStatus } from "../../util/assignmentDates";
 import { useMyProgress } from "../reviews/useReviews";
 import Modal from "../../ui/Modal";
 
 function getStatusClasses(status: string): string {
   const base = "text-xs font-medium rounded-full px-2.5 py-0.5 whitespace-nowrap"
-  const s = status.replace(/\s+/g, "")
-  if (s === "Upcoming") return `${base} bg-emerald-50 text-emerald-700 border border-emerald-200`
-  if (s === "Overdue") return `${base} bg-red-50 text-red-700 border border-red-200`
+  if (status === "Upcoming" || status === "Open") return `${base} bg-emerald-50 text-emerald-700 border border-emerald-200`
+  if (status === "Overdue" || status === "Closed") return `${base} bg-red-50 text-red-700 border border-red-200`
   return `${base} bg-slate-100 text-text-secondary border border-border`
 }
 
@@ -129,7 +128,9 @@ export default function ClassHome() {
             ) : (
               <div className="divide-y divide-border">
                 {assignments.map((assignment: Assignment) => {
-                  const status = getAssignmentStatus(assignment.due_date);
+                  const status = teacherMode
+                    ? getTeacherAssignmentStatus(assignment.due_date)
+                    : getAssignmentStatus(assignment.due_date);
                   const progress = progressMap.get(assignment.id);
                   const isComplete = progress && progress.required > 0 && progress.completed >= progress.required;
                   return (
@@ -140,7 +141,7 @@ export default function ClassHome() {
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                          status === "Upcoming" ? "bg-emerald-500" : status === "Overdue" ? "bg-red-400" : "bg-gray-300"
+                          status === "Upcoming" || status === "Open" ? "bg-emerald-500" : status === "Overdue" || status === "Closed" ? "bg-red-400" : "bg-gray-300"
                         }`} />
                         <div className="min-w-0">
                           <span className="font-medium text-sm text-text-primary group-hover:text-btn-primary transition-colors block truncate">
