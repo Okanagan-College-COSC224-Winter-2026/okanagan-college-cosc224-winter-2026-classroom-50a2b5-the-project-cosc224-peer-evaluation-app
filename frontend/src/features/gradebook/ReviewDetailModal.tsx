@@ -129,23 +129,25 @@ export default function ReviewDetailModal({
       onClose={onClose}
       title={`Reviews: ${studentName} - ${assignmentName}`}
     >
-      {submission && (
-        <div>
-          <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wide m-0 mb-3">
-            Submission
-          </h4>
-        <div className="flex items-center gap-2 px-4 py-3 bg-bg-secondary rounded-xl border border-border mb-2">
-          <DownloadIcon />
-          <a
-            href={submission.download_url}
-            className="text-sm font-medium text-btn-primary hover:underline"
-            download
-          >
-            {submission.filename}
-          </a>
-        </div>
-        </div>
-      )}
+      <div>
+        <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wide m-0 mb-3">
+          Submission
+        </h4>
+        {submission ? (
+          <div className="flex items-center gap-2 px-4 py-3 bg-bg-secondary rounded-xl border border-border mb-2">
+            <DownloadIcon />
+            <a
+              href={submission.download_url}
+              className="text-sm font-medium text-btn-primary hover:underline"
+              download
+            >
+              {submission.filename}
+            </a>
+          </div>
+        ) : (
+          <p className="text-sm text-text-secondary m-0 mb-2">No file submitted yet.</p>
+        )}
+      </div>
       {isLoading ? (
         <p className="text-text-secondary text-sm">Loading reviews...</p>
       ) : hasNoReviews ? (
