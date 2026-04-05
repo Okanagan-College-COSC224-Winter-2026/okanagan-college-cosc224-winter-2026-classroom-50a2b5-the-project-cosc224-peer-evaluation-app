@@ -30,7 +30,7 @@ export default function ClassLayout() {
 
       <TabNavigation
         tabs={[
-          { label: "Home", path: `/classes/${id}/home` },
+          { label: "Assignments", path: `/classes/${id}/home` },
           { label: "Members", path: `/classes/${id}/members` },
           { label: "Groups", path: `/classes/${id}/groups` },
           ...(isTeacher() ? [
