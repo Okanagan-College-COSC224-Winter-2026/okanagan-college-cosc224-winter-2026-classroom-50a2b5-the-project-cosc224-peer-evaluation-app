@@ -176,27 +176,29 @@ export default function GroupReviewSection({
         onClose={() => setIsReviewModalOpen(false)}
         title={`${isEditing ? "Edit" : "Review"}: ${selectedGroupName}`}
       >
-        {groupSubmission && (
-          <div className="mb-4">
-            <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wide m-0 mb-3">
-              Submission
-            </h4>
-          <div className="flex items-center gap-2 px-4 py-3 bg-bg-secondary rounded-xl border border-border">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-btn-primary shrink-0">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            <a
-              href={groupSubmission.download_url}
-              className="text-sm font-medium text-btn-primary hover:underline"
-              download
-            >
-              {groupSubmission.filename}
-            </a>
-          </div>
-          </div>
-        )}
+        <div className="mb-4">
+          <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wide m-0 mb-3">
+            Submission
+          </h4>
+          {groupSubmission ? (
+            <div className="flex items-center gap-2 px-4 py-3 bg-bg-secondary rounded-xl border border-border">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-btn-primary shrink-0">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <a
+                href={groupSubmission.download_url}
+                className="text-sm font-medium text-btn-primary hover:underline"
+                download
+              >
+                {groupSubmission.filename}
+              </a>
+            </div>
+          ) : (
+            <p className="text-sm text-text-secondary m-0">No file submitted by this group yet.</p>
+          )}
+        </div>
         <RubricDisplay
           rubricId={groupRubricId}
           onCriterionSelect={handleCriterionSelect}
