@@ -20,7 +20,9 @@ export default function DashboardLayout() {
         const data = await getCourseGradeSummary(course.id);
         setGrades(prev => ({
           ...prev,
-          [course.id]: `Grade: ${data.courseAverage} / ${data.courseMax}`
+          [course.id]: data.courseMax > 0
+            ? `Grade: ${Math.round((data.courseAverage / data.courseMax) * 100)}%`
+            : `Grade: N/A`
         }));
       } catch {
         // no grade available yet
@@ -82,7 +84,7 @@ export default function DashboardLayout() {
             name={course.name}
             subtitle={`${course.assignmentCount || 0} assignments`}
             href={`/classes/${course.id}/home`}
-            grade={grades[course.id]}
+            grade={!isTeacher() ? grades[course.id] : undefined}
           />
         ))}
 
