@@ -25,6 +25,7 @@ from ..models import (
 )
 from ..services.grade_service import compute_course_summary
 from ..services.group_service import get_user_group_in_course
+from ..services.progress_service import get_review_progress
 from .auth_controller import jwt_teacher_required
 
 bp = Blueprint("gradebook", __name__, url_prefix="/gradebook")
@@ -102,6 +103,21 @@ def get_gradebook(course_id):
             if effective_max is not None:
                 course_max += effective_max
 
+        # Review progress for this student
+        progress_list = get_review_progress(student, course_id, assignments)
+        review_progress = {}
+        total_completed = 0
+        total_required = 0
+        for p in progress_list:
+            completed = p["individual_completed"] + p["group_completed"]
+            required = p["individual_required"] + p["group_required"]
+            review_progress[str(p["assignment_id"])] = {
+                "completed": completed,
+                "required": required,
+            }
+            total_completed += completed
+            total_required += required
+
         student_rows.append({
             "id": student.id,
             "name": student.name,
@@ -110,6 +126,11 @@ def get_gradebook(course_id):
             "courseTotal": {
                 "earned": round(course_earned, 2) if course_earned else 0,
                 "max": round(course_max, 2) if course_max else 0,
+            },
+            "reviewProgress": review_progress,
+            "reviewTotal": {
+                "completed": total_completed,
+                "required": total_required,
             },
         })
 
