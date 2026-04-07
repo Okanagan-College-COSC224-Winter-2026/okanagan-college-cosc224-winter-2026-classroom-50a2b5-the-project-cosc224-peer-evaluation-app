@@ -18,11 +18,18 @@ export default function DashboardLayout() {
     courses.forEach(async (course: CourseWithAssignments) => {
       try {
         const data = await getCourseGradeSummary(course.id);
+        const pcts = (data.assignments ?? [])
+          .map((a: { individualAverage: number | null; individualMax: number | null; groupAverage: number | null; groupMax: number | null }) => {
+            let earned = 0, max = 0;
+            if (a.individualAverage != null && a.individualMax) { earned += a.individualAverage; max += a.individualMax; }
+            if (a.groupAverage != null && a.groupMax) { earned += a.groupAverage; max += a.groupMax; }
+            return max > 0 ? earned / max : null;
+          })
+          .filter((p: number | null): p is number => p !== null);
+        const pct = pcts.length > 0 ? Math.round(pcts.reduce((s: number, p: number) => s + p, 0) / pcts.length * 100) : null;
         setGrades(prev => ({
           ...prev,
-          [course.id]: data.courseMax > 0
-            ? `Grade: ${Math.round((data.courseAverage / data.courseMax) * 100)}%`
-            : `Grade: N/A`
+          [course.id]: pct !== null ? `Grade: ${pct}%` : `Grade: N/A`
         }));
       } catch {
         // no grade available yet

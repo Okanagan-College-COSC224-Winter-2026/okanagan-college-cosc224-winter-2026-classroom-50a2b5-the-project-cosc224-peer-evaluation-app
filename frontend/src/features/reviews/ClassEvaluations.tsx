@@ -97,8 +97,7 @@ function AssignmentList({
   averageKey,
   maxKey,
   onOpen,
-  totalAverage,
-  totalMax,
+  totalPct,
 }: {
   title: string;
   summaries: AssignmentSummary[];
@@ -106,8 +105,7 @@ function AssignmentList({
   averageKey: "individualAverage" | "groupAverage";
   maxKey: "individualMax" | "groupMax";
   onOpen: (summary: AssignmentSummary) => void;
-  totalAverage: number | null;
-  totalMax: number | null;
+  totalPct: number | null;
 }) {
   const totalLabel = title.replace("Reviews", "Total");
 
@@ -154,11 +152,11 @@ function AssignmentList({
           );
         })}
       </div>
-      {totalAverage !== null && totalMax !== null && totalMax > 0 && (
+      {totalPct !== null && (
         <div className="px-5 md:px-8 py-4 bg-bg-secondary border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <span className="text-sm font-semibold text-text-primary">{totalLabel}</span>
           <span className="font-bold text-btn-primary text-sm">
-            {((totalAverage / totalMax) * 100).toFixed(0)}%
+            {totalPct.toFixed(0)}%
           </span>
         </div>
       )}
@@ -180,12 +178,32 @@ export default function ClassEvaluations() {
   );
 
   const summaries: AssignmentSummary[] = summaryData?.assignments ?? [];
-  const courseAverage: number | null = summaryData?.courseAverage ?? null;
-  const courseMax: number | null = summaryData?.courseMax ?? null;
-  const individualAverage: number | null = summaryData?.individualAverage ?? null;
-  const individualMax: number | null = summaryData?.individualMax ?? null;
-  const groupAverage: number | null = summaryData?.groupAverage ?? null;
-  const groupMax: number | null = summaryData?.groupMax ?? null;
+
+  // Equal-weight course total: average of per-assignment percentages
+  const coursePct = (() => {
+    const pcts = summaries
+      .map((a) => {
+        let earned = 0, max = 0;
+        if (a.individualAverage != null && a.individualMax) { earned += a.individualAverage; max += a.individualMax; }
+        if (a.groupAverage != null && a.groupMax) { earned += a.groupAverage; max += a.groupMax; }
+        return max > 0 ? earned / max : null;
+      })
+      .filter((p): p is number => p !== null);
+    return pcts.length > 0 ? pcts.reduce((s, p) => s + p, 0) / pcts.length * 100 : null;
+  })();
+  // Equal-weight per-type totals
+  const individualPct = (() => {
+    const pcts = summaries
+      .filter((a) => a.individualAverage != null && a.individualMax && a.individualMax > 0)
+      .map((a) => a.individualAverage! / a.individualMax!);
+    return pcts.length > 0 ? pcts.reduce((s, p) => s + p, 0) / pcts.length * 100 : null;
+  })();
+  const groupPct = (() => {
+    const pcts = summaries
+      .filter((a) => a.groupAverage != null && a.groupMax && a.groupMax > 0)
+      .map((a) => a.groupAverage! / a.groupMax!);
+    return pcts.length > 0 ? pcts.reduce((s, p) => s + p, 0) / pcts.length * 100 : null;
+  })();
 
   const openAssignment = (summary: AssignmentSummary, reviewType: "individual" | "group") => {
     setSelectedAssignment(summary);
@@ -222,8 +240,7 @@ export default function ClassEvaluations() {
               averageKey="individualAverage"
               maxKey="individualMax"
               onOpen={(s) => openAssignment(s, "individual")}
-              totalAverage={individualAverage}
-              totalMax={individualMax}
+              totalPct={individualPct}
             />
 
             {/* Group reviews per assignment */}
@@ -235,26 +252,25 @@ export default function ClassEvaluations() {
                 averageKey="groupAverage"
                 maxKey="groupMax"
                 onOpen={(s) => openAssignment(s, "group")}
-                totalAverage={groupAverage}
-                totalMax={groupMax}
+                totalPct={groupPct}
               />
             )}
 
             {/* Course total card */}
-            {courseAverage !== null && courseMax !== null && courseMax > 0 && (
+            {coursePct !== null && (
               <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
                 <div className="px-5 md:px-8 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide m-0 mb-1">Course Total</p>
                     <p className="text-xl font-bold text-btn-primary m-0">
-                      {((courseAverage / courseMax) * 100).toFixed(0)}%
+                      {coursePct.toFixed(0)}%
                     </p>
                   </div>
                   <div className="w-full sm:w-48">
                     <div className="h-2 bg-bg-secondary rounded-full overflow-hidden">
                       <div
                         className="h-full bg-btn-primary rounded-full transition-all"
-                        style={{ width: `${Math.min((courseAverage / courseMax) * 100, 100)}%` }}
+                        style={{ width: `${Math.min(coursePct, 100)}%` }}
                       />
                     </div>
                   </div>

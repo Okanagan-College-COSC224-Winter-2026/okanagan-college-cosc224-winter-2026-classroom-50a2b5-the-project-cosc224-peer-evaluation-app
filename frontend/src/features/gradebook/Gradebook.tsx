@@ -131,10 +131,13 @@ export default function Gradebook() {
               </thead>
               <tbody className="divide-y divide-border">
                 {students.map((student) => {
-                  const totalPct =
-                    student.courseTotal.max > 0
-                      ? ((student.courseTotal.earned / student.courseTotal.max) * 100).toFixed(0)
-                      : null;
+                  const pcts = assignments
+                    .map((a) => student.grades[String(a.id)])
+                    .filter((g) => g?.effectiveGrade != null && g?.effectiveMax && g.effectiveMax > 0)
+                    .map((g) => g.effectiveGrade! / g.effectiveMax!);
+                  const totalPct = pcts.length > 0
+                    ? (pcts.reduce((s, p) => s + p, 0) / pcts.length * 100).toFixed(0)
+                    : null;
 
                   return (
                     <tr
@@ -195,9 +198,6 @@ export default function Gradebook() {
                             <span className="font-bold text-btn-primary text-sm">
                               {totalPct !== null ? `${totalPct}%` : "--"}
                             </span>
-                            <div className="text-xs text-text-secondary">
-                              {student.courseTotal.earned} / {student.courseTotal.max}
-                            </div>
                           </td>
                         </>
                       ) : (
