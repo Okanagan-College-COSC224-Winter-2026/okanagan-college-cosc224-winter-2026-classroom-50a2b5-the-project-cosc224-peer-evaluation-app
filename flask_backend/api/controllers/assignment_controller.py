@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from datetime import datetime, timezone
 
-from ..models import Course, Assignment, User, AssignmentSchema, User_Course
+from ..models import Course, Assignment, User, AssignmentSchema, User_Course, Submission, CourseGroup, Group_Members
 from ..models.db import db
 from ..models.criterion_model import Criterion
 from ..models.review_model import Review
@@ -309,4 +309,41 @@ def get_assignments(class_id):
 
     assignments = Assignment.get_by_class_id(class_id)
     assignments_data = AssignmentSchema(many=True).dump(assignments)
+
+    # For students, attach has_submitted flag per assignment
+    if user.is_student():
+        assignment_ids = [a.id for a in assignments]
+        # Individual submissions
+        submitted_ids = set(
+            row.assignmentID for row in
+            Submission.query.filter(
+                Submission.assignmentID.in_(assignment_ids),
+                Submission.studentID == user.id,
+            ).with_entities(Submission.assignmentID).all()
+        )
+        # Group submissions for remaining assignments
+        membership = (
+            Group_Members.query
+            .join(CourseGroup, CourseGroup.id == Group_Members.groupID)
+            .filter(Group_Members.userID == user.id, CourseGroup.courseID == class_id)
+            .first()
+        )
+        if membership:
+            group_member_ids = [
+                m.userID for m in Group_Members.query.filter_by(groupID=membership.groupID).all()
+            ]
+            remaining = [aid for aid in assignment_ids if aid not in submitted_ids]
+            if remaining:
+                group_submitted = set(
+                    row.assignmentID for row in
+                    Submission.query.filter(
+                        Submission.assignmentID.in_(remaining),
+                        Submission.studentID.in_(group_member_ids),
+                    ).with_entities(Submission.assignmentID).all()
+                )
+                submitted_ids |= group_submitted
+
+        for a_data in assignments_data:
+            a_data["has_submitted"] = a_data["id"] in submitted_ids
+
     return jsonify(assignments_data), 200

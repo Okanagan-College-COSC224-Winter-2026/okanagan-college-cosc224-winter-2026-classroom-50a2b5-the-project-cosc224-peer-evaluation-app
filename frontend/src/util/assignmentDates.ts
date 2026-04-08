@@ -1,4 +1,4 @@
-export type AssignmentStatus = "No due date" | "Upcoming" | "Overdue";
+export type AssignmentStatus = "No due date" | "Upcoming" | "Overdue" | "Submitted";
 export type TeacherAssignmentStatus = "No due date" | "Open" | "Closed";
 
 // Backend returns naive UTC datetimes (no Z suffix).
@@ -20,7 +20,11 @@ export function formatDueDate(dueDate?: string): string {
   return parsed.toLocaleDateString();
 }
 
-export function getAssignmentStatus(dueDate?: string): AssignmentStatus {
+export function getAssignmentStatus(dueDate?: string, hasSubmitted?: boolean): AssignmentStatus {
+  if (hasSubmitted) {
+    return "Submitted";
+  }
+
   if (!dueDate) {
     return "No due date";
   }

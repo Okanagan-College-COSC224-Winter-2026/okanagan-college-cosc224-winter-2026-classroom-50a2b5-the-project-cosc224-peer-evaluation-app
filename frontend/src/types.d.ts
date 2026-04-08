@@ -50,6 +50,7 @@ interface Assignment {
   rubric?: string;
   due_date?: string;
   is_anonymous?: boolean;
+  has_submitted?: boolean;
 }
 
 interface CourseWithAssignments extends Course {
