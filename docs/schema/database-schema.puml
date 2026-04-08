@@ -14,6 +14,8 @@ class User {
   +email: String
   +hash_pass: String
   +role: String <<student|teacher|admin>>
+  +must_change_password: Boolean <<default FALSE>>
+  +avatar_path: String (nullable)
 }
 }
 
@@ -22,6 +24,7 @@ class Course {
   +id: Integer
   +teacherID: Integer
   +name: String
+  +image_path: String (nullable)
 }
 
 class Assignment {
@@ -97,6 +100,17 @@ class CriteriaDescription {
 }
 }
 
+package "Resources" {
+class AssignmentResource {
+  +id: Integer
+  +assignmentID: Integer
+  +uploaderID: Integer
+  +original_name: String
+  +path: String
+  +created_at: DateTime
+}
+}
+
 package "Grades" {
 class GradeOverride {
   +id: Integer
@@ -146,6 +160,10 @@ Review "1" --> "0..*" Criterion : criteria
 Assignment "1" --> "0..*" Rubric : rubrics
 Rubric "1" --> "0..*" CriteriaDescription : questions
 CriteriaDescription "1" --> "0..*" Criterion : responses
+
+' Assignment resources
+Assignment "1" --> "0..*" AssignmentResource : resources
+User "1" --> "0..*" AssignmentResource : uploaded by
 
 ' Grade overrides
 User "1" --> "0..*" GradeOverride : overrides for

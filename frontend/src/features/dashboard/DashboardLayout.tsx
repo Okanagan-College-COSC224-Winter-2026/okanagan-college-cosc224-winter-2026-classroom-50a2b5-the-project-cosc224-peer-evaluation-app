@@ -18,9 +18,18 @@ export default function DashboardLayout() {
     courses.forEach(async (course: CourseWithAssignments) => {
       try {
         const data = await getCourseGradeSummary(course.id);
+        const pcts = (data.assignments ?? [])
+          .map((a: { individualAverage: number | null; individualMax: number | null; groupAverage: number | null; groupMax: number | null }) => {
+            const typePcts: number[] = [];
+            if (a.individualAverage != null && a.individualMax && a.individualMax > 0) { typePcts.push(a.individualAverage / a.individualMax); }
+            if (a.groupAverage != null && a.groupMax && a.groupMax > 0) { typePcts.push(a.groupAverage / a.groupMax); }
+            return typePcts.length > 0 ? typePcts.reduce((s, p) => s + p, 0) / typePcts.length : null;
+          })
+          .filter((p: number | null): p is number => p !== null);
+        const pct = pcts.length > 0 ? Math.round(pcts.reduce((s: number, p: number) => s + p, 0) / pcts.length * 100) : null;
         setGrades(prev => ({
           ...prev,
-          [course.id]: `Grade: ${data.courseAverage} / ${data.courseMax}`
+          [course.id]: pct !== null ? `Grade: ${pct}%` : `Grade: N/A`
         }));
       } catch {
         // no grade available yet
@@ -82,7 +91,7 @@ export default function DashboardLayout() {
             name={course.name}
             subtitle={`${course.assignmentCount || 0} assignments`}
             href={`/classes/${course.id}/home`}
-            grade={grades[course.id]}
+            grade={!isTeacher() ? grades[course.id] : undefined}
           />
         ))}
 

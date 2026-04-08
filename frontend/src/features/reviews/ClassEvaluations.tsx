@@ -34,6 +34,17 @@ interface AssignmentSummary {
   groupMax: number | null;
 }
 
+function getAssignmentPct(a: AssignmentSummary): number | null {
+  const pcts: number[] = [];
+  if (a.individualAverage != null && a.individualMax && a.individualMax > 0) {
+    pcts.push(a.individualAverage / a.individualMax);
+  }
+  if (a.groupAverage != null && a.groupMax && a.groupMax > 0) {
+    pcts.push(a.groupAverage / a.groupMax);
+  }
+  return pcts.length > 0 ? (pcts.reduce((s, p) => s + p, 0) / pcts.length) * 100 : null;
+}
+
 function ReviewCard({ review, idx }: { review: ReviewData; idx: number }) {
   const scoredCriteria = review.criteria.filter((c) => c.grade !== null);
   const total = scoredCriteria.reduce((sum, c) => sum + (c.grade ?? 0), 0);
@@ -47,7 +58,6 @@ function ReviewCard({ review, idx }: { review: ReviewData; idx: number }) {
         <span className="font-semibold text-sm text-text-primary">Review {idx + 1}</span>
         <span className="text-xs text-text-secondary">by {review.reviewer.name}</span>
       </div>
-
       <div className="p-4">
         {review.criteria.length === 0 ? (
           <p className="text-text-secondary text-xs m-0">No criteria scores recorded.</p>
@@ -90,79 +100,39 @@ function ReviewCard({ review, idx }: { review: ReviewData; idx: number }) {
   );
 }
 
-function AssignmentList({
-  title,
-  summaries,
-  reviewCountKey,
-  averageKey,
-  maxKey,
-  onOpen,
-  totalAverage,
-  totalMax,
-}: {
-  title: string;
-  summaries: AssignmentSummary[];
-  reviewCountKey: "individualReviewCount" | "groupReviewCount";
-  averageKey: "individualAverage" | "groupAverage";
-  maxKey: "individualMax" | "groupMax";
-  onOpen: (summary: AssignmentSummary) => void;
-  totalAverage: number | null;
-  totalMax: number | null;
-}) {
-  const totalLabel = title.replace("Reviews", "Total");
+function ReviewSection({ title, reviews }: { title: string; reviews: ReviewData[] }) {
+  if (reviews.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
-      <div className="px-5 md:px-8 py-4 border-b border-border">
-        <h3 className="text-base font-semibold text-text-primary m-0">{title}</h3>
+    <div>
+      <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wide m-0 mb-3">
+        {title}
+      </h4>
+      <div className="flex flex-col gap-3">
+        {reviews.map((review, idx) => (
+          <ReviewCard key={review.id} review={review} idx={idx} />
+        ))}
       </div>
-      <div className="divide-y divide-border">
-        {summaries.map((s) => {
-          const count = s[reviewCountKey];
-          const avg = s[averageKey];
-          const max = s[maxKey];
-
-          return (
-            <div
-              key={s.id}
-              className={`px-5 md:px-8 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 transition-colors ${
-                count > 0 ? "cursor-pointer hover:bg-bg-secondary" : ""
-              }`}
-              onClick={() => count > 0 && onOpen(s)}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-2 h-2 rounded-full shrink-0 ${count > 0 ? "bg-btn-primary" : "bg-gray-300"}`} />
-                <span className="font-medium text-text-primary text-sm">{s.name}</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm pl-5 sm:pl-0">
-                {count === 0 ? (
-                  <span className="text-text-secondary text-xs">No reviews yet</span>
-                ) : (
-                  <>
-                    <span className="text-text-secondary text-xs">
-                      {count} review{count !== 1 ? "s" : ""}
-                    </span>
-                    {avg !== null && max !== null && max > 0 && (
-                      <span className="font-semibold text-btn-primary bg-btn-primary/10 px-2.5 py-0.5 rounded-full text-xs">
-                        {((avg / max) * 100).toFixed(0)}%
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {totalAverage !== null && totalMax !== null && totalMax > 0 && (
-        <div className="px-5 md:px-8 py-4 bg-bg-secondary border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <span className="text-sm font-semibold text-text-primary">{totalLabel}</span>
-          <span className="font-bold text-btn-primary text-sm">
-            {((totalAverage / totalMax) * 100).toFixed(0)}%
-          </span>
-        </div>
-      )}
     </div>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
   );
 }
 
@@ -170,38 +140,31 @@ export default function ClassEvaluations() {
   const { id } = useParams();
 
   const [selectedAssignment, setSelectedAssignment] = useState<AssignmentSummary | null>(null);
-  const [selectedAssignmentId, setSelectedAssignmentId] = useState<number>(0);
-  const [modalReviewType, setModalReviewType] = useState<"individual" | "group">("individual");
 
   const { data: summaryData, isLoading: loading } = useCourseGradeSummary(Number(id));
-  const { data: reviews = [], isLoading: modalLoading } = useReviewsForAssignment(
-    selectedAssignmentId,
-    selectedAssignmentId ? modalReviewType : undefined
+
+  // Fetch both individual and group reviews when modal is open
+  const { data: individualReviews = [], isLoading: indLoading } = useReviewsForAssignment(
+    selectedAssignment?.id ?? 0,
+    selectedAssignment ? "individual" : undefined
   );
+  const { data: groupReviews = [], isLoading: grpLoading } = useReviewsForAssignment(
+    selectedAssignment?.id ?? 0,
+    selectedAssignment ? "group" : undefined
+  );
+  const modalLoading = indLoading || grpLoading;
 
   const summaries: AssignmentSummary[] = summaryData?.assignments ?? [];
-  const courseAverage: number | null = summaryData?.courseAverage ?? null;
-  const courseMax: number | null = summaryData?.courseMax ?? null;
-  const individualAverage: number | null = summaryData?.individualAverage ?? null;
-  const individualMax: number | null = summaryData?.individualMax ?? null;
-  const groupAverage: number | null = summaryData?.groupAverage ?? null;
-  const groupMax: number | null = summaryData?.groupMax ?? null;
 
-  const openAssignment = (summary: AssignmentSummary, reviewType: "individual" | "group") => {
-    setSelectedAssignment(summary);
-    setSelectedAssignmentId(summary.id);
-    setModalReviewType(reviewType);
-  };
-
-  const closeModal = () => {
-    setSelectedAssignment(null);
-    setSelectedAssignmentId(0);
-  };
+  const coursePct = (() => {
+    const pcts = summaries.map(getAssignmentPct).filter((p): p is number => p !== null);
+    return pcts.length > 0 ? pcts.reduce((s, p) => s + p, 0) / pcts.length : null;
+  })();
 
   return (
     <>
       <div className="p-4 md:p-8 w-full max-w-260 mx-auto flex flex-col gap-6">
-        <h2 className="text-2xl font-semibold text-text-primary m-0">Evaluations</h2>
+        <h2 className="text-2xl font-semibold text-text-primary m-0">My Evaluations</h2>
 
         {loading ? (
           <p className="text-text-secondary text-sm">Loading evaluations...</p>
@@ -214,96 +177,81 @@ export default function ClassEvaluations() {
           </div>
         ) : (
           <>
-            {/* Individual reviews per assignment */}
-            <AssignmentList
-              title="Individual Reviews"
-              summaries={summaries}
-              reviewCountKey="individualReviewCount"
-              averageKey="individualAverage"
-              maxKey="individualMax"
-              onOpen={(s) => openAssignment(s, "individual")}
-              totalAverage={individualAverage}
-              totalMax={individualMax}
-            />
-
-            {/* Group reviews per assignment */}
-            {summaries.some((s) => s.groupReviewCount > 0) && (
-              <AssignmentList
-                title="Group Reviews"
-                summaries={summaries}
-                reviewCountKey="groupReviewCount"
-                averageKey="groupAverage"
-                maxKey="groupMax"
-                onOpen={(s) => openAssignment(s, "group")}
-                totalAverage={groupAverage}
-                totalMax={groupMax}
-              />
-            )}
-
-            {/* Course total card */}
-            {courseAverage !== null && courseMax !== null && courseMax > 0 && (
-              <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
-                <div className="px-5 md:px-8 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide m-0 mb-1">Course Total</p>
-                    <p className="text-xl font-bold text-btn-primary m-0">
-                      {((courseAverage / courseMax) * 100).toFixed(0)}%
-                    </p>
-                  </div>
-                  <div className="w-full sm:w-48">
-                    <div className="h-2 bg-bg-secondary rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-btn-primary rounded-full transition-all"
-                        style={{ width: `${Math.min((courseAverage / courseMax) * 100, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
+            <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+              <div className="px-5 md:px-8 py-4 border-b border-border flex items-center justify-between">
+                <h3 className="text-base font-semibold text-text-primary m-0">Assignment</h3>
+                <h3 className="text-base font-semibold text-text-primary m-0">Grade</h3>
               </div>
-            )}
+              <div className="divide-y divide-border">
+                {summaries.map((s) => {
+                  const pct = getAssignmentPct(s);
+                  const hasReviews = s.individualReviewCount > 0 || s.groupReviewCount > 0;
+
+                  return (
+                    <div
+                      key={s.id}
+                      className="px-5 md:px-8 py-4 flex items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${hasReviews ? "bg-btn-primary" : "bg-gray-300"}`} />
+                        <span className="font-medium text-text-primary text-sm truncate">{s.name}</span>
+                      </div>
+                      <div className="flex items-center shrink-0">
+                        <div className="w-8 flex items-center justify-center">
+                          {hasReviews && (
+                            <button
+                              onClick={() => setSelectedAssignment(s)}
+                              className="bg-transparent border-none cursor-pointer text-text-secondary hover:text-btn-primary transition-colors p-1 rounded-lg hover:bg-bg-secondary"
+                              title="View reviews"
+                            >
+                              <EyeIcon />
+                            </button>
+                          )}
+                        </div>
+                        <div className="w-16 text-right">
+                          {pct !== null ? (
+                            <span className="font-semibold text-btn-primary bg-btn-primary/10 px-2.5 py-0.5 rounded-full text-xs">
+                              {pct.toFixed(0)}%
+                            </span>
+                          ) : (
+                            <span className="text-text-secondary text-xs">--</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {coursePct !== null && (
+                <div className="px-5 md:px-8 py-4 bg-bg-secondary border-t border-border flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-text-primary">Course Total</span>
+                  <span className="font-bold text-btn-primary text-sm">
+                    {coursePct.toFixed(0)}%
+                  </span>
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
 
-      {/* Review detail modal */}
+      {/* Review detail modal — shows both individual and group reviews */}
       <Modal
         isOpen={selectedAssignment !== null}
-        onClose={closeModal}
-        title={`${modalReviewType === "group" ? "Group" : "Individual"} Reviews: ${selectedAssignment?.name || ""}`}
+        onClose={() => setSelectedAssignment(null)}
+        title={`Reviews: ${selectedAssignment?.name || ""}`}
       >
         {modalLoading ? (
           <p className="text-text-secondary text-sm">Loading reviews...</p>
-        ) : (reviews as ReviewData[]).length === 0 ? (
+        ) : (individualReviews as ReviewData[]).length === 0 && (groupReviews as ReviewData[]).length === 0 ? (
           <p className="text-text-secondary text-sm">No reviews found.</p>
-        ) : (() => {
-          const typedReviews = reviews as ReviewData[];
-          const allTotal = typedReviews.reduce((sum, r) => {
-            return sum + r.criteria.filter((c) => c.grade !== null).reduce((s, c) => s + (c.grade ?? 0), 0);
-          }, 0);
-          const allMax = typedReviews.reduce((sum, r) => {
-            return sum + r.criteria.filter((c) => c.grade !== null && c.score_max !== null).reduce((s, c) => s + (c.score_max ?? 0), 0);
-          }, 0);
-          return (
-            <div className="flex flex-col gap-4">
-              {typedReviews.map((review, idx) => (
-                <ReviewCard key={review.id} review={review} idx={idx} />
-              ))}
-              {allMax > 0 && (
-                <div className="rounded-xl border border-border bg-bg-secondary px-4 py-3 flex justify-between items-center">
-                  <span className="text-sm font-semibold text-text-primary">Overall</span>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-text-secondary">
-                      {allTotal} / {allMax}
-                    </span>
-                    <span className="font-bold text-btn-primary text-sm">
-                      {((allTotal / allMax) * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })()}
+        ) : (
+          <div className="flex flex-col gap-5">
+            <ReviewSection title="Individual Reviews" reviews={individualReviews as ReviewData[]} />
+            <ReviewSection title="Group Reviews" reviews={groupReviews as ReviewData[]} />
+          </div>
+        )}
       </Modal>
     </>
   );

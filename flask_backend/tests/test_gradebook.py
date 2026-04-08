@@ -317,20 +317,107 @@ class TestGetGradebook:
         grade = alice["grades"][str(assignment.id)]
         assert grade["overrideScore"] == 9.0
         assert grade["effectiveGrade"] == 9.0
+        assert grade["effectiveMax"] == 100.0
         # Peer average should still be present
         assert grade["individualAverage"] == 7.0
+
+    def test_gradebook_max_excludes_types_without_reviews(
+        self, auth_teacher, course, assignment, enrolled,
+        reviews_for_alice, group_setup, student_a
+    ):
+        """effectiveMax only counts rubric types where the student has reviews."""
+        resp = auth_teacher.get(f"/gradebook/course/{course.id}")
+        assert resp.status_code == 200
+
+        alice = next(s for s in resp.json["students"] if s["id"] == student_a.id)
+        grade = alice["grades"][str(assignment.id)]
+        # Alice has individual reviews (7/10) but no group reviews.
+        # Equal-weight: only individual counts → 70%
+        assert grade["effectiveGrade"] == 70.0
+        assert grade["effectiveMax"] == 100.0
 
     def test_gradebook_includes_course_totals(
         self, auth_teacher, course, assignment, enrolled, reviews_for_alice, student_a
     ):
-        """Course totals sum effective grades across assignments."""
+        """Course totals use equal-weight percentages (out of 100)."""
         resp = auth_teacher.get(f"/gradebook/course/{course.id}")
         assert resp.status_code == 200
 
         alice = next(s for s in resp.json["students"] if s["id"] == student_a.id)
         assert "courseTotal" in alice
-        assert alice["courseTotal"]["earned"] == 7.0
-        assert alice["courseTotal"]["max"] == 10
+        assert alice["courseTotal"]["earned"] == 70.0
+        assert alice["courseTotal"]["max"] == 100.0
+
+    def test_gradebook_includes_review_progress(
+        self, auth_teacher, db, course, assignment, enrolled,
+        student_a, student_b, group_setup, reviews_for_alice
+    ):
+        """Gradebook response includes reviewProgress and reviewTotal for each student."""
+        # student_a and student_b are in separate groups (Alpha, Beta)
+        # reviews_for_alice: student_b reviewed student_a (individual)
+        # So student_b has completed 1 individual review
+        # Each group has 1 member, so individual_required = 0 (no other group members)
+        # But there are 2 groups, so group_required = 1 for each student
+        resp = auth_teacher.get(f"/gradebook/course/{course.id}")
+        assert resp.status_code == 200
+
+        for student_row in resp.json["students"]:
+            assert "reviewProgress" in student_row, f"Missing reviewProgress for {student_row['name']}"
+            assert "reviewTotal" in student_row, f"Missing reviewTotal for {student_row['name']}"
+            assert str(assignment.id) in student_row["reviewProgress"]
+            progress = student_row["reviewProgress"][str(assignment.id)]
+            assert "completed" in progress
+            assert "required" in progress
+
+    def test_gradebook_review_progress_counts(
+        self, auth_teacher, db, course, assignment, enrolled,
+        student_a, student_b
+    ):
+        """Review progress reflects actual completion vs required counts with multi-member groups."""
+        # Create one group with both students so individual_required > 0
+        group = CourseGroup(name="Team", courseID=course.id)
+        db.session.add(group)
+        db.session.flush()
+        db.session.add(Group_Members(userID=student_a.id, groupID=group.id))
+        db.session.add(Group_Members(userID=student_b.id, groupID=group.id))
+        db.session.commit()
+
+        # Create individual rubric
+        rubric = Rubric(assignmentID=assignment.id, canComment=True, rubric_type="individual")
+        db.session.add(rubric)
+        db.session.flush()
+        crit = CriteriaDescription(rubricID=rubric.id, question="Q1", scoreMax=5, hasScore=True)
+        db.session.add(crit)
+        db.session.commit()
+
+        # student_b reviews student_a — so student_b has completed 1/1 individual reviews
+        review = Review(
+            assignmentID=assignment.id,
+            reviewerID=student_b.id,
+            revieweeID=student_a.id,
+            review_type="individual",
+        )
+        db.session.add(review)
+        db.session.flush()
+        db.session.add(Criterion(reviewID=review.id, criterionRowID=crit.id, grade=4))
+        db.session.commit()
+
+        resp = auth_teacher.get(f"/gradebook/course/{course.id}")
+        assert resp.status_code == 200
+
+        bob = next(s for s in resp.json["students"] if s["id"] == student_b.id)
+        progress = bob["reviewProgress"][str(assignment.id)]
+        assert progress["completed"] == 1
+        assert progress["required"] == 1  # 1 other group member
+        assert bob["reviewTotal"]["completed"] == 1
+        assert bob["reviewTotal"]["required"] == 1
+
+        alice = next(s for s in resp.json["students"] if s["id"] == student_a.id)
+        alice_progress = alice["reviewProgress"][str(assignment.id)]
+        assert alice_progress["completed"] == 0
+        assert alice_progress["required"] == 1  # 1 other group member
+        assert alice["reviewTotal"]["completed"] == 0
+        assert alice["reviewTotal"]["required"] == 1
 
     def test_gradebook_teacher_only(self, auth_student, course, enrolled):
         """Students cannot access the gradebook endpoint."""
