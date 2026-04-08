@@ -207,7 +207,7 @@ export default function GroupReviewSection({
           comment={reviewComment}
         />
         <div className="flex justify-end pt-4 mt-2 border-t border-border">
-          <button className={btnPrimary} disabled={isPending} onClick={() => handleSubmitOrUpdate(true)}>
+          <button className={btnPrimary} disabled={isPending || rubricCriteria.length === 0} onClick={() => handleSubmitOrUpdate(true)}>
             {isPending ? "Saving..." : isEditing ? "Update Review" : "Submit Review"}
           </button>
         </div>
