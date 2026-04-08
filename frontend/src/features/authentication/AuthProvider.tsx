@@ -10,8 +10,10 @@ import { BASE_URL } from "../../services/apiBase";
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: () => void;
+  mustChangePassword: boolean;
+  login: (mustChangePassword?: boolean) => void;
   logout: () => void;
+  refreshAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,36 +21,58 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+
+  async function refreshAuth() {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${BASE_URL}/user`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        setIsAuthenticated(false);
+        setMustChangePassword(false);
+        return;
+      }
+
+      const user = await res.json();
+      setIsAuthenticated(true);
+      setMustChangePassword(Boolean(user?.must_change_password));
+    } catch {
+      setIsAuthenticated(false);
+      setMustChangePassword(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   useEffect(function () {
-    async function checkAuth() {
-      try {
-        const res = await fetch(`${BASE_URL}/user`, {
-          method: "GET",
-          credentials: "include",
-        });
-
-        setIsAuthenticated(res.ok);
-      } catch {
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    checkAuth();
+    refreshAuth();
   }, []);
 
-  function login() {
+  function login(shouldChangePassword = false) {
     setIsAuthenticated(true);
+    setMustChangePassword(shouldChangePassword);
   }
 
   function logout() {
     setIsAuthenticated(false);
+    setMustChangePassword(false);
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        isLoading,
+        mustChangePassword,
+        login,
+        logout,
+        refreshAuth,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Textbox from '../../ui/Textbox';
 import toast from 'react-hot-toast';
-import { changePassword } from '../../util/api';
+import { changeRequiredPassword } from '../../services/userApi';
+import { useAuth } from './AuthProvider';
 import { pageClasses, blockClasses, innerClasses, inputsClasses, inputChunkClasses } from './LoginForm';
 
 export default function ChangePassword() {
   const navigate = useNavigate();
+  const { refreshAuth } = useAuth();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -30,7 +32,20 @@ export default function ChangePassword() {
 
     setIsPending(true);
     try {
-      await changePassword(currentPassword, newPassword);
+      await changeRequiredPassword(currentPassword, newPassword);
+
+      const stored = localStorage.getItem('user');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          parsed.must_change_password = false;
+          localStorage.setItem('user', JSON.stringify(parsed));
+        } catch {
+          // Ignore malformed local storage payloads.
+        }
+      }
+
+      await refreshAuth();
       toast.success('Password changed successfully! Redirecting...');
       setTimeout(() => navigate('/home'), 2000);
     } catch (err: unknown) {
