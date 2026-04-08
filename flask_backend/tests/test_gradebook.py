@@ -317,20 +317,36 @@ class TestGetGradebook:
         grade = alice["grades"][str(assignment.id)]
         assert grade["overrideScore"] == 9.0
         assert grade["effectiveGrade"] == 9.0
+        assert grade["effectiveMax"] == 100.0
         # Peer average should still be present
         assert grade["individualAverage"] == 7.0
+
+    def test_gradebook_max_excludes_types_without_reviews(
+        self, auth_teacher, course, assignment, enrolled,
+        reviews_for_alice, group_setup, student_a
+    ):
+        """effectiveMax only counts rubric types where the student has reviews."""
+        resp = auth_teacher.get(f"/gradebook/course/{course.id}")
+        assert resp.status_code == 200
+
+        alice = next(s for s in resp.json["students"] if s["id"] == student_a.id)
+        grade = alice["grades"][str(assignment.id)]
+        # Alice has individual reviews (7/10) but no group reviews.
+        # Equal-weight: only individual counts → 70%
+        assert grade["effectiveGrade"] == 70.0
+        assert grade["effectiveMax"] == 100.0
 
     def test_gradebook_includes_course_totals(
         self, auth_teacher, course, assignment, enrolled, reviews_for_alice, student_a
     ):
-        """Course totals sum effective grades across assignments."""
+        """Course totals use equal-weight percentages (out of 100)."""
         resp = auth_teacher.get(f"/gradebook/course/{course.id}")
         assert resp.status_code == 200
 
         alice = next(s for s in resp.json["students"] if s["id"] == student_a.id)
         assert "courseTotal" in alice
-        assert alice["courseTotal"]["earned"] == 7.0
-        assert alice["courseTotal"]["max"] == 10
+        assert alice["courseTotal"]["earned"] == 70.0
+        assert alice["courseTotal"]["max"] == 100.0
 
     def test_gradebook_includes_review_progress(
         self, auth_teacher, db, course, assignment, enrolled,

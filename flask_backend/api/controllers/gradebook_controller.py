@@ -65,28 +65,24 @@ def get_gradebook(course_id):
             grp_avg = a_summary["groupAverage"]
             grp_max = a_summary["groupMax"]
 
-            # Compute peer total (individual + group)
-            peer_total = 0.0
-            peer_max_total = 0.0
-            if ind_avg is not None:
-                peer_total += ind_avg
-            if ind_max is not None:
-                peer_max_total += ind_max
-            if grp_avg is not None:
-                peer_total += grp_avg
-            if grp_max is not None:
-                peer_max_total += grp_max
+            # Equal-weight average of individual and group percentages
+            pcts = []
+            if ind_avg is not None and ind_max and ind_max > 0:
+                pcts.append(ind_avg / ind_max)
+            if grp_avg is not None and grp_max and grp_max > 0:
+                pcts.append(grp_avg / grp_max)
 
             override_score = override_map.get((student.id, a_id))
 
             if override_score is not None:
                 effective = override_score
-            elif peer_total > 0:
-                effective = peer_total
+                effective_max = 100.0
+            elif pcts:
+                effective = sum(pcts) / len(pcts) * 100
+                effective_max = 100.0
             else:
                 effective = None
-
-            effective_max = peer_max_total if peer_max_total > 0 else None
+                effective_max = None
 
             grades[str(a_id)] = {
                 "individualAverage": ind_avg,

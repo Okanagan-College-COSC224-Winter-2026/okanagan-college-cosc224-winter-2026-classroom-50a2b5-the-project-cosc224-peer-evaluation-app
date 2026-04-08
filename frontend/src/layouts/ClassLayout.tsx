@@ -36,7 +36,7 @@ export default function ClassLayout() {
           ...(isTeacher() ? [
             { label: "Gradebook", path: `/classes/${id}/gradebook` },
           ] : [
-            { label: "Evaluations", path: `/classes/${id}/evaluations` },
+            { label: "My Evaluations", path: `/classes/${id}/evaluations` },
           ]),
           ...(isTeacher() ? [{ label: "Settings", path: `/classes/${id}/settings` }] : []),
         ]}
