@@ -23,10 +23,10 @@ export default function LoginPage() {
     try {
       const result = await tryLogin(email, password);
       if (result) {
+        login(Boolean(result.must_change_password));
         if (result.must_change_password) {
           navigate('/change-password');
         } else {
-          login();
           navigate('/home');
         }
       } else {
