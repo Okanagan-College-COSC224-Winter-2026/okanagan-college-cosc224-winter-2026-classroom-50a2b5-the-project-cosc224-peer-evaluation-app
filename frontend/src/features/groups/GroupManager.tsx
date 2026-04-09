@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import Modal from "../../ui/Modal";
 import { isTeacher } from "../../util/login";
+import RandomGroupCreation from "../../components/RandomGroupCreation";
 import {
   useGroups,
   useMyGroup,
@@ -62,6 +63,7 @@ export default function Group() {
   const [selectedGroup, setSelectedGroup] = useState<number>(-1);
   const [groupName, setGroupName] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<CourseGroup | null>(null);
+  const [showRandomGroupModal, setShowRandomGroupModal] = useState(false);
 
   const { data: groups = [], isLoading: groupsLoading } = useGroups(courseId);
   const { data: unassignedStudents = [], isLoading: unassignedLoading } = useUnassignedStudents(courseId);
@@ -194,6 +196,12 @@ const handleCreateGroup = async () => {
         >
           Create Group
         </button>
+        <button
+          onClick={() => setShowRandomGroupModal(true)}
+          className="px-5 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-lg cursor-pointer transition-all hover:brightness-110 active:scale-[0.98] border-none"
+        >
+          🎲 Randomise Groups
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -318,6 +326,11 @@ const handleCreateGroup = async () => {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Random Group Creation Modal */}
+      <Modal isOpen={showRandomGroupModal} onClose={() => setShowRandomGroupModal(false)} title="Create Random Groups">
+        <RandomGroupCreation courseId={courseId} />
       </Modal>
     </div>
   );

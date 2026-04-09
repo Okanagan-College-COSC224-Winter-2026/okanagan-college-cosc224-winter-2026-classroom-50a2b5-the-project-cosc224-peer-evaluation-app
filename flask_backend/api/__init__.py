@@ -16,6 +16,7 @@ from .controllers import (
     assignment_controller,
     assignment_resource_controller,
     group_controller,
+    group_creation_controller,
     review_controller,
     rubric_controller,
     submission_controller,
@@ -115,6 +116,7 @@ def create_app(test_config=None):
     app.register_blueprint(assignment_controller.bp)
     app.register_blueprint(assignment_resource_controller.bp)
     app.register_blueprint(group_controller.bp)
+    app.register_blueprint(group_creation_controller.bp)
     app.register_blueprint(rubric_controller.bp)
     app.register_blueprint(review_controller.bp)
     app.register_blueprint(submission_controller.bp)
