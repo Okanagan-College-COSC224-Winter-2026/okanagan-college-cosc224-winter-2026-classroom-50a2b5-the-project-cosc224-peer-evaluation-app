@@ -1,7 +1,7 @@
 import { useState } from "react";
-import Button from "../components/Button";
-import Textbox from "../components/Textbox";
-import StatusMessage from "../components/StatusMessage";
+import Button from "../ui/Button";
+import Textbox from "../ui/Textbox";
+import StatusMessage from "../ui/StatusMessage";
 import "./RandomGroupCreation.css";
 import { isTeacher } from "../util/login";
 
