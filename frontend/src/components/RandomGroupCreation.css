@@ -1,0 +1,306 @@
+.randomGroupCreation {
+  padding: 1rem;
+  background: #f9fafc;
+  border-radius: 8px;
+}
+
+.rgc-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.rgc-container h2 {
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Form Styles */
+.rgc-form {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.rgc-input-group {
+  margin-bottom: 1.5rem;
+}
+
+.rgc-input-group label {
+  display: block;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.5rem;
+}
+
+.rgc-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.rgc-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.rgc-input-group small {
+  display: block;
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.rgc-strategy {
+  background: #eff6ff;
+  border-left: 4px solid #3b82f6;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+  color: #1e40af;
+}
+
+.rgc-create-btn {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.rgc-create-btn:hover:not(:disabled) {
+  background: #059669;
+}
+
+.rgc-create-btn:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+/* Help Section */
+.rgc-help {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.rgc-help h3 {
+  color: #1e293b;
+  margin-bottom: 1rem;
+}
+
+.rgc-help ul {
+  list-style: none;
+  padding: 0;
+}
+
+.rgc-help li {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: #f1f5f9;
+  border-radius: 4px;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.rgc-help strong {
+  color: #475569;
+}
+
+/* Preview Styles */
+.rgc-preview {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.rgc-preview h3 {
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Warning/Remaining Students */
+.rgc-warning {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.rgc-warning h4 {
+  color: #92400e;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.rgc-remaining-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.rgc-remaining-table thead {
+  background: #fcd34d;
+  color: #78350f;
+}
+
+.rgc-remaining-table th {
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #f59e0b;
+}
+
+.rgc-remaining-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #fde68a;
+}
+
+.rgc-remaining-table tbody tr:hover {
+  background: #fffbeb;
+}
+
+.rgc-note {
+  color: #92400e;
+  font-size: 0.875rem;
+  margin: 0;
+  padding: 0.75rem;
+  background: #fffbeb;
+  border-radius: 4px;
+}
+
+/* Groups Grid */
+.rgc-groups-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.rgc-group-card {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  transition: all 0.2s;
+}
+
+.rgc-group-card:hover {
+  border-color: #64748b;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.rgc-group-card h4 {
+  color: #1e293b;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.rgc-member-count {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: #e2e8f0;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.rgc-members-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.rgc-members-list li {
+  padding: 0.5rem 0;
+  color: #334155;
+  border-bottom: 1px solid #cbd5e1;
+  font-size: 0.9rem;
+}
+
+.rgc-members-list li:last-child {
+  border-bottom: none;
+}
+
+.rgc-email {
+  color: #64748b;
+  font-size: 0.8rem;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+/* Actions */
+.rgc-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.rgc-back-btn,
+.rgc-reset-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 150px;
+}
+
+.rgc-back-btn {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.rgc-back-btn:hover {
+  background: #cbd5e1;
+}
+
+.rgc-reset-btn {
+  background: #3b82f6;
+  color: white;
+}
+
+.rgc-reset-btn:hover {
+  background: #2563eb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .rgc-groups-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .rgc-form {
+    padding: 1rem;
+  }
+
+  .rgc-actions {
+    flex-direction: column;
+  }
+
+  .rgc-back-btn,
+  .rgc-reset-btn {
+    width: 100%;
+  }
+}
