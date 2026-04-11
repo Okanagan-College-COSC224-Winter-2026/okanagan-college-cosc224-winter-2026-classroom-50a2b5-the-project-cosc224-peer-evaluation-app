@@ -184,7 +184,7 @@ def delete_own_account():
         return jsonify({"msg": "User not found"}), 404
 
     if not check_password_hash(user.hash_pass, password):
-        return jsonify({"msg": "Incorrect password"}), 401
+        return jsonify({"msg": "Incorrect password"}), 400
 
     user.delete()
     return jsonify({"msg": "Account deleted successfully"}), 200
@@ -242,7 +242,7 @@ def change_password():
 
     # Verify current password
     if not check_password_hash(user.hash_pass, current_password):
-        return jsonify({"msg": "Current password is incorrect"}), 401
+        return jsonify({"msg": "Current password is incorrect"}), 400
 
     # Update password and clear must_change_password flag
     user.hash_pass = generate_password_hash(new_password)

@@ -107,7 +107,11 @@ def change_password():
 
     # Check that the current password is correct
     if not check_password_hash(user.hash_pass, current_password):
-        return jsonify({"msg": "Current password is incorrect"}), 401
+        return jsonify({"msg": "Current password is incorrect"}), 400
+
+    # Prevent updating to the same password
+    if check_password_hash(user.hash_pass, new_password):
+        return jsonify({"msg": "New password must be different from current password"}), 400
 
     # Update to new password
     user.hash_pass = generate_password_hash(new_password)

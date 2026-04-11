@@ -115,7 +115,7 @@ export default function RubricCreator({ onRubricCreated, id, rubricType = "indiv
                                     <span className="text-xs text-text-secondary">Max:</span>
                                     <input
                                         type="number"
-                                        min="0"
+                                        min="1"
                                         max="100"
                                         value={item.scoreMax}
                                         onChange={(e) => handleScoreMaxChange(index, Number(e.target.value))}

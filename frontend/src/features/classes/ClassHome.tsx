@@ -1,9 +1,10 @@
 import Button from "../../ui/Button";
+import toast from "react-hot-toast";
 import { useParams, Link } from "react-router-dom";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useAssignments, useCreateAssignment } from "../assignments/useAssignments";
-import { isTeacher } from "../../util/login";
+import { isTeacher, isAdmin } from "../../util/login";
 import { formatDueDate, getAssignmentStatus, getTeacherAssignmentStatus } from "../../util/assignmentDates";
 import { useMyProgress } from "../reviews/useReviews";
 import Modal from "../../ui/Modal";
@@ -34,7 +35,7 @@ export default function ClassHome() {
   const courseId = Number(id);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const teacherMode = isTeacher();
+  const teacherMode = isTeacher() || isAdmin();
   const { data: assignments = [] } = useAssignments(String(id));
   const { data: progressData } = useMyProgress(courseId, !teacherMode);
   const { mutate: createAssignment, isPending, isSuccess, isError, error } = useCreateAssignment(String(id));
@@ -63,13 +64,22 @@ export default function ClassHome() {
   });
 
   function onSubmit(data: AssignmentFormData) {
+    if (data.start_date && data.due_date) {
+      const start = new Date(data.start_date);
+      const due = new Date(data.due_date);
+      if (start > due) {
+        toast.error("Due date cannot be before start date.");
+        return;
+      }
+    }
+
     createAssignment(
       {
         courseID: courseId,
         name: data.name,
         description: data.description || undefined,
-        start_date: data.start_date || undefined,
-        due_date: data.due_date || undefined,
+        start_date: data.start_date ? new Date(data.start_date).toISOString() : undefined,
+        due_date: data.due_date ? new Date(data.due_date).toISOString() : undefined,
         is_anonymous: data.is_anonymous,
         individual_reviews: data.individual_reviews,
         group_reviews: data.group_reviews,

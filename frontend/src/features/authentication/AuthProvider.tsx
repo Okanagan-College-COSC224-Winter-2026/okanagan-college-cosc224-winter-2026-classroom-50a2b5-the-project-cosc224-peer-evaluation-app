@@ -40,6 +40,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
       const user = await res.json();
       setIsAuthenticated(true);
       setMustChangePassword(Boolean(user?.must_change_password));
+      localStorage.setItem("user", JSON.stringify(user));
     } catch {
       setIsAuthenticated(false);
       setMustChangePassword(false);
