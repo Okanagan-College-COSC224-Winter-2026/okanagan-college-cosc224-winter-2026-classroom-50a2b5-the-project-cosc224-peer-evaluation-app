@@ -74,17 +74,14 @@ function App() {
                 <Route path="members" element={<ClassMembers />} />
                 <Route path="groups" element={<GroupManager />} />
                 <Route path="evaluations" element={<ClassEvaluations />} />
-                <Route path="gradebook" element={<Gradebook />} />
+                <Route path="assignments/:assignmentId" element={<AssignmentDetail />} />
 
                 <Route element={<RequireRole allow={["teacher", "admin", "super_admin"]} />}>
+                  <Route path="gradebook" element={<Gradebook />} />
                   <Route path="settings" element={<ClassSettings />} />
+                  <Route path="assignments/:assignmentId/manage" element={<AssignmentDetail />} />
                 </Route>
               </Route>
-            </Route>
-
-            <Route path="/assignments/:id" element={<AssignmentDetail />} />
-            <Route element={<RequireRole allow={["teacher", "admin", "super_admin"]} />}>
-              <Route path="/assignments/:id/manage" element={<AssignmentDetail />} />
             </Route>
           </Route>
         </Routes>
