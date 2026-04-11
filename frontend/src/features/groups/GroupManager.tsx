@@ -268,7 +268,7 @@ const handleCreateGroup = async () => {
                     </span>
 
                     <div className="min-w-0 flex-1 flex items-start gap-2">
-                      <span className="text-sm font-medium text-text-primary break-words whitespace-normal">
+                      <span className="text-sm font-medium text-text-primary break-all min-w-0">
                         {group.name}
                       </span>
                       {selectedGroup === group.id && (

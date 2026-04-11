@@ -27,7 +27,7 @@ function AdminDashboard({ courses }: { courses: AdminCourse[] }) {
     return <p className="text-text-secondary text-sm text-center py-16">No courses have been created yet.</p>;
   }
 return (
-  <div className="max-w-6xl mx-auto px-8 py-10">
+  <div className="max-w-6xl mx-auto py-10">
     <div className="flex flex-col gap-14">
       {grouped.map(([teacherName, teacherCourses]) => (
         <section key={teacherName} className="flex flex-col gap-6 bg-white/50 p-5 rounded-sm">

@@ -10,7 +10,6 @@ export default function ProtectedLayout() {
   const { isAuthenticated, isLoading, mustChangePassword } = useAuth();
   const navigate = useNavigate();
 
-  // Connect WebSocket for real-time notifications (must be before any early returns)
   useRealtimeNotifications();
 
   useEffect(

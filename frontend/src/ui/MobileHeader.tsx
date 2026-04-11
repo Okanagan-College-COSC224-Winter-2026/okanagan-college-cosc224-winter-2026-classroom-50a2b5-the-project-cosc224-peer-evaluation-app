@@ -8,12 +8,12 @@ export default function MobileHeader() {
   const userId = getUserId();
 
   return (
-    <header className="md:hidden sticky top-0 z-50 bg-white border-b border-border px-4 py-3 flex items-center justify-between shadow-sm">
+    <header className="lg:hidden sticky top-0 z-50 bg-white border-b border-border px-4 py-3 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-2">
         <img src="/oc_logo.png" alt="OC Logo" className="h-7 w-7 object-contain" />
         <span className="text-text-primary font-bold text-sm">Peer Review</span>
       </div>
-      <nav className="flex items-center gap-4 text-sm font-medium">
+      <nav className="flex items-center gap-2 lg:gap-4 text-sm font-medium flex-wrap">
         <Link to="/home" className="text-text-secondary hover:text-text-primary no-underline transition-colors">
           Home
         </Link>
