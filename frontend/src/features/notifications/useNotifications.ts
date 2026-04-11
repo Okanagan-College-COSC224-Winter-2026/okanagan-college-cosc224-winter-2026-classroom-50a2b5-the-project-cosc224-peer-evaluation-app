@@ -4,17 +4,28 @@ import {
   getNotifications,
   getUnreadCount,
   markNotificationRead,
+  markNotificationUnread,
   markAllNotificationsRead,
+  deleteNotification,
+  deleteReadNotifications,
+  deleteAllNotifications,
 } from "../../services/notificationApi";
 import { connectSocket } from "../../services/socket";
 import { getUserId } from "../../util/login";
 
+const KEYS = {
+  list: ["notifications"] as const,
+  count: ["notifications-unread-count"] as const,
+};
+
+function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: KEYS.list });
+  queryClient.invalidateQueries({ queryKey: KEYS.count });
+}
+
 /**
- * Hook that sets up the WebSocket connection and listens for real-time
- * notification events. When a "new_notification" event arrives, it
- * instantly invalidates the notification queries so the UI updates.
- *
- * Falls back to polling (60s) in case the socket connection drops.
+ * Sets up the WebSocket connection and listens for real-time push events.
+ * Falls back to 60s polling if the socket drops.
  */
 export function useRealtimeNotifications() {
   const queryClient = useQueryClient();
@@ -25,44 +36,45 @@ export function useRealtimeNotifications() {
 
     const socket = connectSocket(userId);
 
-    const handleNewNotification = (data: unknown) => {
+    const handleNew = (data: unknown) => {
       console.log("[socket] new_notification received:", data);
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
+      invalidateAll(queryClient);
     };
 
-    socket.on("new_notification", handleNewNotification);
-
-    return () => {
-      socket.off("new_notification", handleNewNotification);
-    };
+    socket.on("new_notification", handleNew);
+    return () => { socket.off("new_notification", handleNew); };
   }, [queryClient]);
 }
 
 export function useNotifications() {
   return useQuery({
-    queryKey: ["notifications"],
+    queryKey: KEYS.list,
     queryFn: () => getNotifications(),
-    refetchInterval: 60000, // Fallback poll every 60s (socket handles real-time)
+    refetchInterval: 60000,
   });
 }
 
 export function useUnreadCount() {
   return useQuery({
-    queryKey: ["notifications-unread-count"],
+    queryKey: KEYS.count,
     queryFn: getUnreadCount,
-    refetchInterval: 60000, // Fallback poll every 60s (socket handles real-time)
+    refetchInterval: 60000,
   });
 }
 
 export function useMarkRead() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (notificationId: number) => markNotificationRead(notificationId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
-    },
+    mutationFn: (id: number) => markNotificationRead(id),
+    onSuccess: () => invalidateAll(queryClient),
+  });
+}
+
+export function useMarkUnread() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => markNotificationUnread(id),
+    onSuccess: () => invalidateAll(queryClient),
   });
 }
 
@@ -70,9 +82,30 @@ export function useMarkAllRead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: markAllNotificationsRead,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
-    },
+    onSuccess: () => invalidateAll(queryClient),
+  });
+}
+
+export function useDeleteNotification() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => deleteNotification(id),
+    onSuccess: () => invalidateAll(queryClient),
+  });
+}
+
+export function useDeleteReadNotifications() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteReadNotifications,
+    onSuccess: () => invalidateAll(queryClient),
+  });
+}
+
+export function useDeleteAllNotifications() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteAllNotifications,
+    onSuccess: () => invalidateAll(queryClient),
   });
 }

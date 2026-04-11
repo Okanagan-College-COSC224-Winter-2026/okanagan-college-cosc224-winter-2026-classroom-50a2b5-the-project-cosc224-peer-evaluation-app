@@ -168,6 +168,28 @@ def get_avatar(user_id):
     return send_from_directory(avatars_dir, user.avatar_path)
 
 
+@bp.route("/", methods=["DELETE"])
+@jwt_required()
+def delete_own_account():
+    """Delete the currently authenticated user's own account after password confirmation."""
+    data = request.get_json(silent=True) or {}
+    password = data.get("password")
+
+    if not password:
+        return jsonify({"msg": "Password is required to delete your account"}), 400
+
+    email = get_jwt_identity()
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    if not check_password_hash(user.hash_pass, password):
+        return jsonify({"msg": "Incorrect password"}), 401
+
+    user.delete()
+    return jsonify({"msg": "Account deleted successfully"}), 200
+
+
 @bp.route("/<int:user_id>", methods=["DELETE"])
 @jwt_required()
 def delete_user(user_id):
@@ -183,7 +205,7 @@ def delete_user(user_id):
         return jsonify({"msg": "User not found"}), 404
 
     # Users can delete their own account, admins can delete anyone
-    if current_user.id != user_id and not current_user.is_admin():
+    if current_user.id != user_id and not current_user.is_admin_or_above():
         return jsonify({"msg": "Insufficient permissions"}), 403
 
     user.delete()

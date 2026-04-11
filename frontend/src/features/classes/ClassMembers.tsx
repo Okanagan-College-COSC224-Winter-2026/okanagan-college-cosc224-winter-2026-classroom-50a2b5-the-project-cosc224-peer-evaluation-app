@@ -39,7 +39,7 @@ export default function ClassMembers() {
     <div className="p-4 md:p-8 w-full max-w-260 mx-auto flex flex-col gap-6">
       <h2 className="text-2xl font-semibold text-text-primary m-0">Members</h2>
 
-      {/* Pending enrollment requests (teacher/admin only) */}
+
       {teacherOrAdmin && (pendingRequests as EnrollmentRequestItem[]).length > 0 && (
         <div className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden">
           <div className="px-5 md:px-8 py-4 border-b border-amber-200 bg-amber-50/50 flex items-center justify-between">

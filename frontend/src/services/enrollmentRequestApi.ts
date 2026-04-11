@@ -65,6 +65,19 @@ export async function rejectRequest(requestId: number) {
   return response.json();
 }
 
+export async function blockAndRejectRequest(requestId: number) {
+  const response = await fetch(`${BASE_URL}/enrollment-request/${requestId}/block`, {
+    method: "POST",
+    credentials: "include",
+  });
+  maybeHandleExpire(response);
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.msg || `Response status: ${response.status}`);
+  }
+  return response.json();
+}
+
 export async function browseAllCourses() {
   const response = await fetch(`${BASE_URL}/class/browse_classes`, {
     credentials: "include",

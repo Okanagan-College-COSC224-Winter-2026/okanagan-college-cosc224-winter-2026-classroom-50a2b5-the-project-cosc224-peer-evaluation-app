@@ -5,6 +5,7 @@ import {
   getPendingRequests,
   approveRequest,
   rejectRequest,
+  blockAndRejectRequest,
   browseAllCourses,
 } from "../../services/enrollmentRequestApi";
 
@@ -49,6 +50,8 @@ export function useApproveRequest() {
       queryClient.invalidateQueries({ queryKey: ["pending-enrollment-requests"] });
       queryClient.invalidateQueries({ queryKey: ["classes"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      // Force all members lists to refetch regardless of mount state
+      queryClient.resetQueries({ queryKey: ["classes"] });
     },
   });
 }
@@ -60,6 +63,18 @@ export function useRejectRequest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pending-enrollment-requests"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+export function useBlockAndRejectRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (requestId: number) => blockAndRejectRequest(requestId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pending-enrollment-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["blocked-students"] });
     },
   });
 }

@@ -5,9 +5,10 @@ interface UserTableProps {
   users: User[];
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
+  currentUserRole: string;
 }
 
-export default function UserTable({ users, onEdit, onDelete }: UserTableProps) {
+export default function UserTable({ users, onEdit, onDelete, currentUserRole }: UserTableProps) {
   if (users.length === 0) {
     return (
       <div className="px-6 py-16 text-center">
@@ -38,7 +39,7 @@ export default function UserTable({ users, onEdit, onDelete }: UserTableProps) {
           </thead>
           <tbody className="divide-y divide-border">
             {users.map((user) => (
-              <UserRow key={user.id} user={user} onEdit={onEdit} onDelete={onDelete} />
+              <UserRow key={user.id} user={user} onEdit={onEdit} onDelete={onDelete} currentUserRole={currentUserRole} />
             ))}
           </tbody>
         </table>
@@ -47,7 +48,7 @@ export default function UserTable({ users, onEdit, onDelete }: UserTableProps) {
       {/* Mobile + tablet card list — below lg */}
       <div className="lg:hidden divide-y divide-border">
         {users.map((user) => (
-          <UserMobileCard key={user.id} user={user} onEdit={onEdit} onDelete={onDelete} />
+          <UserMobileCard key={user.id} user={user} onEdit={onEdit} onDelete={onDelete} currentUserRole={currentUserRole} />
         ))}
       </div>
     </>

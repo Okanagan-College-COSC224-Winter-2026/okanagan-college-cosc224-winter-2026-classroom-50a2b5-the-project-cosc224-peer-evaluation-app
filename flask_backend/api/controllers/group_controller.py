@@ -50,10 +50,10 @@ def create_group():
     if not course:
         return jsonify({"msg": "Course not found"}), 404
     
-    # Verify the teacher owns this course
+    # Verify the teacher owns this course (admins bypass ownership check)
     email = get_jwt_identity()
     user = User.get_by_email(email)
-    if course.teacherID != user.id:
+    if course.teacherID != user.id and not user.is_admin_or_above():
         return jsonify({"msg": "You are not authorized to create groups in this course"}), 403
     
     # Create the group

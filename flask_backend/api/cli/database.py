@@ -260,6 +260,80 @@ def migrate_course_image_command():
     click.echo("Added column 'image_path' to Course table.")
 
 
+@click.command("migrate_super_admin_role")
+@with_appcontext
+def migrate_super_admin_role_command():
+    """Update the User.role CHECK constraint to include super_admin (idempotent)."""
+    inspector = inspect(db.engine)
+    if not inspector.has_table("User"):
+        click.echo("User table does not exist. Run 'flask init_db' first.", err=True)
+        return
+
+    dialect = db.engine.dialect.name
+    if dialect == "sqlite":
+        conn = db.engine.raw_connection()
+        cur = conn.cursor()
+        cur.executescript('''
+PRAGMA foreign_keys = OFF;
+
+CREATE TABLE IF NOT EXISTS "User_new" (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    preferred_name VARCHAR(255),
+    pronouns VARCHAR(50),
+    email VARCHAR(255) NOT NULL UNIQUE,
+    hash_pass VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'student',
+    must_change_password BOOLEAN NOT NULL DEFAULT 0,
+    avatar_path VARCHAR(255),
+    CONSTRAINT check_valid_role CHECK (role IN ('student', 'teacher', 'admin', 'super_admin'))
+);
+
+INSERT OR IGNORE INTO "User_new" SELECT id, name, preferred_name, pronouns, email, hash_pass, role, must_change_password, avatar_path FROM "User";
+
+DROP TABLE "User";
+ALTER TABLE "User_new" RENAME TO "User";
+
+CREATE INDEX IF NOT EXISTS ix_User_email ON "User" (email);
+
+PRAGMA foreign_keys = ON;
+''')
+        conn.commit()
+        conn.close()
+        click.echo("SQLite: User table recreated with super_admin CHECK constraint.")
+    else:
+        click.echo(f"Dialect '{dialect}': update the CHECK constraint manually if needed.")
+
+    click.echo("migrate_super_admin_role completed.")
+
+
+@click.command("migrate_audit_log")
+@with_appcontext
+def migrate_audit_log_command():
+    """Create the AuditLog table if it does not already exist (idempotent)."""
+    from ..models.audit_log_model import AuditLog
+    AuditLog.__table__.create(bind=db.engine, checkfirst=True)
+    click.echo("AuditLog table created (or already exists).")
+
+
+@click.command("create_super_admin")
+@with_appcontext
+def create_super_admin_command():
+    """Create a super_admin (root) user interactively."""
+    name = click.prompt("Super Admin name")
+    email = click.prompt("Super Admin email")
+    password = click.prompt("Password", hide_input=True, confirmation_prompt=True)
+
+    if User.get_by_email(email):
+        click.echo(f"Error: User with email '{email}' already exists", err=True)
+        return
+
+    hashed = generate_password_hash(password, method="pbkdf2:sha256")
+    super_admin = User(name=name, email=email, hash_pass=hashed, role="super_admin")
+    User.create_user(super_admin)
+    click.echo(f"Super Admin '{email}' created successfully.")
+
+
 def init_app(app):
     """Register CLI commands with the Flask app"""
     app.cli.add_command(init_db_command)
@@ -271,6 +345,9 @@ def init_app(app):
     app.cli.add_command(ensure_admin_command)
     app.cli.add_command(add_sample_courses_command)
     app.cli.add_command(migrate_course_image_command)
+    app.cli.add_command(migrate_super_admin_role_command)
+    app.cli.add_command(migrate_audit_log_command)
+    app.cli.add_command(create_super_admin_command)
 
 
 @click.command("migrate_user_avatar")

@@ -1,7 +1,9 @@
 interface Course {
   id: number;
   teacherID: number;
+  teacher_name?: string;
   name: string;
+  image_path?: string | null;
 }
 
 interface User {
@@ -11,7 +13,7 @@ interface User {
   pronouns?: string | null;
   display_name?: string;
   email: string;
-  role: 'student' | 'teacher' | 'admin';
+  role: 'student' | 'teacher' | 'admin' | 'super_admin';
 }
 
 interface StudentGroups {

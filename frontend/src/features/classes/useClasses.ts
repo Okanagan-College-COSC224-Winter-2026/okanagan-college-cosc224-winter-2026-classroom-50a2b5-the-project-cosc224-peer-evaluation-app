@@ -35,6 +35,7 @@ export function useCourseMembers(classId: string) {
     queryKey: ["classes", classId, "members"],
     queryFn: () => listCourseMembers(classId),
     enabled: !!classId,
+    staleTime: 0,
   });
 }
 

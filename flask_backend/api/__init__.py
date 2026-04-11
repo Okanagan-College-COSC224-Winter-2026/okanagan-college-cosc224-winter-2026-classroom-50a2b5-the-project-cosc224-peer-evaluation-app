@@ -10,6 +10,7 @@ from .extensions import socketio
 from .controllers import (
     admin_controller,
     auth_controller,
+    block_controller,
     class_controller,
     enrollment_request_controller,
     fake_api_controller,
@@ -122,6 +123,7 @@ def create_app(test_config=None):
     app.register_blueprint(review_controller.bp)
     app.register_blueprint(review_flag_controller.bp)
     app.register_blueprint(enrollment_request_controller.bp)
+    app.register_blueprint(block_controller.bp)
     app.register_blueprint(notification_controller.bp)
     app.register_blueprint(submission_controller.bp)
     app.register_blueprint(fake_api_controller.fake)

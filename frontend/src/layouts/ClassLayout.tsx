@@ -4,7 +4,7 @@ import TabNavigation from "../ui/TabNavigation";
 import Button from "../ui/Button";
 import { useClasses } from "../features/classes/useClasses";
 import { importCSV } from "../util/csv";
-import { isTeacher } from "../util/login";
+import { isTeacher, isAdmin } from "../util/login";
 
 export default function ClassLayout() {
   const { id } = useParams();
@@ -34,7 +34,7 @@ export default function ClassLayout() {
           { label: "Members", path: `/classes/${id}/members` },
           { label: "Groups", path: `/classes/${id}/groups` },
           { label: "Evaluations", path: `/classes/${id}/evaluations` },
-          ...(isTeacher() ? [{ label: "Settings", path: `/classes/${id}/settings` }] : []),
+          ...((isTeacher() || isAdmin()) ? [{ label: "Settings", path: `/classes/${id}/settings` }] : []),
         ]}
       />
 

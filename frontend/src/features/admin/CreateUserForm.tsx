@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import Modal from "../../ui/Modal";
+import { isSuperAdmin } from "../../util/login";
 import { useCreateUser } from "./useAdmin";
 
 interface CreateUserFormProps {
@@ -26,6 +27,7 @@ export default function CreateUserForm({ isOpen, onClose }: CreateUserFormProps)
     defaultValues: { role: "student" },
   });
   const { mutate: createUser, isPending } = useCreateUser();
+  const canCreateAdmin = isSuperAdmin();
 
   function onSubmit(data: FormData) {
     createUser(data, {
@@ -100,7 +102,7 @@ export default function CreateUserForm({ isOpen, onClose }: CreateUserFormProps)
           >
             <option value="student">Student</option>
             <option value="teacher">Teacher</option>
-            <option value="admin">Admin</option>
+            {canCreateAdmin && <option value="admin">Admin</option>}
           </select>
         </div>
 

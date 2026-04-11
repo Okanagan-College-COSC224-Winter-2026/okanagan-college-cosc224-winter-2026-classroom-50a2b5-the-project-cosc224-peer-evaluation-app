@@ -1,51 +1,38 @@
 import { BASE_URL, maybeHandleExpire } from "./apiBase";
 
-export async function getNotifications(unreadOnly = false) {
+async function call(url: string, method = "GET") {
+  const response = await fetch(url, { method, credentials: "include" });
+  maybeHandleExpire(response);
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.msg || `Response status: ${response.status}`);
+  }
+  return response.json();
+}
+
+export const getNotifications = (unreadOnly = false) => {
   const url = new URL(`${BASE_URL}/notification/`);
   if (unreadOnly) url.searchParams.set("unread_only", "true");
-  const response = await fetch(url.toString(), { credentials: "include" });
-  maybeHandleExpire(response);
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    throw new Error(data?.msg || `Response status: ${response.status}`);
-  }
-  return response.json();
-}
+  return call(url.toString());
+};
 
-export async function getUnreadCount() {
-  const response = await fetch(`${BASE_URL}/notification/unread-count`, {
-    credentials: "include",
-  });
-  maybeHandleExpire(response);
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    throw new Error(data?.msg || `Response status: ${response.status}`);
-  }
-  return response.json();
-}
+export const getUnreadCount = () =>
+  call(`${BASE_URL}/notification/unread-count`);
 
-export async function markNotificationRead(notificationId: number) {
-  const response = await fetch(`${BASE_URL}/notification/${notificationId}/read`, {
-    method: "PATCH",
-    credentials: "include",
-  });
-  maybeHandleExpire(response);
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    throw new Error(data?.msg || `Response status: ${response.status}`);
-  }
-  return response.json();
-}
+export const markNotificationRead = (id: number) =>
+  call(`${BASE_URL}/notification/${id}/read`, "PATCH");
 
-export async function markAllNotificationsRead() {
-  const response = await fetch(`${BASE_URL}/notification/read-all`, {
-    method: "PATCH",
-    credentials: "include",
-  });
-  maybeHandleExpire(response);
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    throw new Error(data?.msg || `Response status: ${response.status}`);
-  }
-  return response.json();
-}
+export const markNotificationUnread = (id: number) =>
+  call(`${BASE_URL}/notification/${id}/unread`, "PATCH");
+
+export const markAllNotificationsRead = () =>
+  call(`${BASE_URL}/notification/read-all`, "PATCH");
+
+export const deleteNotification = (id: number) =>
+  call(`${BASE_URL}/notification/${id}`, "DELETE");
+
+export const deleteReadNotifications = () =>
+  call(`${BASE_URL}/notification/read`, "DELETE");
+
+export const deleteAllNotifications = () =>
+  call(`${BASE_URL}/notification/all`, "DELETE");

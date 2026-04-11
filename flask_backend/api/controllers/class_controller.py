@@ -90,7 +90,7 @@ def search_classes():
     # Get user's courses based on role
     if user.is_teacher():
         user_courses = Course.get_courses_by_teacher(user.id)
-    elif user.is_admin():
+    elif user.is_admin_or_above():
         user_courses = Course.get_all_courses()
     elif user.is_student():
         user_course_entries = User_Course.get_courses_by_student(user.id)
@@ -128,8 +128,19 @@ def get_user_classes():
 
     if user.is_teacher():
         courses = Course.get_courses_by_teacher(user.id)
-    elif user.is_admin():
+        return jsonify([{"id": c.id, "name": c.name, "image_path": c.image_path} for c in courses]), 200
+    elif user.is_admin_or_above():
         courses = Course.get_all_courses()
+        return jsonify([
+            {
+                "id": c.id,
+                "name": c.name,
+                "image_path": c.image_path,
+                "teacherID": c.teacherID,
+                "teacher_name": User.get_by_id(c.teacherID).name if c.teacherID and User.get_by_id(c.teacherID) else "Unknown",
+            }
+            for c in courses
+        ]), 200
     elif user.is_student():
         user_courses = User_Course.get_courses_by_student(user.id)
         courses = [Course.get_by_id(uc.courseID) for uc in user_courses]
@@ -148,7 +159,7 @@ def update_course(course_id):
 
     email = get_jwt_identity()
     user = User.get_by_email(email)
-    if course.teacherID != user.id:
+    if course.teacherID != user.id and not user.is_admin_or_above():
         return jsonify({"msg": "Unauthorized"}), 403
 
     data = request.get_json()
@@ -169,7 +180,7 @@ def upload_course_image(course_id):
 
     email = get_jwt_identity()
     user = User.get_by_email(email)
-    if course.teacherID != user.id:
+    if course.teacherID != user.id and not user.is_admin_or_above():
         return jsonify({"msg": "Unauthorized"}), 403
 
     if "image" not in request.files:
@@ -203,7 +214,6 @@ def upload_course_image(course_id):
 
 
 @bp.route("/<int:course_id>/image", methods=["GET"])
-@jwt_required()
 def get_course_image(course_id):
     """Serve the cover image for a course."""
     course = Course.get_by_id(course_id)
@@ -224,7 +234,7 @@ def delete_course(course_id):
 
     email = get_jwt_identity()
     user = User.get_by_email(email)
-    if course.teacherID != user.id:
+    if course.teacherID != user.id and not user.is_admin_or_above():
         return jsonify({"msg": "Unauthorized"}), 403
 
     course.delete()

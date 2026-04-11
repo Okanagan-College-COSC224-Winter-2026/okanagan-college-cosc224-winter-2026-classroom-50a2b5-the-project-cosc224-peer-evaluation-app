@@ -1,15 +1,17 @@
 import { useMemo, useState } from "react";
 import { useDebounce } from "../../hooks/useDebounce";
+import { getUserRole } from "../../util/login";
 import { useUsers } from "./useAdmin";
 import UserTable from "./UserTable";
 import CreateUserForm from "./CreateUserForm";
 import EditUserForm from "./EditUserForm";
 import DeleteUserConfirm from "./DeleteUserConfirm";
 
-type RoleFilter = "all" | "student" | "teacher" | "admin";
+type RoleFilter = "all" | "student" | "teacher" | "admin" | "super_admin";
 
 export default function AdminUsers() {
   const { data: users = [], isLoading, isError, error } = useUsers();
+  const currentUserRole = getUserRole();
 
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedQuery = useDebounce(searchQuery, 300);
@@ -37,6 +39,7 @@ export default function AdminUsers() {
       student: all.filter((u) => u.role === "student").length,
       teacher: all.filter((u) => u.role === "teacher").length,
       admin: all.filter((u) => u.role === "admin").length,
+      super_admin: all.filter((u) => u.role === "super_admin").length,
     };
   }, [users]);
 
@@ -88,7 +91,7 @@ export default function AdminUsers() {
       {/* Toolbar — filters + add button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
         <div className="flex items-center gap-1.5 bg-white rounded-lg border border-border shadow-sm p-1 overflow-x-auto shrink-0">
-          {(["all", "student", "teacher", "admin"] as RoleFilter[]).map((role) => (
+          {(["all", "student", "teacher", "admin", "super_admin"] as RoleFilter[]).map((role) => (
             <button
               key={role}
               onClick={() => setRoleFilter(role)}
@@ -98,7 +101,7 @@ export default function AdminUsers() {
                   : "bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-secondary"
               }`}
             >
-              {role === "all" ? "All" : role.charAt(0).toUpperCase() + role.slice(1)}
+              {role === "all" ? "All" : role === "super_admin" ? "Super Admin" : role.charAt(0).toUpperCase() + role.slice(1)}
               <span className={`ml-1.5 ${roleFilter === role ? "text-white/70" : "text-text-secondary/50"}`}>
                 {counts[role]}
               </span>
@@ -119,7 +122,7 @@ export default function AdminUsers() {
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
-        <UserTable users={filteredUsers} onEdit={setEditingUser} onDelete={setDeletingUser} />
+        <UserTable users={filteredUsers} onEdit={setEditingUser} onDelete={setDeletingUser} currentUserRole={currentUserRole} />
       </div>
 
       {debouncedQuery && filteredUsers.length === 0 && (

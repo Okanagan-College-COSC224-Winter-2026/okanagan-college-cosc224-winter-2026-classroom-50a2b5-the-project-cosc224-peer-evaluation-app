@@ -15,6 +15,7 @@ from .notification_model import Notification
 from .review_flag_model import ReviewFlag
 from .user_course_model import User_Course
 from .user_model import User
+from .blocked_student_model import BlockedStudent
 
 # ============================================================
 # USER SCHEMAS
@@ -39,7 +40,8 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
     display_name = fields.Method("get_display_name", dump_only=True)
     email = fields.Email(required=True)
     role = fields.Str(
-        dump_default="student", validate=validate.OneOf(["student", "teacher", "admin"])
+        dump_default="student",
+        validate=validate.OneOf(["student", "teacher", "admin", "super_admin"]),
     )
     must_change_password = fields.Bool(dump_default=False)
     avatar_url = fields.Method("get_avatar_url", dump_only=True)
@@ -295,9 +297,30 @@ class EnrollmentRequestSchema(ma.SQLAlchemyAutoSchema):
 # ============================================================
 
 
+class BlockedStudentSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = BlockedStudent
+        load_instance = True
+        include_fk = True
+        sqla_session = db.session
+
+    student = fields.Nested(UserListSchema, dump_only=True)
+
+
 class NotificationSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Notification
         load_instance = True
         include_fk = True
         sqla_session = db.session
+
+    reference_status = fields.Method("get_reference_status", dump_only=True)
+
+    def get_reference_status(self, obj):
+        """Return the current status of the referenced enrollment request, if applicable."""
+        if obj.reference_type == "enrollment_request" and obj.reference_id:
+            from .enrollment_request_model import EnrollmentRequest
+            req = EnrollmentRequest.get_by_id(obj.reference_id)
+            if req:
+                return req.status
+        return None

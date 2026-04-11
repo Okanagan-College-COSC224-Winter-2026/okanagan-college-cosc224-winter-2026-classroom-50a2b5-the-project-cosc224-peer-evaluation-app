@@ -226,7 +226,7 @@ def get_review(review_id):
         return jsonify({"msg": "Review not found"}), 404
 
     # Authorization: students can only see their own reviews
-    if not user.is_teacher() and not user.is_admin():
+    if not user.is_teacher() and not user.is_admin_or_above():
         if review.reviewerID != user.id and review.revieweeID != user.id:
             return jsonify({"msg": "Unauthorized"}), 403
 
@@ -242,7 +242,7 @@ def get_review(review_id):
         and assignment.is_anonymous
         and review.revieweeID == user.id
         and not user.is_teacher()
-        and not user.is_admin()
+        and not user.is_admin_or_above()
     ):
         result["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
 
@@ -272,7 +272,7 @@ def get_reviews_for_assignment(assignment_id):
     if not assignment:
         return jsonify({"msg": "Assignment not found"}), 404
 
-    is_teacher_or_admin = user.is_teacher() or user.is_admin()
+    is_teacher_or_admin = user.is_teacher() or user.is_admin_or_above()
 
     if is_teacher_or_admin:
         # Teachers see every review for this assignment
@@ -343,7 +343,7 @@ def course_grade_summary(course_id):
     if not course:
         return jsonify({"msg": "Course not found"}), 404
 
-    is_teacher_or_admin = user.is_teacher() or user.is_admin()
+    is_teacher_or_admin = user.is_teacher() or user.is_admin_or_above()
 
     # Teachers may pass ?studentID=X to view a specific student's summary
     target_student_id = None

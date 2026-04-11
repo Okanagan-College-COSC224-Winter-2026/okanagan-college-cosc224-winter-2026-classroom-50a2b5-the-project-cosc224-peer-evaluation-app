@@ -149,10 +149,15 @@ def jwt_role_required(*roles):
 
 
 def jwt_admin_required(view):
-    """Decorator to require admin role for JWT-protected endpoints"""
-    return jwt_role_required("admin")(view)
+    """Decorator to require admin or super_admin role for JWT-protected endpoints"""
+    return jwt_role_required("admin", "super_admin")(view)
+
+
+def jwt_super_admin_required(view):
+    """Decorator to require super_admin role exclusively"""
+    return jwt_role_required("super_admin")(view)
 
 
 def jwt_teacher_required(view):
-    """Decorator to require teacher or admin role for JWT-protected endpoints"""
-    return jwt_role_required("teacher", "admin")(view)
+    """Decorator to require teacher, admin, or super_admin role for JWT-protected endpoints"""
+    return jwt_role_required("teacher", "admin", "super_admin")(view)

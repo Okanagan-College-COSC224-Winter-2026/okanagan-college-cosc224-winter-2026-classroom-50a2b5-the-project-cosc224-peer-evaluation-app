@@ -37,7 +37,7 @@ def _get_current_user() -> User | None:
 
 
 def _can_access_course(user: User, course: Course):
-    if user.is_admin():
+    if user.is_admin_or_above():
         return True
     if user.is_teacher() and course.teacherID == user.id:
         return True
@@ -107,7 +107,7 @@ def upload_assignment_resource(assignment_id):
     if not user:
         return jsonify({"msg": "User not found"}), 404
 
-    if not user.is_admin() and course.teacherID != user.id:
+    if not user.is_admin_or_above() and course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
     upload = request.files.get("file")
@@ -165,7 +165,7 @@ def delete_assignment_resource(resource_id):
     if not user:
         return jsonify({"msg": "User not found"}), 404
 
-    if not user.is_admin() and course.teacherID != user.id:
+    if not user.is_admin_or_above() and course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
     file_path = resource.path

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import Modal from "../../ui/Modal";
-import { isTeacher } from "../../util/login";
+import { isTeacher, isAdmin } from "../../util/login";
 import {
   useGroups,
   useMyGroup,
@@ -63,16 +63,18 @@ export default function Group() {
   const [groupName, setGroupName] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<CourseGroup | null>(null);
 
+  const isManagerView = isTeacher() || isAdmin();
+
   const { data: groups = [], isLoading: groupsLoading } = useGroups(courseId);
   const { data: unassignedStudents = [], isLoading: unassignedLoading } = useUnassignedStudents(courseId);
-  const { data: myGroup = null, isLoading: myGroupLoading } = useMyGroup(courseId);
+  const { data: myGroup = null, isLoading: myGroupLoading } = useMyGroup(isManagerView ? 0 : courseId);
 
   const createGroupMutation = useCreateGroup(courseId);
   const deleteGroupMutation = useDeleteGroup(courseId);
   const addMemberMutation = useAddGroupMember(courseId);
   const removeMemberMutation = useRemoveGroupMember(courseId);
 
-  const loading = isTeacher() ? (groupsLoading || unassignedLoading) : myGroupLoading;
+  const loading = isManagerView ? (groupsLoading || unassignedLoading) : myGroupLoading;
 
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
@@ -132,7 +134,7 @@ export default function Group() {
   }
 
   /* ─── Student View ─── */
-  if (!isTeacher()) {
+  if (!isManagerView) {
     return (
       <div className="p-4 md:p-8 w-full max-w-260 mx-auto flex flex-col gap-6">
         <h2 className="text-2xl font-semibold text-text-primary m-0">My Group</h2>

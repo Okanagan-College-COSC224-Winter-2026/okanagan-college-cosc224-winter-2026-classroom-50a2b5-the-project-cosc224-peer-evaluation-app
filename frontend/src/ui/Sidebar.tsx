@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom'
 import SidebarNavLink from '../ui/SidebarNavLink'
-import { isAdmin, isStudent, getUserId, logout } from '../util/login'
+import { isAdmin, getUserId, logout } from '../util/login'
 import { useUnreadCount } from '../features/notifications/useNotifications'
 
 function HomeIcon() {
@@ -35,14 +35,6 @@ function BellIcon() {
   )
 }
 
-function MagnifyingGlassIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-    </svg>
-  )
-}
-
 function ArrowRightOnRectangleIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -58,8 +50,8 @@ export default function Sidebar() {
   const userId = getUserId()
 
   return (
-    <aside className="hidden md:flex w-64 min-w-64 h-screen bg-white border-r border-border flex-col sticky top-0 z-30">
-      {/* Brand */}
+    <aside className="hidden lg:flex w-64 min-w-64 h-screen bg-white border-r border-border flex-col sticky top-0 z-30">
+    
       <div className="flex items-center gap-3 px-6 py-5 border-b border-border flex-shrink-0">
         <img src="/oc_logo.png" alt="OC Logo" className="w-9 h-9 object-contain flex-shrink-0" />
         <div>
@@ -68,7 +60,6 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex flex-col flex-1 px-3 py-4 gap-0.5 overflow-y-auto">
         <SidebarNavLink to="/home" icon={<HomeIcon />} active={pathname === '/home'}>
           Home
@@ -95,20 +86,14 @@ export default function Sidebar() {
           Notifications
         </SidebarNavLink>
 
-        {isStudent() && (
-          <SidebarNavLink to="/courses/browse" icon={<MagnifyingGlassIcon />} active={pathname.includes('/courses/browse')}>
-            Browse Courses
-          </SidebarNavLink>
-        )}
-
-        {isAdmin() && (
+      {isAdmin() && (
           <SidebarNavLink to="/admin/users" icon={<UsersIcon />} active={pathname.includes('/admin/users')}>
             Manage Users
           </SidebarNavLink>
         )}
       </nav>
 
-      {/* Logout */}
+   
       <div className="px-3 py-4 border-t border-border flex-shrink-0">
         <button
           onClick={() => logout()}

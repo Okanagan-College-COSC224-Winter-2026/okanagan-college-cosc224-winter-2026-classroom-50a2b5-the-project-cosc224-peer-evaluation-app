@@ -30,7 +30,7 @@ def _coerce_optional_bool(value, field_name):
 
 
 def _can_access_course_assignments(user, course):
-    if user.is_admin():
+    if user.is_admin_or_above():
         return True
     if course.teacherID == user.id:
         return True

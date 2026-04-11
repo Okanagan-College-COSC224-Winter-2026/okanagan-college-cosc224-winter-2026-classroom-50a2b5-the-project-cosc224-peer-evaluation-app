@@ -23,12 +23,8 @@ export default function LoginPage() {
     try {
       const result = await tryLogin(email, password);
       if (result) {
-        if (result.must_change_password) {
-          navigate('/change-password');
-        } else {
-          login();
-          navigate('/home');
-        }
+        login();
+        navigate('/home');
       } else {
         toast.error('Invalid email or password');
       }

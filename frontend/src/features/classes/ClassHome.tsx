@@ -87,7 +87,7 @@ export default function ClassHome() {
         </div>
       )}
 
-      <div className="p-4 md:p-6 w-full">
+      <div className="p-4 md:p-6 max-w-260 mx-auto w-full">
         <div className="flex flex-col items-stretch w-full gap-5">
           <div className="flex justify-between items-center gap-4">
             <h3 className="m-0 text-text-primary text-base font-semibold">Assignments</h3>
@@ -96,7 +96,7 @@ export default function ClassHome() {
             )}
           </div>
 
-          <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden ">
             <div className="px-5 md:px-8 py-4 border-b border-border">
               <h3 className="text-base font-semibold text-text-primary m-0">All Assignments</h3>
             </div>

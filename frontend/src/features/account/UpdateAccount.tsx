@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import { useUser, useUpdateProfile, useUploadAvatar, useChangePassword, useDeleteAccount, getUserAvatarUrl } from './useUser'
+import { useUser, useUpdateProfile, useUploadAvatar, useChangePassword, useDeleteAccount } from './useUser'
 import { getUserId, logout } from '../../util/login'
 import Modal from '../../ui/Modal'
 
@@ -148,10 +148,8 @@ export default function Profile() {
   const inputClass =
     'px-3 py-2.5 border border-border rounded-lg bg-bg-secondary text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-btn-primary focus:border-btn-primary transition-colors w-full'
 
-  const currentAvatarSrc =
-    avatarPreview ??
-    (profile?.avatar_url ? `http://localhost:5000${profile.avatar_url}` : null) ??
-    (userId ? getUserAvatarUrl(userId) : null)
+  const fetchedAvatarSrc = profile?.avatar_url ? `http://localhost:5000${profile.avatar_url}` : null
+  const currentAvatarSrc = avatarPreview ?? fetchedAvatarSrc
 
   return (
     <div className="p-6 md:p-8 w-full max-w-260 mx-auto">
