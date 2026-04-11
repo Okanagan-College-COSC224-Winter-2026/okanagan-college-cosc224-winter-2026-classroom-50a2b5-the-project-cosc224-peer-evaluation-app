@@ -21,6 +21,8 @@ class Assignment(db.Model):
     # NEW: due date field (acceptance criteria: edit/delete allowed before due date)
     due_date = db.Column(db.DateTime, nullable=True, index=True)
     is_anonymous = db.Column(db.Boolean, nullable=True, default=True)
+    individual_reviews = db.Column(db.Boolean, nullable=True, default=True)
+    group_reviews = db.Column(db.Boolean, nullable=True, default=True)
 
     # relationships
     course = db.relationship("Course", back_populates="assignments", lazy="joined")
@@ -46,6 +48,8 @@ class Assignment(db.Model):
         description=None,
         start_date=None,
         is_anonymous=True,
+        individual_reviews=True,
+        group_reviews=True,
     ):
         self.courseID = courseID
         self.name = name
@@ -54,6 +58,8 @@ class Assignment(db.Model):
         self.rubric_text = rubric_text
         self.due_date = due_date
         self.is_anonymous = is_anonymous
+        self.individual_reviews = individual_reviews
+        self.group_reviews = group_reviews
 
     def __repr__(self):
         return f"<Assignment id={self.id} name={self.name}>"

@@ -556,6 +556,82 @@ class TestListReviewsForAssignment:
 
 
 # ============================================================================
+# REVIEW TYPE ENFORCEMENT
+# ============================================================================
+
+
+class TestReviewTypeEnforcement:
+    """Submissions should be rejected when the review type is disabled on the assignment."""
+
+    def test_submit_individual_review_when_disabled(
+        self, db, auth_student_a, student_a, student_b, course, assignment, rubric_with_criteria
+    ):
+        """Individual review rejected when assignment.individual_reviews is False."""
+        assignment.individual_reviews = False
+        db.session.commit()
+
+        _, criteria = rubric_with_criteria
+        resp = auth_student_a.post(
+            "/review/submit",
+            json={
+                "assignmentID": assignment.id,
+                "revieweeID": student_b.id,
+                "criteria": [{"criterionRowID": criteria[0].id, "grade": 4, "comments": ""}],
+            },
+        )
+        assert resp.status_code == 400
+        assert "individual" in resp.get_json()["msg"].lower()
+
+    def test_submit_group_review_when_disabled(
+        self, db, test_client, student_a, course, assignment, rubric_with_criteria
+    ):
+        """Group review rejected when assignment.group_reviews is False."""
+        from api.models import CourseGroup, Group_Members, User_Course
+
+        assignment.group_reviews = False
+        db.session.commit()
+
+        # Set up groups
+        db.session.add(User_Course(userID=student_a.id, courseID=course.id))
+        group_a = CourseGroup(name="TeamA", courseID=course.id)
+        db.session.add(group_a)
+        db.session.flush()
+        db.session.add(Group_Members(userID=student_a.id, groupID=group_a.id))
+
+        target_group = CourseGroup(name="TeamB", courseID=course.id)
+        db.session.add(target_group)
+        db.session.commit()
+
+        test_client.post("/auth/login", json={"email": student_a.email, "password": "password123"})
+        resp = test_client.post(
+            "/review/submit",
+            json={
+                "assignmentID": assignment.id,
+                "revieweeID": target_group.id,
+                "review_type": "group",
+                "criteria": [],
+            },
+        )
+        assert resp.status_code == 400
+        assert "group" in resp.get_json()["msg"].lower()
+
+    def test_submit_individual_review_when_enabled(
+        self, auth_student_a, student_b, assignment, rubric_with_criteria
+    ):
+        """Individual review allowed when assignment.individual_reviews is True (default)."""
+        _, criteria = rubric_with_criteria
+        resp = auth_student_a.post(
+            "/review/submit",
+            json={
+                "assignmentID": assignment.id,
+                "revieweeID": student_b.id,
+                "criteria": [{"criterionRowID": criteria[0].id, "grade": 5, "comments": ""}],
+            },
+        )
+        assert resp.status_code == 201
+
+
+# ============================================================================
 # US3: ANONYMOUS PEER REVIEW
 # ============================================================================
 
@@ -693,8 +769,8 @@ class TestCourseGradeSummary:
         assert "assignments" in data
         assert len(data["assignments"]) == 1
         assert data["assignments"][0]["name"] == assignment.name
-        assert data["assignments"][0]["reviewCount"] == 0
-        assert data["assignments"][0]["averageScore"] is None
+        assert data["assignments"][0]["individualReviewCount"] == 0
+        assert data["assignments"][0]["individualAverage"] is None
 
     def test_summary_computes_average_correctly(
         self, db, auth_student_a, student_a, student_b, course, assignment, rubric_with_criteria
@@ -731,11 +807,11 @@ class TestCourseGradeSummary:
         data = resp.get_json()
 
         a = data["assignments"][0]
-        assert a["reviewCount"] == 2
+        assert a["individualReviewCount"] == 2
         # Average: (13 + 9) / 2 = 11.0
-        assert a["averageScore"] == 11.0
+        assert a["individualAverage"] == 11.0
         # Max: 5 + 10 = 15
-        assert a["maxScore"] == 15
+        assert a["individualMax"] == 15
 
     def test_summary_course_average_across_assignments(
         self, db, auth_student_a, student_a, student_b, course, rubric_with_criteria
@@ -774,9 +850,10 @@ class TestCourseGradeSummary:
         data = resp.get_json()
 
         assert len(data["assignments"]) == 2
-        # Assignment 1 avg = 15.0, Assignment 2 avg = 7.0
-        # Course avg = (15 + 7) / 2 = 11.0
-        assert data["courseAverage"] == 11.0
+        # Assignment 1 total = 15.0, Assignment 2 total = 7.0
+        # Course total = 15 + 7 = 22.0, Course max = 15 + 10 = 25
+        assert data["courseAverage"] == 22.0
+        assert data["courseMax"] == 25
 
     def test_summary_max_score_from_rubric(
         self, auth_student_a, student_a, course, assignment, rubric_with_criteria
@@ -785,8 +862,8 @@ class TestCourseGradeSummary:
         resp = auth_student_a.get(f"/review/course/{course.id}/summary")
         data = resp.get_json()
 
-        # criteria[0].scoreMax=5, criteria[1].scoreMax=10 → maxScore=15
-        assert data["assignments"][0]["maxScore"] == 15
+        # criteria[0].scoreMax=5, criteria[1].scoreMax=10 → individualMax=15
+        assert data["assignments"][0]["individualMax"] == 15
 
     def test_summary_student_sees_only_own_reviews(
         self, db, auth_student_b, student_a, student_b, course, assignment, rubric_with_criteria
@@ -810,8 +887,8 @@ class TestCourseGradeSummary:
         resp = auth_student_b.get(f"/review/course/{course.id}/summary")
         data = resp.get_json()
 
-        assert data["assignments"][0]["reviewCount"] == 1
-        assert data["assignments"][0]["averageScore"] == 4.0
+        assert data["assignments"][0]["individualReviewCount"] == 1
+        assert data["assignments"][0]["individualAverage"] == 4.0
 
     def test_summary_teacher_sees_all_reviews(
         self, db, auth_teacher, student_a, student_b, course, assignment, rubric_with_criteria
@@ -835,8 +912,8 @@ class TestCourseGradeSummary:
         data = resp.get_json()
 
         # Teacher sees both reviews: avg = (5 + 3) / 2 = 4.0
-        assert data["assignments"][0]["reviewCount"] == 2
-        assert data["assignments"][0]["averageScore"] == 4.0
+        assert data["assignments"][0]["individualReviewCount"] == 2
+        assert data["assignments"][0]["individualAverage"] == 4.0
 
     def test_summary_teacher_filter_by_student(
         self, db, auth_teacher, student_a, student_b, course, assignment, rubric_with_criteria
@@ -862,8 +939,8 @@ class TestCourseGradeSummary:
         )
         data = resp.get_json()
 
-        assert data["assignments"][0]["reviewCount"] == 1
-        assert data["assignments"][0]["averageScore"] == 5.0
+        assert data["assignments"][0]["individualReviewCount"] == 1
+        assert data["assignments"][0]["individualAverage"] == 5.0
 
     def test_summary_course_not_found(self, auth_student_a):
         """Returns 404 for a nonexistent course."""

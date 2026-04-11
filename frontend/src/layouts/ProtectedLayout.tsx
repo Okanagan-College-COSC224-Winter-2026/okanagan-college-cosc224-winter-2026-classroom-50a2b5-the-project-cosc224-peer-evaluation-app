@@ -7,7 +7,7 @@ import { useAuth } from "../features/authentication/AuthProvider";
 import { useRealtimeNotifications } from "../features/notifications/useNotifications";
 
 export default function ProtectedLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, mustChangePassword } = useAuth();
   const navigate = useNavigate();
 
   // Connect WebSocket for real-time notifications (must be before any early returns)
@@ -16,8 +16,11 @@ export default function ProtectedLayout() {
   useEffect(
     function () {
       if (!isAuthenticated && !isLoading) navigate("/");
+      if (isAuthenticated && !isLoading && mustChangePassword) {
+        navigate("/change-password");
+      }
     },
-    [isAuthenticated, isLoading, navigate]
+    [isAuthenticated, isLoading, mustChangePassword, navigate]
   );
 
   if (isLoading)

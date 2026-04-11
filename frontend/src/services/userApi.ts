@@ -67,5 +67,29 @@ export const deleteAccount = async (password: string) => {
   return response.json();
 };
 
+export const changeRequiredPassword = async (
+  currentPassword: string,
+  newPassword: string
+) => {
+  const response = await fetch(`${BASE_URL}/user/password`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
+
+  maybeHandleExpire(response);
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.msg || `Response status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
 export const getUserAvatarUrl = (userId: number) =>
   `${BASE_URL}/user/avatar/${userId}`;

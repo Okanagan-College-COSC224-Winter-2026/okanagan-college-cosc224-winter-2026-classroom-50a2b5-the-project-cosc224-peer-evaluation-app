@@ -22,7 +22,7 @@ Field types, primary keys, and notable constraints are included for quick refere
 
 - User
   - id (PK, autoincrement), name (required), email (unique, indexed), hash_pass, role (`student|teacher|admin`, default `student` via DB check constraint), must_change_password (BOOLEAN, default FALSE)
-  - Relationships: `teaching_courses`, `user_courses`, `courses` (through `User_Courses`), `submissions`, `reviews_made`, `reviews_received`, `group_memberships`
+  - Relationships: `teaching_courses`, `user_courses`, `courses` (through `User_Courses`), `submissions`, `reviews_made`, `group_memberships`
 - Course
   - id (PK), teacherID (FK -> User.id, not null), name
   - Relationships: `teacher`, `assignments`, `students` (via `User_Courses`), `user_courses`
@@ -33,7 +33,7 @@ Field types, primary keys, and notable constraints are included for quick refere
 ### Assignments and Grouping
 
 - Assignment
-  - id (PK), courseID (FK -> Course.id), name, `description` (nullable), `start_date` (nullable, timezone-aware), `rubric_text` column (stored as `rubric`), `due_date` (nullable, timezone-aware), `is_anonymous` (BOOLEAN, default TRUE)
+  - id (PK), courseID (FK -> Course.id), name, `description` (nullable), `start_date` (nullable, timezone-aware), `rubric_text` column (stored as `rubric`), `due_date` (nullable, timezone-aware), `is_anonymous` (BOOLEAN, default TRUE), `individual_reviews` (BOOLEAN, default TRUE), `group_reviews` (BOOLEAN, default TRUE)
   - Relationships: `course`, `rubrics`, `submissions`, `reviews`, `resources`
 - CourseGroup
   - id (PK), name, courseID (FK -> Course.id, not null)
@@ -59,18 +59,27 @@ Field types, primary keys, and notable constraints are included for quick refere
 ### Reviews, Rubrics, and Criteria
 
 - Review
-  - id (PK), assignmentID (FK -> Assignment.id), reviewerID (FK -> User.id), revieweeID (FK -> User.id), comments (VARCHAR(500), nullable)
-  - Peer review instances scoped to a single assignment, with eager-loaded relationships for performance
+  - id (PK), assignmentID (FK -> Assignment.id), reviewerID (FK -> User.id), revieweeID (INT, no FK constraint), review_type (VARCHAR(20), NOT NULL, default 'individual'), comments (VARCHAR(500), nullable)
+  - Supports two review types: `individual` (revieweeID → User.id) and `group` (revieweeID → CourseGroup.id). The polymorphic `revieweeID` has no foreign-key constraint; resolution is handled in application code.
+  - For group reviews, any group member may submit on behalf of the group. Duplicate prevention checks all members of the submitter's group. All group members can view and edit the review.
   - The `comments` field stores the reviewer's overall comment for the entire review
 - Rubric
-  - id (PK), assignmentID (FK -> Assignment.id), canComment (BOOLEAN NOT NULL DEFAULT TRUE)
-  - Multiple rubrics per assignment permitted; business logic decides which one is active
+  - id (PK), assignmentID (FK -> Assignment.id), canComment (BOOLEAN NOT NULL DEFAULT TRUE), rubric_type (VARCHAR(20), NOT NULL, default 'individual')
+  - Each assignment can have one individual rubric and one group rubric (distinguished by `rubric_type`)
 - Criteria_Description (rubric rows)
   - id (PK), rubricID (FK -> Rubric.id), question, scoreMax, hasScore (default TRUE)
   - Defines each question/row shown to reviewers
 - Criterion (responses per review per row)
   - id (PK), reviewID (FK -> Review.id), criterionRowID (FK -> Criteria_Description.id), grade, comments
   - Captures the reviewer’s inputs for a single rubric row
+
+### Grade Overrides
+
+- GradeOverride
+  - id (PK), studentID (FK -> User.id, indexed), assignmentID (FK -> Assignment.id, indexed), courseID (FK -> Course.id, indexed), override_score (Float, not null), teacherID (FK -> User.id)
+  - UniqueConstraint on (studentID, assignmentID, courseID) — one override per student per assignment per course
+  - Allows teachers to manually set a grade that takes precedence over peer-review averages in the gradebook
+  - Relationships: `student`, `assignment`, `course`, `teacher`
 
 ## Constraints and Defaults
 

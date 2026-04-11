@@ -28,6 +28,8 @@ def migrate_assignment_columns_command():
         ("start_date", 'ALTER TABLE "Assignment" ADD COLUMN start_date TIMESTAMP'),
         ("due_date", 'ALTER TABLE "Assignment" ADD COLUMN due_date TIMESTAMP'),
         ("is_anonymous", 'ALTER TABLE "Assignment" ADD COLUMN is_anonymous BOOLEAN DEFAULT TRUE'),
+        ("individual_reviews", 'ALTER TABLE "Assignment" ADD COLUMN individual_reviews BOOLEAN DEFAULT TRUE'),
+        ("group_reviews", 'ALTER TABLE "Assignment" ADD COLUMN group_reviews BOOLEAN DEFAULT TRUE'),
     ]
 
     applied = 0
@@ -345,9 +347,60 @@ def init_app(app):
     app.cli.add_command(ensure_admin_command)
     app.cli.add_command(add_sample_courses_command)
     app.cli.add_command(migrate_course_image_command)
+    app.cli.add_command(migrate_review_comments_command)
+    app.cli.add_command(migrate_group_reviews_command)
+    app.cli.add_command(migrate_user_avatar_command)
     app.cli.add_command(migrate_super_admin_role_command)
     app.cli.add_command(migrate_audit_log_command)
     app.cli.add_command(create_super_admin_command)
+
+
+@click.command("migrate_group_reviews")
+@with_appcontext
+def migrate_group_reviews_command():
+    """Add review_type column to Review and rubric_type column to Rubric.
+
+    Needed for group-review support. Existing rows default to 'individual'.
+    This command is idempotent and safe to run multiple times.
+    """
+    inspector = inspect(db.engine)
+    applied = 0
+
+    # --- Review table ---
+    if not inspector.has_table("Review"):
+        click.echo("Review table does not exist. Run 'flask init_db' first.", err=True)
+        return
+
+    review_cols = {col["name"] for col in inspector.get_columns("Review")}
+    if "review_type" in review_cols:
+        click.echo("Column 'review_type' already exists on Review")
+    else:
+        db.session.execute(
+            text('ALTER TABLE "Review" ADD COLUMN review_type VARCHAR(20) NOT NULL DEFAULT \'individual\'')
+        )
+        applied += 1
+        click.echo("Added column 'review_type' to Review (default='individual')")
+
+    # --- Rubric table ---
+    if not inspector.has_table("Rubric"):
+        click.echo("Rubric table does not exist. Run 'flask init_db' first.", err=True)
+        return
+
+    rubric_cols = {col["name"] for col in inspector.get_columns("Rubric")}
+    if "rubric_type" in rubric_cols:
+        click.echo("Column 'rubric_type' already exists on Rubric")
+    else:
+        db.session.execute(
+            text('ALTER TABLE "Rubric" ADD COLUMN rubric_type VARCHAR(20) NOT NULL DEFAULT \'individual\'')
+        )
+        applied += 1
+        click.echo("Added column 'rubric_type' to Rubric (default='individual')")
+
+    if applied:
+        db.session.commit()
+        click.echo(f"Group reviews migration completed ({applied} column(s) added)")
+    else:
+        click.echo("Group reviews migration completed (no changes needed)")
 
 
 @click.command("migrate_user_avatar")

@@ -1,6 +1,6 @@
 export const cardClass = "bg-white rounded-2xl border border-border shadow-sm overflow-hidden";
 export const btnPrimary =
-  "inline-flex items-center px-4 py-2 rounded-lg bg-btn-primary text-white text-sm font-semibold hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer border-none";
+  "inline-flex items-center px-4 py-2 rounded-lg bg-btn-primary text-white text-sm font-semibold hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100 disabled:active:scale-100";
 export const btnSecondary =
   "inline-flex items-center px-4 py-2 rounded-lg bg-btn-secondary text-white text-sm font-medium hover:brightness-110 transition-all cursor-pointer border-none";
 export const btnDanger =

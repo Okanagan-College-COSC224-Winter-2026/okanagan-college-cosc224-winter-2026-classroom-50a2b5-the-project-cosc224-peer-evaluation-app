@@ -36,6 +36,8 @@ export function useCreateAssignment(classId: string) {
       start_date?: string;
       due_date?: string;
       is_anonymous?: boolean;
+      individual_reviews?: boolean;
+      group_reviews?: boolean;
     }) =>
       createAssignment(
         params.courseID,
@@ -43,7 +45,9 @@ export function useCreateAssignment(classId: string) {
         params.description,
         params.start_date,
         params.due_date,
-        params.is_anonymous
+        params.is_anonymous,
+        params.individual_reviews,
+        params.group_reviews
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["assignments", classId] });
@@ -60,6 +64,8 @@ export function useEditAssignment(assignmentId: number) {
       start_date?: string;
       due_date?: string;
       is_anonymous?: boolean;
+      individual_reviews?: boolean;
+      group_reviews?: boolean;
     }) => editAssignment(assignmentId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["assignment", assignmentId] });

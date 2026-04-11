@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface props {
     question: string;
@@ -11,6 +11,10 @@ interface props {
 
 export default function Criterion(props: props) {
     const [sliderValue, setSliderValue] = useState<number>(props.grade || 0);
+
+    useEffect(() => {
+        setSliderValue(props.grade || 0);
+    }, [props.grade]);
 
     const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = Number(e.target.value);

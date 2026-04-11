@@ -6,7 +6,7 @@ from flask import Blueprint, current_app, jsonify, request, send_from_directory
 from flask_jwt_extended import get_jwt_identity
 from werkzeug.utils import secure_filename
 
-from ..models import Assignment, Submission, User, User_Course, db
+from ..models import Assignment, CourseGroup, Group_Members, Submission, User, User_Course, db
 from .auth_controller import jwt_role_required
 
 bp = Blueprint("submission", __name__, url_prefix="/submission")
@@ -76,6 +76,66 @@ def _ensure_student_enrolled_for_assignment(user: User, assignment: Assignment):
     return User_Course.get(user.id, assignment.courseID) is not None
 
 
+def _get_group_submission(user_id: int, assignment: Assignment):
+    """Return a group member's submission for this assignment, or None.
+
+    Looks up the user's group in the assignment's course and returns the first
+    submission found from any member of that group.
+    """
+    membership = (
+        Group_Members.query
+        .join(CourseGroup, CourseGroup.id == Group_Members.groupID)
+        .filter(Group_Members.userID == user_id, CourseGroup.courseID == assignment.courseID)
+        .first()
+    )
+    if not membership:
+        return None
+
+    group_member_ids = [
+        m.userID for m in Group_Members.query.filter_by(groupID=membership.groupID).all()
+    ]
+    return Submission.query.filter(
+        Submission.assignmentID == assignment.id,
+        Submission.studentID.in_(group_member_ids),
+    ).first()
+
+
+@bp.route("/<int:assignment_id>/student/<int:student_id>", methods=["GET"])
+@jwt_role_required("student", "teacher", "admin")
+def get_student_submission(assignment_id, student_id):
+    """View another user's submission for an assignment.
+
+    Teachers/admins: always allowed.
+    Students: must be enrolled in the course.
+    """
+    assignment = Assignment.get_by_id(assignment_id)
+    if not assignment:
+        return jsonify({"msg": "Assignment not found"}), 404
+
+    user = _get_current_user()
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    # Students must be enrolled in the course
+    if user.is_student():
+        if not User_Course.get(user.id, assignment.courseID):
+            return jsonify({"msg": "Unauthorized: You do not have access to this class"}), 403
+
+    # Look up the target student's submission (or their group's)
+    target = User.get_by_id(student_id)
+    if not target:
+        return jsonify({"msg": "Student not found"}), 404
+
+    submission = Submission.query.filter_by(
+        assignmentID=assignment_id, studentID=student_id
+    ).first()
+
+    if not submission:
+        submission = _get_group_submission(student_id, assignment)
+
+    return jsonify({"submission": _attachment_payload(submission) if submission else None}), 200
+
+
 @bp.route("/<int:assignment_id>/mine", methods=["GET"])
 @jwt_role_required("student", "teacher", "admin")
 def get_my_submission(assignment_id):
@@ -94,6 +154,9 @@ def get_my_submission(assignment_id):
         assignmentID=assignment_id,
         studentID=user.id,
     ).first()
+
+    if not submission and user.is_student():
+        submission = _get_group_submission(user.id, assignment)
 
     return jsonify({"submission": _attachment_payload(submission) if submission else None}), 200
 
@@ -142,12 +205,16 @@ def upload_my_submission(assignment_id):
         studentID=user.id,
     ).first()
 
+    if not submission:
+        submission = _get_group_submission(user.id, assignment)
+
     if submission is None:
         submission = Submission(path=stored_path, studentID=user.id, assignmentID=assignment_id)
         db.session.add(submission)
     else:
         _delete_file_if_exists(submission.path)
         submission.path = stored_path
+        submission.studentID = user.id
 
     db.session.commit()
     return jsonify({"msg": "Attachment saved", "submission": _attachment_payload(submission)}), 200
@@ -171,6 +238,9 @@ def delete_my_submission(assignment_id):
         assignmentID=assignment_id,
         studentID=user.id,
     ).first()
+
+    if not submission:
+        submission = _get_group_submission(user.id, assignment)
 
     if submission is None:
         return jsonify({"msg": "No attachment found"}), 404
@@ -198,10 +268,12 @@ def download_submission_file(submission_id):
         return jsonify({"msg": "User not found"}), 404
 
     if user.is_student():
-        if submission.studentID != user.id:
-            return jsonify({"msg": "Unauthorized"}), 403
         if not _ensure_student_enrolled_for_assignment(user, assignment):
             return jsonify({"msg": "Unauthorized: You do not have access to this class"}), 403
+        if submission.studentID != user.id:
+            group_sub = _get_group_submission(user.id, assignment)
+            if not group_sub or group_sub.id != submission.id:
+                return jsonify({"msg": "Unauthorized"}), 403
 
     file_path = Path(submission.path)
     if not file_path.exists():

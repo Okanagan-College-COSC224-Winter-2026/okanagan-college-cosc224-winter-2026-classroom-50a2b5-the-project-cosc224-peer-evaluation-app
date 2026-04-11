@@ -5,13 +5,17 @@ import {
   getCriteria,
   createRubric,
   createCriteria,
+  updateRubric,
   deleteRubric,
 } from "../../services/rubricApi";
 
-export function useRubricForAssignment(assignmentId: number) {
+export function useRubricForAssignment(
+  assignmentId: number,
+  rubric_type: "individual" | "group" = "individual"
+) {
   return useQuery({
-    queryKey: ["rubric", "assignment", assignmentId],
-    queryFn: () => getRubricForAssignment(assignmentId),
+    queryKey: ["rubric", "assignment", assignmentId, rubric_type],
+    queryFn: () => getRubricForAssignment(assignmentId, rubric_type),
     enabled: !!assignmentId,
   });
 }
@@ -32,14 +36,17 @@ export function useCriteria(rubricId: number | null) {
   });
 }
 
-export function useCreateRubric(assignmentId: number) {
+export function useCreateRubric(
+  assignmentId: number,
+  rubric_type: "individual" | "group" = "individual"
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (params: {
       canComment: boolean;
       criteria: { question: string; scoreMax: number; hasScore: boolean }[];
     }) =>
-      createRubric(assignmentId, params.canComment).then(async ({ id }) => {
+      createRubric(assignmentId, params.canComment, rubric_type).then(async ({ id }) => {
         await Promise.all(
           params.criteria.map((c) =>
             createCriteria(id, c.question, c.scoreMax, params.canComment, c.hasScore)
@@ -49,19 +56,42 @@ export function useCreateRubric(assignmentId: number) {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["rubric", "assignment", assignmentId],
+        queryKey: ["rubric", "assignment", assignmentId, rubric_type],
       });
     },
   });
 }
 
-export function useDeleteRubric(assignmentId: number) {
+export function useUpdateRubric(
+  assignmentId: number,
+  rubric_type: "individual" | "group" = "individual"
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: {
+      rubricId: number;
+      canComment?: boolean;
+      criteria: { question: string; scoreMax: number; hasScore: boolean }[];
+    }) => updateRubric(params.rubricId, { canComment: params.canComment, criteria: params.criteria }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["rubric", "assignment", assignmentId, rubric_type],
+      });
+      queryClient.invalidateQueries({ queryKey: ["criteria"] });
+    },
+  });
+}
+
+export function useDeleteRubric(
+  assignmentId: number,
+  rubric_type: "individual" | "group" = "individual"
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (rubricId: number) => deleteRubric(rubricId),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["rubric", "assignment", assignmentId],
+        queryKey: ["rubric", "assignment", assignmentId, rubric_type],
       });
     },
   });

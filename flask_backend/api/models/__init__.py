@@ -8,6 +8,7 @@ from .criteria_description_model import CriteriaDescription
 from .criterion_model import Criterion
 from .db import db, ma
 from .enrollment_request_model import EnrollmentRequest
+from .grade_override_model import GradeOverride
 from .group_members_model import Group_Members
 from .notification_model import Notification
 from .review_flag_model import ReviewFlag
@@ -56,6 +57,7 @@ __all__ = [
     "EnrollmentRequest",
     "Notification",
     "CourseGroup",
+    "GradeOverride",
     "Group_Members",
     "User_Course",
     "Submission",

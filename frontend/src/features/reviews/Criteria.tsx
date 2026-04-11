@@ -1,5 +1,5 @@
 import Criterion from './Criterion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface props {
     questions: Array<string>;
@@ -9,12 +9,19 @@ interface props {
     onCriterionSelect: (row: number, column: number) => void;
     onCommentChange?: (comment: string) => void;
     grades: number[];
+    comment?: string;
 }
 
 export default function Criteria(props: props) {
     const [scores, setScores] = useState<number[]>(
         props.grades.length > 0 ? [...props.grades] : new Array(props.questions.length).fill(0)
     );
+
+    useEffect(() => {
+        if (props.grades.length > 0) {
+            setScores([...props.grades]);
+        }
+    }, [props.grades]);
 
     const handleSelect = (row: number, value: number) => {
         setScores(prev => {
@@ -48,6 +55,7 @@ export default function Criteria(props: props) {
                     <textarea
                         className="w-full min-h-[80px] px-3.5 py-2.5 border border-border rounded-lg bg-bg-secondary text-text-primary text-sm font-[inherit] resize-y focus:outline-none focus:ring-2 focus:ring-btn-primary/30 focus:border-btn-primary transition-all"
                         placeholder="Additional comments..."
+                        value={props.comment ?? ""}
                         onChange={(e) => props.onCommentChange?.(e.target.value)}
                     />
                 </div>

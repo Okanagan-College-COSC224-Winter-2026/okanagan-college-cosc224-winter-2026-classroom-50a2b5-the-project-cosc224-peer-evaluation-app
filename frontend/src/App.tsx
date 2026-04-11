@@ -20,6 +20,7 @@ import ClassMembers from "./features/classes/ClassMembers";
 import ClassSettings from "./features/classes/ClassSettings";
 import ClassEvaluations from "./features/reviews/ClassEvaluations";
 import GroupManager from "./features/groups/GroupManager";
+import Gradebook from "./features/gradebook/Gradebook";
 
 import AssignmentDetail from "./features/assignments/AssignmentDetail";
 
@@ -73,6 +74,7 @@ function App() {
                 <Route path="members" element={<ClassMembers />} />
                 <Route path="groups" element={<GroupManager />} />
                 <Route path="evaluations" element={<ClassEvaluations />} />
+                <Route path="gradebook" element={<Gradebook />} />
 
                 <Route element={<RequireRole allow={["teacher", "admin", "super_admin"]} />}>
                   <Route path="settings" element={<ClassSettings />} />

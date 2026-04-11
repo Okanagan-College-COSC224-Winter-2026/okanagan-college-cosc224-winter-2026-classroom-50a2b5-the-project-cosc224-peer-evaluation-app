@@ -42,8 +42,11 @@ def create_group():
     # Validate required fields
     if not course_id:
         return jsonify({"msg": "courseID is required"}), 400
-    if not name:
+    if not name or not name.strip():
         return jsonify({"msg": "name is required"}), 400
+    name = name.strip()
+    if len(name) > 50:
+        return jsonify({"msg": "name must be 50 characters or fewer"}), 400
     
     # Check course exists
     course = Course.get_by_id(course_id)

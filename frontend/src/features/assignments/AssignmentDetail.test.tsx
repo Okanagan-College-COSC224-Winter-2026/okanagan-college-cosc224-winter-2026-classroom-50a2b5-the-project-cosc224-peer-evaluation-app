@@ -7,11 +7,11 @@ const useAssignmentDetailMock = vi.fn();
 
 function makeAssignmentDetailState() {
   return {
-    id: '5',
+    classId: '10',
     assignmentId: 5,
     assignment: {
       id: 5,
-      courseID: 99,
+      courseID: 10,
       name: 'Assignment Title',
       description: 'Assignment description',
       is_anonymous: true,
@@ -19,12 +19,17 @@ function makeAssignmentDetailState() {
     teacherMode: true,
     isManageTab: false,
     rubricId: null,
+    groupRubricId: null,
     review: [],
+    groupReview: [],
     resourceList: [],
     groupMembers: [],
+    otherGroups: [],
     mySubmission: null,
     revieweeID: 0,
     setRevieweeID: vi.fn(),
+    groupRevieweeID: 0,
+    setGroupRevieweeID: vi.fn(),
   };
 }
 
@@ -68,12 +73,12 @@ describe('Assignment US9 UI', () => {
       teacherMode: true,
       isManageTab: true,
     });
-    window.history.pushState({}, '', '/assignments/5/manage');
+    window.history.pushState({}, '', '/classes/10/assignments/5/manage');
 
     const { container } = renderWithQueryClient(
-      <MemoryRouter initialEntries={['/assignments/5/manage']}>
+      <MemoryRouter initialEntries={['/classes/10/assignments/5/manage']}>
         <Routes>
-          <Route path='/assignments/:id/manage' element={<Assignment />} />
+          <Route path='/classes/:id/assignments/:assignmentId/manage' element={<Assignment />} />
         </Routes>
       </MemoryRouter>
     );
@@ -104,12 +109,12 @@ describe('Assignment US9 UI', () => {
       ],
     });
 
-    window.history.pushState({}, '', '/assignments/5');
+    window.history.pushState({}, '', '/classes/10/assignments/5');
 
     renderWithQueryClient(
-      <MemoryRouter initialEntries={['/assignments/5']}>
+      <MemoryRouter initialEntries={['/classes/10/assignments/5']}>
         <Routes>
-          <Route path='/assignments/:id' element={<Assignment />} />
+          <Route path='/classes/:id/assignments/:assignmentId' element={<Assignment />} />
         </Routes>
       </MemoryRouter>
     );
@@ -127,12 +132,12 @@ describe('Assignment US9 UI', () => {
       mySubmission: null,
     });
 
-    window.history.pushState({}, '', '/assignments/5');
+    window.history.pushState({}, '', '/classes/10/assignments/5');
 
     renderWithQueryClient(
-      <MemoryRouter initialEntries={['/assignments/5']}>
+      <MemoryRouter initialEntries={['/classes/10/assignments/5']}>
         <Routes>
-          <Route path='/assignments/:id' element={<Assignment />} />
+          <Route path='/classes/:id/assignments/:assignmentId' element={<Assignment />} />
         </Routes>
       </MemoryRouter>
     );

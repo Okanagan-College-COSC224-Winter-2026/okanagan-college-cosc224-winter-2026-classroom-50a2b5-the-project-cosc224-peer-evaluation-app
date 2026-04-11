@@ -1,9 +1,10 @@
-import { useState, ChangeEvent } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import toast from "react-hot-toast";
 import Modal from "../../ui/Modal";
 import RubricDisplay from "../reviews/RubricDisplay";
-import { useSubmitReview } from "../reviews/useReviews";
-import { cardClass, btnPrimary } from "./assignmentStyles";
+import { useSubmitReview, useReview, useUpdateReview, useMyReviewed } from "../reviews/useReviews";
+import { useCriteria } from "../reviews/useRubric";
+import { btnPrimary } from "./assignmentStyles";
 import type { GroupMember } from "./useAssignmentDetail";
 
 interface SelectedCriterion {
@@ -25,9 +26,27 @@ export default function PeerReviewSection({ assignmentId, rubricId, review, grou
   const [reviewComment, setReviewComment] = useState("");
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedMemberName, setSelectedMemberName] = useState("");
-  const [reviewedMembers, setReviewedMembers] = useState<Set<number>>(new Set());
 
+  const { data: reviewedIds = [] } = useMyReviewed(assignmentId, "individual");
   const { mutate: submitReview, isPending: isSubmitting } = useSubmitReview();
+  const { mutate: updateReviewMut, isPending: isUpdating } = useUpdateReview();
+  const { data: existingReview } = useReview(assignmentId, revieweeID, "individual");
+  const { data: rubricCriteria = [] } = useCriteria(rubricId);
+
+  const isEditing = existingReview?.review !== undefined && existingReview?.review !== null;
+  const isPending = isSubmitting || isUpdating;
+
+  // Seed selectedCriteria from existing review when data loads
+  useEffect(() => {
+    if (isEditing && existingReview?.criteria && rubricCriteria.length > 0 && isReviewModalOpen) {
+      const seeded = existingReview.criteria.map((c: { criterionRowID: number; grade: number }) => ({
+        row: c.criterionRowID,
+        column: c.grade,
+      }));
+      setSelectedCriteria(seeded);
+      setReviewComment(existingReview.review.comments || "");
+    }
+  }, [isEditing, existingReview, rubricCriteria, isReviewModalOpen]);
 
   function handleCriterionSelect(row: number, column: number) {
     setSelectedCriteria((prev) => {
@@ -41,38 +60,67 @@ export default function PeerReviewSection({ assignmentId, rubricId, review, grou
     setRevieweeID(selectedID);
     const member = groupMembers.find((m) => m.id === selectedID);
     setSelectedMemberName(member?.name || "");
+    setSelectedCriteria([]);
+    setReviewComment("");
     setIsReviewModalOpen(true);
   }
 
-  function handleSubmitReview(closeModal?: boolean) {
-    submitReview(
-      {
-        assignmentID: assignmentId,
-        revieweeID,
-        criteria: selectedCriteria.map((c) => ({ criterionRowID: c.row, grade: c.column, comments: "" })),
-        comments: reviewComment,
-      },
-      {
-        onSuccess: () => {
-          if (closeModal) setIsReviewModalOpen(false);
-          setReviewedMembers((prev) => new Set(prev).add(revieweeID));
-          toast.success("Review submitted successfully.");
+  function handleSubmitOrUpdate(closeModal?: boolean) {
+    const criteriaPayload = selectedCriteria.map((c) => ({
+      criterionRowID: c.row,
+      grade: c.column,
+      comments: "",
+    }));
+
+    if (isEditing) {
+      updateReviewMut(
+        {
+          reviewId: existingReview.review.id,
+          assignmentID: assignmentId,
+          revieweeID: revieweeID,
+          criteria: criteriaPayload,
+          comments: reviewComment,
         },
-        onError: (error) => {
-          toast.error(error instanceof Error ? error.message : "Failed to submit review.");
+        {
+          onSuccess: () => {
+            if (closeModal) setIsReviewModalOpen(false);
+            toast.success("Review updated successfully.");
+          },
+          onError: (error) => {
+            toast.error(error instanceof Error ? error.message : "Failed to update review.");
+          },
+        }
+      );
+    } else {
+      submitReview(
+        {
+          assignmentID: assignmentId,
+          revieweeID,
+          criteria: criteriaPayload,
+          comments: reviewComment,
         },
-      }
-    );
+        {
+          onSuccess: () => {
+            if (closeModal) setIsReviewModalOpen(false);
+            toast.success("Review submitted successfully.");
+          },
+          onError: (error) => {
+            toast.error(error instanceof Error ? error.message : "Failed to submit review.");
+          },
+        }
+      );
+    }
   }
+
+  // Determine grades to display — from existing review or local state
+  const displayGrades: number[] = isEditing
+    ? existingReview.criteria?.map((c: { grade: number }) => c.grade) ?? []
+    : review;
 
   return (
     <>
-      <div className={cardClass}>
-        <div className="px-5 md:px-8 py-4 border-b border-border">
-          <h3 className="text-base font-semibold text-text-primary m-0">Peer Review</h3>
-        </div>
-
-        <div className="px-5 md:px-8 py-5 flex flex-col gap-4">
+      <div>
+        <div className="flex flex-col gap-4">
           <p className="text-sm text-text-secondary m-0">Select a group member to review</p>
           {groupMembers.length === 0 ? (
             <p className="text-text-secondary text-sm m-0">No group members found. You may not be assigned to a group yet.</p>
@@ -89,27 +137,31 @@ export default function PeerReviewSection({ assignmentId, rubricId, review, grou
                     className="w-4 h-4 accent-btn-primary"
                   />
                   {member.name}
-                  {reviewedMembers.has(member.id) && (
+                  {reviewedIds.includes(member.id) && (
                     <span className="text-xs text-emerald-600 font-medium">(reviewed)</span>
                   )}
                 </label>
               ))}
             </div>
           )}
-
-          <div className="pt-3 border-t border-border">
-            <button className={btnPrimary} disabled={isSubmitting} onClick={() => handleSubmitReview()}>
-              {isSubmitting ? "Submitting..." : "Submit Review"}
-            </button>
-          </div>
         </div>
       </div>
 
-      <Modal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} title={`Review: ${selectedMemberName}`}>
-        <RubricDisplay rubricId={rubricId} onCriterionSelect={handleCriterionSelect} onCommentChange={setReviewComment} grades={review} />
+      <Modal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        title={`${isEditing ? "Edit" : "Review"}: ${selectedMemberName}`}
+      >
+        <RubricDisplay
+          rubricId={rubricId}
+          onCriterionSelect={handleCriterionSelect}
+          onCommentChange={setReviewComment}
+          grades={displayGrades}
+          comment={reviewComment}
+        />
         <div className="flex justify-end pt-4 mt-2 border-t border-border">
-          <button className={btnPrimary} disabled={isSubmitting} onClick={() => handleSubmitReview(true)}>
-            {isSubmitting ? "Submitting..." : "Submit Review"}
+          <button className={btnPrimary} disabled={isPending || rubricCriteria.length === 0} onClick={() => handleSubmitOrUpdate(true)}>
+            {isPending ? "Saving..." : isEditing ? "Update Review" : "Submit Review"}
           </button>
         </div>
       </Modal>

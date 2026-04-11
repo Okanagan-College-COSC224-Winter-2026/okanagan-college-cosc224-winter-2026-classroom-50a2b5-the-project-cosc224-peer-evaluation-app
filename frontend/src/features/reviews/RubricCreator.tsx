@@ -6,13 +6,16 @@ import { useCreateRubric } from './useRubric';
 interface RubricCreatorProps {
     onRubricCreated?: (rubricId: number) => void;
     id: number;
+    rubricType?: "individual" | "group";
 }
 
-export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProps) {
-    const [newCriteria, setNewCriteria] = useState<Omit<Criterion, 'id'>[]>([{ rubricID: 0, question: '', scoreMax: 0, hasScore: true }]);
+export default function RubricCreator({ onRubricCreated, id, rubricType = "individual" }: RubricCreatorProps) {
+    const [newCriteria, setNewCriteria] = useState<Omit<Criterion, 'id'>[]>([
+        { rubricID: 0, question: '', scoreMax: 1, hasScore: true }
+    ]);
     const [canComment, setCanComment] = useState(false);
 
-    const { mutate: createRubric, isPending } = useCreateRubric(id);
+    const { mutate: createRubric, isPending } = useCreateRubric(id, rubricType);
 
     const handleCreate = () => {
         const emptyQuestions = newCriteria.some(c => !c.question.trim());
@@ -44,7 +47,7 @@ export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProp
 
     const handleScoreMaxChange = (index: number, value: number) => {
         const updatedCriteria = [...newCriteria];
-        updatedCriteria[index].scoreMax = Math.max(0, value);
+        updatedCriteria[index].scoreMax = Math.min(100, Math.max(1, value));
         setNewCriteria(updatedCriteria);
     };
 
@@ -52,12 +55,12 @@ export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProp
         const updatedCriteria = [...newCriteria];
         updatedCriteria[index].hasScore = value;
         if (!value) {
-            updatedCriteria[index].scoreMax = 0;
+            updatedCriteria[index].scoreMax = 1;
         }
         setNewCriteria(updatedCriteria);
     };
 
-    const handleAddNewSection = () => setNewCriteria(prev => [...prev, { rubricID: 0, question: '', scoreMax: 0, hasScore: true } as Omit<Criterion, 'id'>]);
+    const handleAddNewSection = () => setNewCriteria(prev => [...prev, { rubricID: 0, question: '', scoreMax: 1, hasScore: true } as Omit<Criterion, 'id'>]);
 
     const handleRemoveSection = (index: number) => setNewCriteria(prev => prev.filter((_, i) => i !== index));
 
@@ -113,6 +116,7 @@ export default function RubricCreator({ onRubricCreated, id }: RubricCreatorProp
                                     <input
                                         type="number"
                                         min="0"
+                                        max="100"
                                         value={item.scoreMax}
                                         onChange={(e) => handleScoreMaxChange(index, Number(e.target.value))}
                                         className="w-16 px-2.5 py-1.5 border border-border rounded-lg bg-white text-sm text-text-primary text-center focus:outline-none focus:ring-2 focus:ring-btn-primary/30 focus:border-btn-primary transition-all"
