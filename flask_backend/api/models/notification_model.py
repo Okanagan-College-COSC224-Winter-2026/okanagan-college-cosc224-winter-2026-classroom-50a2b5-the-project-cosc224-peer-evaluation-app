@@ -18,9 +18,8 @@ class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     userID = db.Column(db.Integer, db.ForeignKey("User.id"), nullable=False, index=True)
     type = db.Column(db.String(50), nullable=False)
-    # Types: assignment_published, assignment_graded,
-    #        enrollment_request, enrollment_approved, enrollment_rejected,
-    #        review_flagged
+    # Types: assignment_published, assignment_updated, course_deleted,
+    #        enrollment_approved, enrollment_rejected, enrollment_blocked
     message = db.Column(db.String(500), nullable=False)
     is_read = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)

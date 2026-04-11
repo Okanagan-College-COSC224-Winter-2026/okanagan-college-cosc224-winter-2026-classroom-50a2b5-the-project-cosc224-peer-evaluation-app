@@ -9,7 +9,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 
-from ..models import Course, User, User_Course
+from ..models import Course, Notification, User, User_Course
 from .auth_controller import jwt_teacher_required
 
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
@@ -237,7 +237,44 @@ def delete_course(course_id):
     if course.teacherID != user.id and not user.is_admin_or_above():
         return jsonify({"msg": "Unauthorized"}), 403
 
+    course_name = course.name
+
+    # Collect enrolled student IDs before deletion
+    enrollments = User_Course.query.filter_by(courseID=course_id).all()
+    student_ids = [
+        e.userID for e in enrollments
+        if User.get_by_id(e.userID) and User.get_by_id(e.userID).is_student()
+    ]
+
+    # If an admin/super_admin is deleting, also notify the course teacher
+    notify_teacher = user.is_admin_or_above() and course.teacherID and course.teacherID != user.id
+    teacher_id = course.teacherID
+
     course.delete()
+
+    # Notify enrolled students
+    if student_ids:
+        Notification.create_bulk([
+            {
+                "userID": uid,
+                "type": "course_deleted",
+                "message": f"Your course '{course_name}' has been removed.",
+                "reference_id": None,
+                "reference_type": "course",
+            }
+            for uid in student_ids
+        ])
+
+    # Notify the teacher if deleted by admin/super_admin
+    if notify_teacher:
+        Notification.create(
+            userID=teacher_id,
+            type="course_deleted",
+            message=f"Your course '{course_name}' was removed by an administrator.",
+            reference_id=None,
+            reference_type="course",
+        )
+
     return jsonify({"msg": "Course deleted"}), 200
 
 

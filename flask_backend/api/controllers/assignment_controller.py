@@ -233,6 +233,27 @@ def edit_assignment(assignment_id):
     if "group_reviews" in data and assignment.group_reviews is False:
         cascade_info.update(_cascade_delete_review_type(assignment, "group"))
 
+    # Notify enrolled students when name or due date changed
+    name_changed = "name" in data and data["name"] != assignment.name
+    due_date_changed = "due_date" in data
+    if name_changed or due_date_changed:
+        enrollments = User_Course.query.filter_by(courseID=course.id).all()
+        student_ids = [
+            e.userID for e in enrollments
+            if User.get_by_id(e.userID) and User.get_by_id(e.userID).is_student()
+        ]
+        if student_ids:
+            Notification.create_bulk([
+                {
+                    "userID": uid,
+                    "type": "assignment_updated",
+                    "message": f"Assignment '{assignment.name}' in {course.name} has been updated — check the latest details.",
+                    "reference_id": assignment.id,
+                    "reference_type": "assignment",
+                }
+                for uid in student_ids
+            ])
+
     assignment.update()
     return (
         jsonify(
