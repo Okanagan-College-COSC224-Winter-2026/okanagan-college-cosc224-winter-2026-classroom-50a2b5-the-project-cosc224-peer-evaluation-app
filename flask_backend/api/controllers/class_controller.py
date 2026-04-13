@@ -71,6 +71,21 @@ def create_class():
 
     new_class = Course(teacherID=user.id, name=class_name)
     Course.create_course(new_class)
+
+    # Notify admins and super-admins about the new course
+    admins = User.query.filter(User.role.in_(["admin", "super_admin"])).all()
+    if admins:
+        Notification.create_bulk([
+            {
+                "userID": admin.id,
+                "type": "course_created",
+                "message": f"{user.name} created a new course '{class_name}'.",
+                "reference_id": new_class.id,
+                "reference_type": "course",
+            }
+            for admin in admins
+        ])
+
     return jsonify({"msg": "Class created", "class": {"id": new_class.id}}), 201
 
 
@@ -163,10 +178,48 @@ def update_course(course_id):
         return jsonify({"msg": "Unauthorized"}), 403
 
     data = request.get_json()
+    old_name = course.name
     if "name" in data and data["name"].strip():
         course.name = data["name"].strip()
 
     course.update()
+
+    # Notify when name changes
+    if course.name != old_name:
+        enrollments = User_Course.query.filter_by(courseID=course.id).all()
+        notifications = [
+            {
+                "userID": e.userID,
+                "type": "course_updated",
+                "message": f"Course '{old_name}' was renamed to '{course.name}' by {user.name}.",
+                "reference_id": course.id,
+                "reference_type": "course",
+            }
+            for e in enrollments
+            if User.get_by_id(e.userID) and User.get_by_id(e.userID).is_student()
+        ]
+        if user.is_admin_or_above() and course.teacherID and course.teacherID != user.id:
+            notifications.append({
+                "userID": course.teacherID,
+                "type": "course_updated",
+                "message": f"Your course '{old_name}' was renamed to '{course.name}' by {user.name}.",
+                "reference_id": course.id,
+                "reference_type": "course",
+            })
+        # Notify admins/super-admins when the change is made by the teacher themselves
+        if not user.is_admin_or_above():
+            admins = User.query.filter(User.role.in_(["admin", "super_admin"])).all()
+            for admin in admins:
+                notifications.append({
+                    "userID": admin.id,
+                    "type": "course_updated",
+                    "message": f"{user.name} renamed course '{old_name}' to '{course.name}'.",
+                    "reference_id": course.id,
+                    "reference_type": "course",
+                })
+        if notifications:
+            Notification.create_bulk(notifications)
+
     return jsonify({"id": course.id, "name": course.name, "image_path": course.image_path}), 200
 
 
@@ -209,6 +262,43 @@ def upload_course_image(course_id):
     file.save(os.path.join(images_dir, filename))
     course.image_path = filename
     course.update()
+
+    # Notify enrolled students and teacher about the image update
+    enrollments = User_Course.query.filter_by(courseID=course.id).all()
+    notifications = [
+        {
+            "userID": e.userID,
+            "type": "course_updated",
+            "message": f"The cover image for '{course.name}' was updated by {user.name}.",
+            "reference_id": course.id,
+            "reference_type": "course",
+        }
+        for e in enrollments
+        if User.get_by_id(e.userID) and User.get_by_id(e.userID).is_student()
+    ]
+    if user.is_admin_or_above() and course.teacherID and course.teacherID != user.id:
+        notifications.append({
+            "userID": course.teacherID,
+            "type": "course_updated",
+            "message": f"The cover image for your course '{course.name}' was updated by {user.name}.",
+            "reference_id": course.id,
+            "reference_type": "course",
+        })
+    # Notify admins/super-admins: when teacher updates, or when admin updates their own course
+    # (covers the edge case where admin is also the teacher with no enrolled students)
+    notified_ids = {n["userID"] for n in notifications}
+    admins = User.query.filter(User.role.in_(["admin", "super_admin"])).all()
+    for admin in admins:
+        if admin.id != user.id and admin.id not in notified_ids:
+            notifications.append({
+                "userID": admin.id,
+                "type": "course_updated",
+                "message": f"{user.name} updated the cover image for course '{course.name}'.",
+                "reference_id": course.id,
+                "reference_type": "course",
+            })
+    if notifications:
+        Notification.create_bulk(notifications)
 
     return jsonify({"id": course.id, "name": course.name, "image_path": course.image_path}), 200
 
@@ -371,6 +461,19 @@ def enroll_students():
         if not enrollment:
             # Enroll student
             User_Course.add(student.id, class_id)
-            enrolled_students.append(email)
+            enrolled_students.append(student.id)
+
+    # Notify newly enrolled students
+    if enrolled_students:
+        Notification.create_bulk([
+            {
+                "userID": uid,
+                "type": "course_enrolled",
+                "message": f"You have been enrolled in '{course.name}' by {user.name}.",
+                "reference_id": course.id,
+                "reference_type": "course",
+            }
+            for uid in enrolled_students
+        ])
 
     return jsonify({"msg": f"{len(enrolled_students)} students added to course {course.name}"}), 200

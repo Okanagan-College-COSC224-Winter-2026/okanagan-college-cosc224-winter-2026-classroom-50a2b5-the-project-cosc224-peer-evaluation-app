@@ -103,8 +103,8 @@ def create_assignment():
         else:
             due_date = None
 
-        if start_date and due_date and start_date > due_date:
-            return jsonify({"msg": "Due date cannot be before start date"}), 400
+        if start_date and due_date and start_date >= due_date:
+            return jsonify({"msg": "Due date must be after start date"}), 400
 
         is_anonymous = _coerce_optional_bool(is_anonymous, "is_anonymous")
         if is_anonymous is None:
@@ -211,8 +211,8 @@ def edit_assignment(assignment_id):
         if due_date:
             new_due_date = _normalize_datetime(datetime.fromisoformat(due_date))
 
-        if new_start_date and new_due_date and new_start_date > new_due_date:
-            return jsonify({"msg": "Due date cannot be before start date"}), 400
+        if new_start_date and new_due_date and new_start_date >= new_due_date:
+            return jsonify({"msg": "Due date must be after start date"}), 400
 
         assignment.start_date = new_start_date
         assignment.due_date = new_due_date
@@ -285,6 +285,15 @@ def delete_assignment(assignment_id):
     if course.teacherID != user.id:
         return jsonify({"msg": "Unauthorized: You are not the teacher of this class"}), 403
 
+    # Capture info before deletion for notifications
+    assignment_name = assignment.name
+    course_name = course.name
+    enrollments = User_Course.query.filter_by(courseID=course.id).all()
+    student_ids = [
+        e.userID for e in enrollments
+        if User.get_by_id(e.userID) and User.get_by_id(e.userID).is_student()
+    ]
+
     try:
         # Criterion has FKs to both Review and CriteriaDescription.
         # Delete all Criterion rows for this assignment first to avoid
@@ -300,6 +309,19 @@ def delete_assignment(assignment_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"msg": f"Failed to delete assignment: {str(e)}"}), 500
+
+    # Notify enrolled students about the deleted assignment
+    if student_ids:
+        Notification.create_bulk([
+            {
+                "userID": uid,
+                "type": "assignment_deleted",
+                "message": f"Assignment '{assignment_name}' in {course_name} has been removed by {user.name}.",
+                "reference_id": course.id,
+                "reference_type": "course",
+            }
+            for uid in student_ids
+        ])
 
     return jsonify({"msg": "Assignment deleted"}), 200
 

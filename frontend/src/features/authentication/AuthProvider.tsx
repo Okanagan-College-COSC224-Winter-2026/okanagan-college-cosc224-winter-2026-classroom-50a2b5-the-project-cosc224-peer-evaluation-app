@@ -11,6 +11,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   mustChangePassword: boolean;
+  userId: number | null;
   login: (mustChangePassword?: boolean) => void;
   logout: () => void;
   refreshAuth: () => Promise<void>;
@@ -22,6 +23,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
 
   async function refreshAuth() {
     setIsLoading(true);

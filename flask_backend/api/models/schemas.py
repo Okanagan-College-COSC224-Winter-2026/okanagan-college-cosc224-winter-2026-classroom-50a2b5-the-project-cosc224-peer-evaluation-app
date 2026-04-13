@@ -338,13 +338,3 @@ class NotificationSchema(ma.SQLAlchemyAutoSchema):
         include_fk = True
         sqla_session = db.session
 
-    reference_status = fields.Method("get_reference_status", dump_only=True)
-
-    def get_reference_status(self, obj):
-        """Return the current status of the referenced enrollment request, if applicable."""
-        if obj.reference_type == "enrollment_request" and obj.reference_id:
-            from .enrollment_request_model import EnrollmentRequest
-            req = EnrollmentRequest.get_by_id(obj.reference_id)
-            if req:
-                return req.status
-        return None

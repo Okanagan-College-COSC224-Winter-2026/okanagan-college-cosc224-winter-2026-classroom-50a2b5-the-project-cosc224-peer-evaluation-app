@@ -402,12 +402,7 @@ def get_review(review_id):
         return jsonify({"msg": "Review not found"}), 404
 
     # Authorization: students can only see their own reviews
-<<<<<<< HEAD
     if not user.is_teacher() and not user.is_admin_or_above():
-        if review.reviewerID != user.id and review.revieweeID != user.id:
-            return jsonify({"msg": "Unauthorized"}), 403
-=======
-    if not user.is_teacher() and not user.is_admin():
         if review.review_type == "individual":
             if review.reviewerID != user.id and review.revieweeID != user.id:
                 return jsonify({"msg": "Unauthorized"}), 403
@@ -422,7 +417,6 @@ def get_review(review_id):
 
             if not is_in_reviewer_group and not is_in_reviewee_group:
                 return jsonify({"msg": "Unauthorized"}), 403
->>>>>>> origin/dev
 
     criteria = Criterion.query.filter_by(reviewID=review.id).all()
 
@@ -430,22 +424,11 @@ def get_review(review_id):
 
     # Apply reviewer masking/transformation for students
     assignment = Assignment.get_by_id(review.assignmentID)
-<<<<<<< HEAD
-    if (
-        assignment
-        and assignment.is_anonymous
-        and review.revieweeID == user.id
-        and not user.is_teacher()
-        and not user.is_admin_or_above()
-    ):
-        result["reviewer"] = {"id": None, "name": "Anonymous", "email": None}
-=======
-    is_student = not user.is_teacher() and not user.is_admin()
+    is_student = not user.is_teacher() and not user.is_admin_or_above()
     if assignment and is_student:
         masked = mask_reviewer(review, assignment, False, assignment.courseID, user.id)
         if masked:
             result["reviewer"] = masked
->>>>>>> origin/dev
 
     result["criteria"] = CriterionSchema(many=True).dump(criteria)
     return jsonify(result), 200
@@ -505,13 +488,9 @@ def get_reviews_for_assignment(assignment_id):
     if not assignment:
         return jsonify({"msg": "Assignment not found"}), 404
 
-<<<<<<< HEAD
-    is_teacher_or_admin = user.is_teacher() or user.is_admin_or_above()
-=======
     review_type_filter = request.args.get("review_type")
 
-    is_teacher_or_admin = user.is_teacher() or user.is_admin()
->>>>>>> origin/dev
+    is_teacher_or_admin = user.is_teacher() or user.is_admin_or_above()
 
     query = Review.query.filter_by(assignmentID=assignment_id)
 

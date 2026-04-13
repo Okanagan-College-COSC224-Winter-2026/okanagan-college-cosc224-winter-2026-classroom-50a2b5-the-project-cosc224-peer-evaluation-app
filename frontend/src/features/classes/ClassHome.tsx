@@ -67,8 +67,8 @@ export default function ClassHome() {
     if (data.start_date && data.due_date) {
       const start = new Date(data.start_date);
       const due = new Date(data.due_date);
-      if (start > due) {
-        toast.error("Due date cannot be before start date.");
+      if (start >= due) {
+        toast.error("Due date must be after start date.");
         return;
       }
     }
