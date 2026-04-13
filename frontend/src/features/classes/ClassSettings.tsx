@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
-import toast from "react-hot-toast";
+import toast from "../../lib/toast";
 import Modal from "../../ui/Modal";
 import { useClasses, useUpdateCourse, useUploadCourseImage, useDeleteCourse } from "./useClasses";
 import { getCourseImageUrl } from "../../services/classApi";

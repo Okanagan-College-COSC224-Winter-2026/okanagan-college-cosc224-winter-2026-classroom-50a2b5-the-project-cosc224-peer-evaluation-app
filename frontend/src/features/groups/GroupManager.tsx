@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import toast from "react-hot-toast";
+import toast from "../../lib/toast";
 import Modal from "../../ui/Modal";
 import { isTeacher, isAdmin } from "../../util/login";
 import {

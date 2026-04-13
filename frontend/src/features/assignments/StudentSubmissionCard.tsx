@@ -1,5 +1,5 @@
 import { useState } from "react";
-import toast from "react-hot-toast";
+import toast from "../../lib/toast";
 import { useUploadSubmission, useDeleteSubmission } from "../reviews/useSubmission";
 import { cardClass, btnSecondary, btnOutline } from "./assignmentStyles";
 

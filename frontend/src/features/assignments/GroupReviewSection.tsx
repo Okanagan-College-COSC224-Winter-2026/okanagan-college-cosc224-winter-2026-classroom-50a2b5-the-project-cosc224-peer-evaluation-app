@@ -1,6 +1,6 @@
 import { useState, useEffect, ChangeEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
-import toast from "react-hot-toast";
+import toast from "../../lib/toast";
 import Modal from "../../ui/Modal";
 import RubricDisplay from "../reviews/RubricDisplay";
 import { useSubmitReview, useReview, useUpdateReview, useMyReviewed } from "../reviews/useReviews";

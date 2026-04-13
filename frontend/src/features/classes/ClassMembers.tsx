@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import toast from "react-hot-toast";
+import toast from "../../lib/toast";
 import { useCourseMembers } from "./useClasses";
 import { usePendingRequests, useApproveRequest, useRejectRequest } from "../enrollment/useEnrollment";
 import { isTeacher, isAdmin } from "../../util/login";

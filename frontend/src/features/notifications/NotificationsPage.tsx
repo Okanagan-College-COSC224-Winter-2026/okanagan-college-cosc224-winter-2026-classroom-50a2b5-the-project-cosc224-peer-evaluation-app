@@ -1,5 +1,5 @@
 import { useState } from "react";
-import toast from "react-hot-toast";
+import toast from "../../lib/toast";
 import {
   useNotifications,
   useMarkRead,
@@ -344,16 +344,6 @@ export default function NotificationsPage() {
           <p className="text-text-secondary text-sm font-medium m-0">
             {filtersActive ? "No notifications match your filters" : "No notifications yet"}
           </p>
-          {filtersActive && (
-            <button
-              onClick={() => {
-                setStatusFilter("all"); setDateFilter("all");
-              }}
-              className="text-xs text-btn-primary hover:underline cursor-pointer bg-transparent border-none"
-            >
-              Clear filters
-            </button>
-          )}
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">

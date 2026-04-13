@@ -3,7 +3,7 @@ import Textbox from '../../ui/Textbox';
 import Button from '../../ui/Button';
 import { tryRegister } from '../../util/api';
 import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { pageClasses, blockClasses, innerClasses, inputsClasses, inputChunkClasses } from './LoginForm';
 
 export default function RegisterPage() {

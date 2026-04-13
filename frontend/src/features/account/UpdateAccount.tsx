@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import toast from 'react-hot-toast'
+import toast from '../../lib/toast'
 import { useUser, useUpdateProfile, useUploadAvatar, useChangePassword, useDeleteAccount } from './useUser'
 import { getUserId, logout } from '../../util/login'
 import Modal from '../../ui/Modal'

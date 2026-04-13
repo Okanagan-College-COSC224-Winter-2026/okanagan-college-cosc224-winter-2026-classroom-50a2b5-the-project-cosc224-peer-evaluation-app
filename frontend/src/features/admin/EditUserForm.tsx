@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import toast from "react-hot-toast";
+import toast from "../../lib/toast";
 import Modal from "../../ui/Modal";
 import { useUpdateUser } from "./useAdmin";
 import { getUserId, getUserRole, isSuperAdmin } from "../../util/login";

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
+import toast from "../../lib/toast";
 import RubricCreator from "../reviews/RubricCreator";
 import RubricDisplay from "../reviews/RubricDisplay";
 import Modal from "../../ui/Modal";

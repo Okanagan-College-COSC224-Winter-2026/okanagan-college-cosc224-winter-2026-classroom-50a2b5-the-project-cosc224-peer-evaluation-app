@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import toast from "react-hot-toast";
+import toast from "../../lib/toast";
 import Modal from "../../ui/Modal";
 import { isSuperAdmin } from "../../util/login";
 import { useCreateUser } from "./useAdmin";

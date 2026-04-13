@@ -1,5 +1,5 @@
 import Button from "../../ui/Button";
-import toast from "react-hot-toast";
+import toast from "../../lib/toast";
 import { useParams, Link } from "react-router-dom";
 import { useState } from "react";
 import { useForm } from "react-hook-form";

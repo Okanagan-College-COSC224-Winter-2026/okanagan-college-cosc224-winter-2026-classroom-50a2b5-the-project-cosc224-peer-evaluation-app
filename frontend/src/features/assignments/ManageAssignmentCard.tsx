@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import toast from "react-hot-toast";
+import toast from "../../lib/toast";
 import Modal from "../../ui/Modal";
 import { useEditAssignment, useDeleteAssignment } from "./useAssignments";
 import { cardClass, btnPrimary, btnDanger, inputClass, labelClass } from "./assignmentStyles";

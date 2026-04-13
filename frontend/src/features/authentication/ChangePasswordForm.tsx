@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Textbox from '../../ui/Textbox';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { changeRequiredPassword } from '../../services/userApi';
 import { useAuth } from './AuthProvider';
 import { pageClasses, blockClasses, innerClasses, inputsClasses, inputChunkClasses } from './LoginForm';

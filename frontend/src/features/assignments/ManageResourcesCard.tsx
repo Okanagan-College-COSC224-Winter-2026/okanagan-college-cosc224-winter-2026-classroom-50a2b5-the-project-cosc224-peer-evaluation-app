@@ -1,5 +1,5 @@
 import { useState } from "react";
-import toast from "react-hot-toast";
+import toast from "../../lib/toast";
 import { useUploadAssignmentResource, useDeleteAssignmentResource } from "./useAssignments";
 import { cardClass, btnSecondary } from "./assignmentStyles";
 import type { AssignmentResourceItem } from "./useAssignmentDetail";

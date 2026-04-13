@@ -1,4 +1,4 @@
-import toast from "react-hot-toast";
+import toast from "../../lib/toast";
 import Modal from "../../ui/Modal";
 import { useDeleteUser } from "./useAdmin";
 
