@@ -10,8 +10,12 @@ from .group_members_model import Group_Members
 from .review_model import Review
 from .rubric_model import Rubric
 from .submission_model import Submission
+from .enrollment_request_model import EnrollmentRequest
+from .notification_model import Notification
+from .review_flag_model import ReviewFlag
 from .user_course_model import User_Course
 from .user_model import User
+from .blocked_student_model import BlockedStudent
 
 # ============================================================
 # USER SCHEMAS
@@ -31,11 +35,22 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
     # Explicit fields for clarity and validation
     id = fields.Int(dump_only=True)
     name = fields.Str(required=True, validate=validate.Length(min=1, max=255))
+    preferred_name = fields.Str(load_default=None, validate=validate.Length(max=255))
+    pronouns = fields.Str(load_default=None, validate=validate.Length(max=50))
+    display_name = fields.Method("get_display_name", dump_only=True)
     email = fields.Email(required=True)
     role = fields.Str(
-        dump_default="student", validate=validate.OneOf(["student", "teacher", "admin"])
+        dump_default="student",
+        validate=validate.OneOf(["student", "teacher", "admin", "super_admin"]),
     )
     must_change_password = fields.Bool(dump_default=False)
+    avatar_url = fields.Method("get_avatar_url", dump_only=True)
+
+    def get_avatar_url(self, obj):
+        return f"/user/avatar/{obj.id}" if getattr(obj, "avatar_path", None) else None
+
+    def get_display_name(self, obj):
+        return getattr(obj, "preferred_name", None) or obj.name
 
 
 class UserRegistrationSchema(ma.Schema):
@@ -58,8 +73,13 @@ class UserListSchema(ma.SQLAlchemyAutoSchema):
 
     class Meta:
         model = User
-        fields = ("id", "name", "email", "role")
-        dump_only = ("id",)
+        fields = ("id", "name", "email", "role", "display_name", "pronouns")
+        dump_only = ("id", "display_name")
+
+    display_name = fields.Method("get_display_name")
+
+    def get_display_name(self, obj):
+        return getattr(obj, "preferred_name", None) or obj.name
 
 
 # ============================================================
@@ -105,7 +125,7 @@ class AssignmentSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Assignment
         load_instance = True
-        include_fk = False
+        include_fk = True  # Include courseID in serialization
         sqla_session = db.session
 
     course = fields.Nested(CourseListSchema, dump_only=True)
@@ -120,7 +140,7 @@ class RubricSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Rubric
         load_instance = True
-        include_fk = False
+        include_fk = True
         sqla_session = db.session
 
 
@@ -128,7 +148,7 @@ class CriteriaDescriptionSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = CriteriaDescription
         load_instance = True
-        include_fk = False
+        include_fk = True
         sqla_session = db.session
 
 
@@ -136,8 +156,24 @@ class CriterionSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Criterion
         load_instance = True
-        include_fk = False
+        include_fk = True
         sqla_session = db.session
+
+    # Pull the human-readable criterion name from the related CriteriaDescription
+    criterion_name = fields.Method("get_criterion_name")
+    score_max = fields.Method("get_score_max")
+
+    def get_criterion_name(self, obj):
+        """Return the question text from the linked CriteriaDescription row."""
+        if obj.criterion_row:
+            return obj.criterion_row.question
+        return None
+
+    def get_score_max(self, obj):
+        """Return the maximum possible score from the linked CriteriaDescription row."""
+        if obj.criterion_row:
+            return obj.criterion_row.scoreMax
+        return None
 
 
 # ============================================================
@@ -148,8 +184,9 @@ class CriterionSchema(ma.SQLAlchemyAutoSchema):
 class ReviewSchema(ma.SQLAlchemyAutoSchema):
     """Full review schema with nested relationships.
 
-    Note: To avoid N+1 queries, use Review.get_by_id_with_relations() or
-    Review.get_all_with_relations() when fetching reviews for serialization.
+    Handles both individual reviews (reviewee is a User) and group reviews
+    (reviewee is a CourseGroup).  The ``reviewee`` field is serialized
+    manually based on ``review_type``.
     """
 
     class Meta:
@@ -158,9 +195,23 @@ class ReviewSchema(ma.SQLAlchemyAutoSchema):
         include_fk = False
         sqla_session = db.session
 
+    review_type = fields.Str(dump_only=True)
     reviewer = fields.Nested(UserListSchema, dump_only=True)
-    reviewee = fields.Nested(UserListSchema, dump_only=True)
+    reviewee = fields.Method("get_reviewee")
     assignment = fields.Nested(AssignmentSchema, dump_only=True)
+
+    def get_reviewee(self, obj):
+        """Return User data for individual reviews, CourseGroup data for group reviews."""
+        if obj.review_type == "group":
+            group = CourseGroup.get_by_id(obj.revieweeID)
+            if group:
+                return {"id": group.id, "name": group.name, "type": "group"}
+            return {"id": obj.revieweeID, "name": "Unknown Group", "type": "group"}
+        # Individual review — look up User
+        user = User.get_by_id(obj.revieweeID)
+        if user:
+            return UserListSchema().dump(user)
+        return {"id": obj.revieweeID, "name": "Unknown User"}
 
 
 class ReviewListSchema(ma.SQLAlchemyAutoSchema):
@@ -168,19 +219,28 @@ class ReviewListSchema(ma.SQLAlchemyAutoSchema):
 
     Uses minimal nested data to reduce query complexity.
     For list views, we don't need full assignment details with nested course.
-
-    Note: Only includes assignmentID as FK since reviewer/reviewee provide their own IDs.
-    This avoids redundancy while giving clients the assignment link they need.
     """
 
     class Meta:
         model = Review
-        fields = ("id", "assignmentID", "reviewer", "reviewee")
+        fields = ("id", "assignmentID", "comments", "review_type", "reviewer", "reviewee")
         dump_only = ("id",)
-        include_fk = True  # Allows assignmentID to be serialized
+        include_fk = True
 
+    review_type = fields.Str(dump_only=True)
     reviewer = fields.Nested(UserListSchema, dump_only=True)
-    reviewee = fields.Nested(UserListSchema, dump_only=True)
+    reviewee = fields.Method("get_reviewee")
+
+    def get_reviewee(self, obj):
+        if obj.review_type == "group":
+            group = CourseGroup.get_by_id(obj.revieweeID)
+            if group:
+                return {"id": group.id, "name": group.name, "type": "group"}
+            return {"id": obj.revieweeID, "name": "Unknown Group", "type": "group"}
+        user = User.get_by_id(obj.revieweeID)
+        if user:
+            return UserListSchema().dump(user)
+        return {"id": obj.revieweeID, "name": "Unknown User"}
 
 
 # ============================================================
@@ -192,7 +252,7 @@ class CourseGroupSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = CourseGroup
         load_instance = True
-        include_fk = False
+        include_fk = True  # Include courseID in serialization
         sqla_session = db.session
 
 
@@ -200,7 +260,7 @@ class GroupMembersSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Group_Members
         load_instance = True
-        include_fk = False
+        include_fk = True  # Include userID and groupID in serialization
         sqla_session = db.session
 
 
@@ -223,3 +283,58 @@ class SubmissionSchema(ma.SQLAlchemyAutoSchema):
         load_instance = True
         include_fk = False
         sqla_session = db.session
+
+
+# ============================================================
+# REVIEW FLAG SCHEMAS
+# ============================================================
+
+
+class ReviewFlagSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = ReviewFlag
+        load_instance = True
+        include_fk = True
+        sqla_session = db.session
+
+    user = fields.Nested(UserListSchema, dump_only=True)
+
+
+# ============================================================
+# ENROLLMENT REQUEST SCHEMAS
+# ============================================================
+
+
+class EnrollmentRequestSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = EnrollmentRequest
+        load_instance = True
+        include_fk = True
+        sqla_session = db.session
+
+    student = fields.Nested(UserListSchema, dump_only=True)
+    course = fields.Nested(CourseListSchema, dump_only=True)
+
+
+# ============================================================
+# NOTIFICATION SCHEMAS
+# ============================================================
+
+
+class BlockedStudentSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = BlockedStudent
+        load_instance = True
+        include_fk = True
+        sqla_session = db.session
+
+    student = fields.Nested(UserListSchema, dump_only=True)
+
+
+class NotificationSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Notification
+        load_instance = True
+        include_fk = True
+        sqla_session = db.session
+

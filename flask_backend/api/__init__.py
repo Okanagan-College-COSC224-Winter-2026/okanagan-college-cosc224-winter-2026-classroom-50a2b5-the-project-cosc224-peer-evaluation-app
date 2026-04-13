@@ -6,13 +6,24 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
 from .cli import init_app
+from .extensions import socketio
 from .controllers import (
     admin_controller,
     auth_controller,
+    block_controller,
     class_controller,
+    enrollment_request_controller,
     fake_api_controller,
+    notification_controller,
+    gradebook_controller,
     user_controller,
     assignment_controller,
+    assignment_resource_controller,
+    group_controller,
+    review_controller,
+    review_flag_controller,
+    rubric_controller,
+    submission_controller,
 )
 from .models.db import db, ma
 
@@ -107,6 +118,22 @@ def create_app(test_config=None):
     app.register_blueprint(admin_controller.bp)
     app.register_blueprint(class_controller.bp)
     app.register_blueprint(assignment_controller.bp)
+    app.register_blueprint(assignment_resource_controller.bp)
+    app.register_blueprint(group_controller.bp)
+    app.register_blueprint(rubric_controller.bp)
+    app.register_blueprint(review_controller.bp)
+    app.register_blueprint(review_flag_controller.bp)
+    app.register_blueprint(enrollment_request_controller.bp)
+    app.register_blueprint(block_controller.bp)
+    app.register_blueprint(notification_controller.bp)
+    app.register_blueprint(submission_controller.bp)
+    app.register_blueprint(gradebook_controller.bp)
     app.register_blueprint(fake_api_controller.fake)
+
+    # Initialize SocketIO with CORS origins matching the REST API
+    socketio.init_app(app, cors_allowed_origins=cors_origins)
+
+    # Register socket event handlers
+    from . import socket_events  # noqa: F401
 
     return app

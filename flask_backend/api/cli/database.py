@@ -2,10 +2,64 @@ import os
 
 import click
 from flask.cli import with_appcontext
+from sqlalchemy import inspect, text
 from werkzeug.security import generate_password_hash
 
-from ..models import User, Course, Assignment
+from ..models import User, Course, Assignment, AssignmentResource
 from ..models.db import db
+
+
+@click.command("migrate_assignment_columns")
+@with_appcontext
+def migrate_assignment_columns_command():
+    """Add missing Assignment columns for existing databases.
+
+    This command is idempotent and safe to run multiple times.
+    """
+
+    inspector = inspect(db.engine)
+    if not inspector.has_table("Assignment"):
+        click.echo("Assignment table does not exist. Run 'flask init_db' first.", err=True)
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("Assignment")}
+    migrations = [
+        ("description", 'ALTER TABLE "Assignment" ADD COLUMN description TEXT'),
+        ("start_date", 'ALTER TABLE "Assignment" ADD COLUMN start_date TIMESTAMP'),
+        ("due_date", 'ALTER TABLE "Assignment" ADD COLUMN due_date TIMESTAMP'),
+        ("is_anonymous", 'ALTER TABLE "Assignment" ADD COLUMN is_anonymous BOOLEAN DEFAULT TRUE'),
+        ("individual_reviews", 'ALTER TABLE "Assignment" ADD COLUMN individual_reviews BOOLEAN DEFAULT TRUE'),
+        ("group_reviews", 'ALTER TABLE "Assignment" ADD COLUMN group_reviews BOOLEAN DEFAULT TRUE'),
+    ]
+
+    applied = 0
+    for column_name, statement in migrations:
+        if column_name in existing_columns:
+            click.echo(f"Column '{column_name}' already exists on Assignment")
+            continue
+        db.session.execute(text(statement))
+        applied += 1
+        click.echo(f"Added column '{column_name}' to Assignment")
+
+    if applied:
+        db.session.commit()
+        click.echo(f"Assignment migration completed ({applied} column(s) added)")
+    else:
+        click.echo("Assignment migration completed (no changes needed)")
+
+
+@click.command("migrate_assignment_resources")
+@with_appcontext
+def migrate_assignment_resources_command():
+    """Create AssignmentResource table if missing (idempotent)."""
+
+    inspector = inspect(db.engine)
+    if inspector.has_table("AssignmentResource"):
+        click.echo("AssignmentResource table already exists")
+        return
+
+    AssignmentResource.__table__.create(bind=db.engine, checkfirst=True)
+    click.echo("AssignmentResource table created")
 
 
 @click.command("init_db")
@@ -157,8 +211,9 @@ def add_sample_courses_command():
             courseID=course.id,
             name="Example Assignment",
             rubric_text="Example rubric",
-            # due_date=None
-            # due_date is currently not in the Assignment table
+            # description=None,
+            # start_date=None,
+            # due_date=None,
         )
         Assignment.create(assignment)
         click.echo(f"  - Assignment 'Example Assignment' added to '{course.name}'")
@@ -166,11 +221,203 @@ def add_sample_courses_command():
     click.echo("Sample courses and assignments created successfully")
 
 
+@click.command("migrate_review_comments")
+@with_appcontext
+def migrate_review_comments_command():
+    """Add comments column to Review table for existing databases.
+
+    This command is idempotent and safe to run multiple times.
+    """
+    inspector = inspect(db.engine)
+    if not inspector.has_table("Review"):
+        click.echo("Review table does not exist. Run 'flask init_db' first.", err=True)
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("Review")}
+    if "comments" in existing_columns:
+        click.echo("Column 'comments' already exists on Review")
+        return
+
+    db.session.execute(text('ALTER TABLE "Review" ADD COLUMN comments VARCHAR(500)'))
+    db.session.commit()
+    click.echo("Added column 'comments' to Review")
+
+
+@click.command("migrate_course_image")
+@with_appcontext
+def migrate_course_image_command():
+    """Add image_path column to Course table for existing databases (idempotent)."""
+    inspector = inspect(db.engine)
+    if not inspector.has_table("Course"):
+        click.echo("Course table does not exist. Run 'flask init_db' first.", err=True)
+        return
+
+    existing_columns = {col["name"] for col in inspector.get_columns("Course")}
+    if "image_path" in existing_columns:
+        click.echo("Column 'image_path' already exists on Course — no changes needed.")
+        return
+
+    db.session.execute(text('ALTER TABLE "Course" ADD COLUMN image_path VARCHAR(255)'))
+    db.session.commit()
+    click.echo("Added column 'image_path' to Course table.")
+
+
+@click.command("migrate_super_admin_role")
+@with_appcontext
+def migrate_super_admin_role_command():
+    """Update the User.role CHECK constraint to include super_admin (idempotent)."""
+    inspector = inspect(db.engine)
+    if not inspector.has_table("User"):
+        click.echo("User table does not exist. Run 'flask init_db' first.", err=True)
+        return
+
+    dialect = db.engine.dialect.name
+    if dialect == "sqlite":
+        conn = db.engine.raw_connection()
+        cur = conn.cursor()
+        cur.executescript('''
+PRAGMA foreign_keys = OFF;
+
+CREATE TABLE IF NOT EXISTS "User_new" (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    preferred_name VARCHAR(255),
+    pronouns VARCHAR(50),
+    email VARCHAR(255) NOT NULL UNIQUE,
+    hash_pass VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'student',
+    must_change_password BOOLEAN NOT NULL DEFAULT 0,
+    avatar_path VARCHAR(255),
+    CONSTRAINT check_valid_role CHECK (role IN ('student', 'teacher', 'admin', 'super_admin'))
+);
+
+INSERT OR IGNORE INTO "User_new" SELECT id, name, preferred_name, pronouns, email, hash_pass, role, must_change_password, avatar_path FROM "User";
+
+DROP TABLE "User";
+ALTER TABLE "User_new" RENAME TO "User";
+
+CREATE INDEX IF NOT EXISTS ix_User_email ON "User" (email);
+
+PRAGMA foreign_keys = ON;
+''')
+        conn.commit()
+        conn.close()
+        click.echo("SQLite: User table recreated with super_admin CHECK constraint.")
+    else:
+        click.echo(f"Dialect '{dialect}': update the CHECK constraint manually if needed.")
+
+    click.echo("migrate_super_admin_role completed.")
+
+
+@click.command("migrate_audit_log")
+@with_appcontext
+def migrate_audit_log_command():
+    """Create the AuditLog table if it does not already exist (idempotent)."""
+    from ..models.audit_log_model import AuditLog
+    AuditLog.__table__.create(bind=db.engine, checkfirst=True)
+    click.echo("AuditLog table created (or already exists).")
+
+
+@click.command("create_super_admin")
+@with_appcontext
+def create_super_admin_command():
+    """Create a super_admin (root) user interactively."""
+    name = click.prompt("Super Admin name")
+    email = click.prompt("Super Admin email")
+    password = click.prompt("Password", hide_input=True, confirmation_prompt=True)
+
+    if User.get_by_email(email):
+        click.echo(f"Error: User with email '{email}' already exists", err=True)
+        return
+
+    hashed = generate_password_hash(password, method="pbkdf2:sha256")
+    super_admin = User(name=name, email=email, hash_pass=hashed, role="super_admin")
+    User.create_user(super_admin)
+    click.echo(f"Super Admin '{email}' created successfully.")
+
+
 def init_app(app):
     """Register CLI commands with the Flask app"""
     app.cli.add_command(init_db_command)
     app.cli.add_command(drop_db_command)
+    app.cli.add_command(migrate_assignment_columns_command)
+    app.cli.add_command(migrate_assignment_resources_command)
     app.cli.add_command(add_users_command)
     app.cli.add_command(create_admin_command)
     app.cli.add_command(ensure_admin_command)
     app.cli.add_command(add_sample_courses_command)
+    app.cli.add_command(migrate_course_image_command)
+    app.cli.add_command(migrate_review_comments_command)
+    app.cli.add_command(migrate_group_reviews_command)
+    app.cli.add_command(migrate_user_avatar_command)
+    app.cli.add_command(migrate_super_admin_role_command)
+    app.cli.add_command(migrate_audit_log_command)
+    app.cli.add_command(create_super_admin_command)
+
+
+@click.command("migrate_group_reviews")
+@with_appcontext
+def migrate_group_reviews_command():
+    """Add review_type column to Review and rubric_type column to Rubric.
+
+    Needed for group-review support. Existing rows default to 'individual'.
+    This command is idempotent and safe to run multiple times.
+    """
+    inspector = inspect(db.engine)
+    applied = 0
+
+    # --- Review table ---
+    if not inspector.has_table("Review"):
+        click.echo("Review table does not exist. Run 'flask init_db' first.", err=True)
+        return
+
+    review_cols = {col["name"] for col in inspector.get_columns("Review")}
+    if "review_type" in review_cols:
+        click.echo("Column 'review_type' already exists on Review")
+    else:
+        db.session.execute(
+            text('ALTER TABLE "Review" ADD COLUMN review_type VARCHAR(20) NOT NULL DEFAULT \'individual\'')
+        )
+        applied += 1
+        click.echo("Added column 'review_type' to Review (default='individual')")
+
+    # --- Rubric table ---
+    if not inspector.has_table("Rubric"):
+        click.echo("Rubric table does not exist. Run 'flask init_db' first.", err=True)
+        return
+
+    rubric_cols = {col["name"] for col in inspector.get_columns("Rubric")}
+    if "rubric_type" in rubric_cols:
+        click.echo("Column 'rubric_type' already exists on Rubric")
+    else:
+        db.session.execute(
+            text('ALTER TABLE "Rubric" ADD COLUMN rubric_type VARCHAR(20) NOT NULL DEFAULT \'individual\'')
+        )
+        applied += 1
+        click.echo("Added column 'rubric_type' to Rubric (default='individual')")
+
+    if applied:
+        db.session.commit()
+        click.echo(f"Group reviews migration completed ({applied} column(s) added)")
+    else:
+        click.echo("Group reviews migration completed (no changes needed)")
+
+
+@click.command("migrate_user_avatar")
+@with_appcontext
+def migrate_user_avatar_command():
+    """Add avatar_path column to User table for existing databases (idempotent)."""
+
+    inspector = inspect(db.engine)
+    if not inspector.has_table("User"):
+        click.echo("User table does not exist. Run 'flask init_db' first.", err=True)
+        return
+
+    existing_columns = {col["name"] for col in inspector.get_columns("User")}
+    if "avatar_path" in existing_columns:
+        click.echo("Column 'avatar_path' already exists on User — no changes needed.")
+        return
+
+    db.session.execute(text('ALTER TABLE "User" ADD COLUMN avatar_path VARCHAR(255)'))
+    db.session.commit()
+    click.echo("Added column 'avatar_path' to User table.")

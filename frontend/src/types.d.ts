@@ -1,14 +1,19 @@
 interface Course {
   id: number;
   teacherID: number;
+  teacher_name?: string;
   name: string;
+  image_path?: string | null;
 }
 
 interface User {
   id: number;
   name: string;
+  preferred_name?: string | null;
+  pronouns?: string | null;
+  display_name?: string;
   email: string;
-  role: 'student' | 'teacher' | 'admin';
+  role: 'student' | 'teacher' | 'admin' | 'super_admin';
 }
 
 interface StudentGroups {
@@ -34,6 +39,7 @@ interface GroupTableValue{
 }
 
 interface Criterion {
+  id: number;
   rubricID: number;
   question: string;
   scoreMax: number;
@@ -44,8 +50,12 @@ interface Assignment {
   id: number;
   name: string;
   courseID: number;
+  description?: string;
+  start_date?: string;
   rubric?: string;
   due_date?: string;
+  is_anonymous?: boolean;
+  has_submitted?: boolean;
 }
 
 interface CourseWithAssignments extends Course {

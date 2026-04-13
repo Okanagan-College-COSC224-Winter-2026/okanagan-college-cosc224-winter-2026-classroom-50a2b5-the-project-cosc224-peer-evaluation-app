@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Rounded square background -->
+  <rect width="64" height="64" rx="14" fill="#4bd530"/>
+  <!-- Graduation cap board -->
+  <path d="M32 18L10 28l22 10 22-10-22-10z" fill="white"/>
+  <!-- Cap top highlight -->
+  <path d="M32 18L10 28l22 10 22-10-22-10z" fill="white" opacity="0.15"/>
+  <!-- Left side of board stroke -->
+  <path d="M32 18L10 28l22 10 22-10-22-10z" stroke="white" stroke-opacity="0.3" stroke-width="0.5" fill="none"/>
+  <!-- Tassel cord -->
+  <line x1="54" y1="28" x2="54" y2="40" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Tassel ball -->
+  <circle cx="54" cy="43" r="3" fill="white"/>
+  <!-- Cap body (3D depth) -->
+  <path d="M20 32v8c0 2.5 5.4 5 12 5s12-2.5 12-5v-8L32 38 20 32z" fill="white" opacity="0.9"/>
+</svg>

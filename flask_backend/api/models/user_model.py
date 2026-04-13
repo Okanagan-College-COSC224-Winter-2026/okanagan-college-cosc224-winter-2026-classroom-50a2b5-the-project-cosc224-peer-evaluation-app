@@ -14,13 +14,18 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
+    preferred_name = db.Column(db.String(255), nullable=True)
+    pronouns = db.Column(db.String(50), nullable=True)
     email = db.Column(db.String(255), nullable=False, unique=True, index=True)
     hash_pass = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(50), default="student", nullable=False)
     must_change_password = db.Column(db.Boolean, default=False, nullable=False)
+    avatar_path = db.Column(db.String(255), nullable=True)
 
     __table_args__ = (
-        CheckConstraint("role IN ('student', 'teacher', 'admin')", name="check_valid_role"),
+        CheckConstraint(
+            "role IN ('student', 'teacher', 'admin', 'super_admin')", name="check_valid_role"
+        ),
     )
 
     # relationships
@@ -43,15 +48,12 @@ class User(db.Model):
     reviews_made = db.relationship(
         "Review", back_populates="reviewer", foreign_keys="Review.reviewerID", lazy="dynamic"
     )
-    reviews_received = db.relationship(
-        "Review", back_populates="reviewee", foreign_keys="Review.revieweeID", lazy="dynamic"
-    )
     group_memberships = db.relationship(
         "Group_Members", back_populates="user", cascade="all, delete-orphan", lazy="dynamic"
     )
 
     def __init__(self, name, email, hash_pass, role="student", must_change_password=False):
-        valid_roles = ["student", "teacher", "admin"]
+        valid_roles = ["student", "teacher", "admin", "super_admin"]
         if role not in valid_roles:
             raise ValueError(f"Invalid role '{role}'. Must be one of: {', '.join(valid_roles)}")
         self.name = name
@@ -96,9 +98,17 @@ class User(db.Model):
         """Check if the user is a teacher"""
         return self.role == "teacher"
 
+    def is_super_admin(self):
+        """Check if the user is a super admin (root)"""
+        return self.role == "super_admin"
+
     def is_admin(self):
-        """Check if the user is an admin"""
+        """Check if the user is an admin (not super_admin)"""
         return self.role == "admin"
+
+    def is_admin_or_above(self):
+        """Check if the user has admin-level access or higher"""
+        return self.role in ("admin", "super_admin")
 
     def is_student(self):
         """Check if the user is a student"""
@@ -107,3 +117,8 @@ class User(db.Model):
     def has_role(self, *roles):
         """Check if the user has any of the specified roles"""
         return self.role in roles
+
+    @property
+    def display_name(self):
+        """Return preferred_name if set, otherwise name."""
+        return self.preferred_name or self.name

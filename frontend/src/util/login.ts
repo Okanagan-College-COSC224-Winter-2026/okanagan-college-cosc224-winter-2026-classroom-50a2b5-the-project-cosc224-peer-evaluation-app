@@ -24,12 +24,27 @@ export const isTeacher = () => {
   return getUserRole() === "teacher";
 }
 
+export const isSuperAdmin = () => {
+  return getUserRole() === "super_admin";
+}
+
 export const isAdmin = () => {
+  // Returns true for both admin and super_admin (admin-level access)
+  return getUserRole() === "admin" || getUserRole() === "super_admin";
+}
+
+export const isStrictAdmin = () => {
+  // Returns true only for plain admin (not super_admin)
   return getUserRole() === "admin";
 }
 
 export const isStudent = () => {
   return getUserRole() === "student";
+}
+
+export const getUserId = (): number | null => {
+  const user = JSON.parse(localStorage.getItem("user") || '{}');
+  return user.id || null;
 }
 
 export const hasRole = (...roles: string[]) => {
